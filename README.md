@@ -251,9 +251,16 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── model_comparison.csv                (planned)
 │   ├── shap_summary.png                    (planned)
 │   └── persona_clusters.png                (planned)
+├── walkthrough/
+│   ├── phase0.md
+│   ├── phase1.md
+│   ├── phase2.md
+│   └── phase3.md …                         (planned, added alongside each new notebook)
 ├── README.md
 └── requirements.txt
 ```
+
+Each `walkthrough/phaseN.md` answers that phase's research questions and, for phases with a notebook, walks through it cell by cell — what each cell does and the motivation behind it — so the reasoning behind the code doesn't have to be reconstructed from the code alone.
 
 ## 7. Setup & Usage
 
