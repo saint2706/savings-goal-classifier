@@ -47,9 +47,13 @@ Goal_Met = 0 otherwise
 Every question below maps to one phase of the project pipeline (Section 5). Questions are answered in order; later phases depend on decisions made in earlier ones.
 
 ### Phase 0 — Framing
-- What real business decision does this project inform?
-- What is the precise, one-sentence definition of the target variable?
-- Is the primary task classification or regression, and why?
+
+- **What real business decision does this project inform?**
+  Whether a fintech / savings-product marketing team should treat an individual as **on-track** or **at-risk** for their own stated savings goal, and therefore which customers to target with which intervention (e.g., a nudge campaign, a round-up savings product, a budgeting tool aimed at a specific overspend category). The model output is meant to drive a targeting/prioritization decision, not to produce a precise savings forecast.
+- **What is the precise, one-sentence definition of the target variable?**
+  `Goal_Met = 1` if `Disposable_Income >= Desired_Savings`, else `0` — i.e., a binary label that is `1` when an individual's actual leftover income (after all recorded expenses) is enough to cover the monthly savings amount they themselves said they want to save (see Section 3 for the full leakage discussion).
+- **Is the primary task classification or regression, and why?**
+  **Binary classification.** The business decision this project informs is a yes/no call — is this person on-track or not, so the pipeline can flag them for a marketing/outreach decision — not a request for a precise savings-shortfall forecast. A regression on `Disposable_Income` or on the savings gap would be a reasonable *follow-up* analysis, but it is not what the stated business decision requires, and the target as defined is already binary by construction — framing it as regression would mean predicting a continuous quantity and then re-thresholding it, which throws away information about *why* that threshold was chosen and complicates evaluation against the yes/no decision the business actually needs to make.
 
 ### Phase 1 — Data Understanding
 - What does each column mean, and what unit/time period does it represent?
@@ -113,12 +117,15 @@ questions:
   - id: P0-Q1
     phase: framing
     text: "What real business decision does this project inform?"
+    answer: "Whether to flag an individual as on-track or at-risk for their stated savings goal, to target fintech savings-product marketing/outreach."
   - id: P0-Q2
     phase: framing
     text: "What is the precise definition of the target variable?"
+    answer: "Goal_Met = 1 if Disposable_Income >= Desired_Savings else 0."
   - id: P0-Q3
     phase: framing
     text: "Is the primary task classification or regression, and why?"
+    answer: "Binary classification, because the business decision needed is a yes/no targeting call and the target is binary by construction."
   - id: P1-Q1
     phase: data_understanding
     text: "What does each column mean, and what unit/period does it represent?"
@@ -228,22 +235,22 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 
 ```
 .
-├── data/
-│   └── indian_personal_finance.csv
+├── dataset/
+│   └── data.csv
 ├── notebooks/
 │   ├── 01_eda_and_leakage_check.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   ├── 03_baseline_and_model_comparison.ipynb
-│   ├── 04_explainability.ipynb
-│   └── 05_clustering_personas.ipynb
+│   ├── 02_feature_engineering.ipynb        (planned)
+│   ├── 03_baseline_and_model_comparison.ipynb  (planned)
+│   ├── 04_explainability.ipynb             (planned)
+│   └── 05_clustering_personas.ipynb        (planned)
 ├── src/
-│   ├── preprocessing.py
-│   ├── models.py
-│   └── evaluation.py
+│   ├── preprocessing.py                    (planned)
+│   ├── models.py                           (planned)
+│   └── evaluation.py                       (planned)
 ├── results/
-│   ├── model_comparison.csv
-│   ├── shap_summary.png
-│   └── persona_clusters.png
+│   ├── model_comparison.csv                (planned)
+│   ├── shap_summary.png                    (planned)
+│   └── persona_clusters.png                (planned)
 ├── README.md
 └── requirements.txt
 ```
