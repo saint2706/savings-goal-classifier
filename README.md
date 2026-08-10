@@ -239,7 +239,7 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   └── data.csv
 ├── notebooks/
 │   ├── 01_eda_and_leakage_check.ipynb
-│   ├── 02_feature_engineering.ipynb        (planned)
+│   ├── 02_feature_engineering.ipynb
 │   ├── 03_baseline_and_model_comparison.ipynb  (planned)
 │   ├── 04_explainability.ipynb             (planned)
 │   └── 05_clustering_personas.ipynb        (planned)
