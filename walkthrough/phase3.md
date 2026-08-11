@@ -119,13 +119,16 @@ A confusion-matrix heatmap follows, visualizing the same result: the entire "Pre
 
 ```python
 candidate_cols = ["Income"] + ratio_cols
-target_corr = df[candidate_cols + ["Goal_Met"]].corr()["Goal_Met"].drop("Goal_Met")
+train_df = df.loc[X_train.index]  # training rows only — the test set must stay unseen for this feature-selection step too
+target_corr = train_df[candidate_cols + ["Goal_Met"]].corr()["Goal_Met"].drop("Goal_Met")
 target_corr.sort_values(key=lambda s: -s.abs())
 ```
 
-**What it does:** Correlates `Income` and every expense ratio directly with `Goal_Met`, sorted by absolute correlation strength.
+**What it does:** Correlates `Income` and every expense ratio with `Goal_Met`, computed on the training rows only (`df.loc[X_train.index]`), sorted by absolute correlation strength.
 
-**Why:** The question asks for logistic regression on "income and 1–2 expense ratios" without specifying which ratios — rather than picking two arbitrarily, this cell lets the data decide. `Loan_Repayment_Ratio` (r ≈ -0.151) and `Rent_Ratio` (r ≈ -0.109) come out clearly ahead of the rest, which matches domain intuition: rent and loan repayments are typically the largest, least-discretionary expense categories, so a higher share of income going to either one directly squeezes the disposable income `Goal_Met` depends on. `Income` itself barely correlates with `Goal_Met` (r ≈ -0.008) — a first hint that income level alone says little about whether someone hits their own self-defined savings goal, since the goal itself scales with income.
+**Why restrict this to the training split:** Choosing which features to feed the model is itself a modeling decision, not a passive lookup — computing this correlation over the full `df` (test rows included) would let the held-out set influence which features the logistic regression gets to use, a subtler form of the same test-set leakage the scaler-fitting step later in this notebook is careful to avoid. With only 22 minority-class rows in the test set, that influence wouldn't be negligible, so restricting the correlation to `X_train`'s rows keeps the test set genuinely unseen until evaluation.
+
+**Why these two ratios:** The question asks for logistic regression on "income and 1–2 expense ratios" without specifying which ratios — rather than picking two arbitrarily, this cell lets the (training) data decide. `Loan_Repayment_Ratio` (r ≈ -0.152) and `Rent_Ratio` (r ≈ -0.109) come out clearly ahead of the rest, which matches domain intuition: rent and loan repayments are typically the largest, least-discretionary expense categories, so a higher share of income going to either one directly squeezes the disposable income `Goal_Met` depends on. `Income` itself barely correlates with `Goal_Met` (r ≈ -0.008) — a first hint that income level alone says little about whether someone hits their own self-defined savings goal, since the goal itself scales with income.
 
 ### Cells 15–19 (markdown + code) — Question 2: fitting and evaluating plain logistic regression
 
