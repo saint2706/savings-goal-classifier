@@ -248,7 +248,7 @@ engineered.head()
 
 ### Cell 20 (markdown) — Summary table and handoff to Phase 3
 
-Closes with a compact table of all four answers and a pointer to `03_baseline_and_model_comparison.ipynb`, so Phase 3 can start directly from this engineered feature matrix instead of re-deriving it.
+Closes with a compact table of all four answers and a pointer to `03_baseline.ipynb`, so Phase 3 can start directly from this engineered feature matrix instead of re-deriving it.
 
 ---
 
@@ -261,4 +261,4 @@ Closes with a compact table of all four answers and a pointer to `03_baseline_an
 | `Income`/`Age` flagged as needing scaling for some models | Phase 3/4 build both a scaled and unscaled version of `engineered` depending on model family |
 | No features dropped for collinearity | Phase 4's full feature set carries forward unchanged; the mild `Dependents`↔`Education_Ratio` link is flagged for Phase 5's explainability review |
 
-**Next:** Phase 3 — Baseline (`03_baseline_and_model_comparison.ipynb`, not yet created), which trains a majority-class baseline and a plain logistic regression on this feature set, informed directly by Phase 1's ~99.4%/0.6% class imbalance finding.
+**Next:** [Phase 3 — Baseline](phase3.md) (`03_baseline.ipynb`), which trains a majority-class baseline and a plain logistic regression on this feature set, informed directly by Phase 1's ~99.4%/0.6% class imbalance finding.

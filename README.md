@@ -240,9 +240,10 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 ├── notebooks/
 │   ├── 01_eda_and_leakage_check.ipynb
 │   ├── 02_feature_engineering.ipynb
-│   ├── 03_baseline_and_model_comparison.ipynb  (planned)
-│   ├── 04_explainability.ipynb             (planned)
-│   └── 05_clustering_personas.ipynb        (planned)
+│   ├── 03_baseline.ipynb
+│   ├── 04_model_comparison.ipynb           (planned)
+│   ├── 05_explainability.ipynb             (planned)
+│   └── 06_clustering_personas.ipynb        (planned)
 ├── src/
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
@@ -255,7 +256,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase0.md
 │   ├── phase1.md
 │   ├── phase2.md
-│   └── phase3.md …                         (planned, added alongside each new notebook)
+│   ├── phase3.md
+│   └── phase4.md …                         (planned, added alongside each new notebook)
 ├── README.md
 └── requirements.txt
 ```
