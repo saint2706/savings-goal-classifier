@@ -241,23 +241,26 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── 01_eda_and_leakage_check.ipynb
 │   ├── 02_feature_engineering.ipynb
 │   ├── 03_baseline.ipynb
-│   ├── 04_model_comparison.ipynb           (planned)
-│   ├── 05_explainability.ipynb             (planned)
+│   ├── 04_model_comparison.ipynb
+│   ├── 05_explainability.ipynb
 │   └── 06_clustering_personas.ipynb        (planned)
 ├── src/
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
 │   └── evaluation.py                       (planned)
 ├── results/
-│   ├── model_comparison.csv                (planned)
-│   ├── shap_summary.png                    (planned)
+│   ├── model_comparison.csv
+│   ├── model_comparison.png
+│   ├── shap_summary.png
 │   └── persona_clusters.png                (planned)
 ├── walkthrough/
 │   ├── phase0.md
 │   ├── phase1.md
 │   ├── phase2.md
 │   ├── phase3.md
-│   └── phase4.md …                         (planned, added alongside each new notebook)
+│   ├── phase4.md
+│   ├── phase5.md
+│   └── phase6.md …                         (planned, added alongside each new notebook)
 ├── README.md
 └── requirements.txt
 ```
@@ -275,17 +278,21 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-*(Fill in after running the full pipeline — recommended: final model, F1-macro, top 3 SHAP features, number of personas found.)*
+*(Phase 6–8 results — persona count, business translation — still to be filled in once those notebooks exist.)*
+
+**Winning model:** Neural Net (MLP), `hidden_layer_sizes=(64,)`, `alpha=0.001`, trained on an oversampled/scaled feature matrix — selected in Phase 4 for reaching perfect recall on the at-risk class (`Goal_Met = 0`) with the best precision and macro-F1 among the models that did.
+
+**Top 3 SHAP features (Phase 5):** `Loan_Repayment_Ratio` (dominant, ~1.7× the next feature), `City_Tier_Tier_1`, `Education_Ratio`.
 
 | Model | Accuracy | F1 (macro) | Notes |
 |---|---|---|---|
-| Majority baseline | — | — | |
-| Logistic Regression | — | — | |
-| Decision Tree | — | — | |
-| Random Forest | — | — | |
-| XGBoost | — | — | |
-| SVM | — | — | |
-| Neural Net | — | — | |
+| Majority baseline | 0.9945 | 0.4986 | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class (Phase 3) |
+| Logistic Regression | 0.9975 | 0.9068 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` (Phase 4) |
+| Decision Tree | 0.9932 | 0.7436 | `class_weight="balanced"`; `recall_0 = 0.59` — class weighting alone under-serves the minority class in a single tree (Phase 4) |
+| Random Forest | 0.9945 | 0.7486 | `class_weight="balanced"`; `recall_0 = 0.50` — same limitation as the decision tree, only partly offset by ensembling (Phase 4) |
+| XGBoost | 0.9972 | 0.8326 | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula — reweighting cost more precision than it gained in recall (Phase 4) |
+| SVM (Linear) | 0.9980 | 0.9226 | `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0` (Phase 4) |
+| Neural Net (MLP) | 0.9982 | **0.9309** | **Winning model** — `RandomOverSampler`-based imbalance handling; `recall_0 = 1.0`, `precision_0 = 0.759` (Phase 4) |
 
 ## 9. Limitations
 
