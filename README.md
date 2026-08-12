@@ -251,6 +251,7 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 ├── results/
 │   ├── model_comparison.csv
 │   ├── model_comparison.png
+│   ├── final_test_evaluation.csv
 │   ├── shap_summary.png
 │   └── persona_clusters.png                (planned)
 ├── walkthrough/
@@ -280,19 +281,21 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 *(Phase 6–8 results — persona count, business translation — still to be filled in once those notebooks exist.)*
 
-**Winning model:** Neural Net (MLP), `hidden_layer_sizes=(64,)`, `alpha=0.001`, trained on an oversampled/scaled feature matrix — selected in Phase 4 for reaching perfect recall on the at-risk class (`Goal_Met = 0`) with the best precision and macro-F1 among the models that did.
+**Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect *cross-validated* recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
 
-**Top 3 SHAP features (Phase 5):** `Loan_Repayment_Ratio` (dominant, ~1.7× the next feature), `City_Tier_Tier_1`, `Education_Ratio`.
+**Top 3 SHAP features (Phase 5):** `Loan_Repayment_Ratio` (dominant, >2× the next feature), `Education_Ratio`, `City_Tier_Tier_1`.
 
-| Model | Accuracy | F1 (macro) | Notes |
+The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for every candidate — not test-set numbers — because Phase 4 selects its winning model from cross-validated predictions specifically to avoid biasing the reported score of whichever model happens to look best on the held-out test set. See [`walkthrough/phase4.md`](walkthrough/phase4.md) for why, and for the winning model's separate, single, final test-set evaluation.
+
+| Model | CV Accuracy | CV F1 (macro) | Notes |
 |---|---|---|---|
-| Majority baseline | 0.9945 | 0.4986 | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class (Phase 3) |
-| Logistic Regression | 0.9975 | 0.9068 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` (Phase 4) |
-| Decision Tree | 0.9932 | 0.7436 | `class_weight="balanced"`; `recall_0 = 0.59` — class weighting alone under-serves the minority class in a single tree (Phase 4) |
-| Random Forest | 0.9945 | 0.7486 | `class_weight="balanced"`; `recall_0 = 0.50` — same limitation as the decision tree, only partly offset by ensembling (Phase 4) |
-| XGBoost | 0.9972 | 0.8326 | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula — reweighting cost more precision than it gained in recall (Phase 4) |
-| SVM (Linear) | 0.9980 | 0.9226 | `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0` (Phase 4) |
-| Neural Net (MLP) | 0.9982 | **0.9309** | **Winning model** — `RandomOverSampler`-based imbalance handling; `recall_0 = 1.0`, `precision_0 = 0.759` (Phase 4) |
+| Majority baseline | 0.9944 | 0.4986 | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class |
+| Decision Tree | 0.9947 | 0.8028 | `class_weight="balanced"`; `recall_0 = 0.73` — class weighting alone under-serves the minority class in a single tree |
+| XGBoost | 0.9969 | 0.8255 | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula; `recall_0 = 0.51` |
+| Random Forest | 0.9965 | 0.8436 | `class_weight="balanced"`; `recall_0 = 0.69` — same limitation as the decision tree, only partly offset by ensembling |
+| Neural Net (MLP) | 0.9959 | 0.8579 | `RandomOverSampler`-based imbalance handling; `recall_0 = 0.93` — close, but not perfect, under cross-validation |
+| Logistic Regression | 0.9970 | 0.8940 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` |
+| SVM (Linear) | 0.9979 | **0.9220** | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
 
 ## 9. Limitations
 

@@ -4,7 +4,9 @@
 **Notebook:** [`notebooks/05_explainability.ipynb`](../notebooks/05_explainability.ipynb)
 **Builds on:** [Phase 4 — Model Comparison](phase4.md)
 
-Phase 4 compared six model families and selected the **Neural Net (MLP)** — `hidden_layer_sizes=(64,)`, `alpha=0.001`, trained on an oversampled, scaled feature matrix — as the winning model, on the grounds that it reached perfect recall on the at-risk class (`Goal_Met = 0`) with the best precision and macro-F1 among the models that did. A model chosen partly for a business-facing purpose is only useful if the *reasons* behind its predictions can be explained to the people who have to act on them. Phase 5's job is to answer that directly, using SHAP.
+Phase 4 selected **SVM (Linear)** — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (chosen via cross-validation) — as the winning model, on the grounds that it was one of only two models (alongside Logistic Regression) reaching perfect cross-validated recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. A model chosen partly for a business-facing purpose is only useful if the *reasons* behind its predictions can be explained to the people who have to act on them. Phase 5's job is to answer that directly, using SHAP.
+
+Because the winning model is **linear**, this notebook uses SHAP's exact `LinearExplainer` rather than the sampled, permutation-based approximation a non-linear model (e.g. the MLP that an earlier, less careful comparison had briefly pointed to) would require.
 
 ---
 
@@ -12,9 +14,9 @@ Phase 4 compared six model families and selected the **Neural Net (MLP)** — `h
 
 | # | Question | Answer |
 |---|---|---|
-| 1 | Which features matter most globally for the winning model? | `Loan_Repayment_Ratio` dominates (mean \|SHAP\| ≈ 0.0204, ~1.7× the next feature), followed by `City_Tier_Tier_1`, `Education_Ratio`, `Groceries_Ratio`, and `Utilities_Ratio` — expense-ratio features, not raw `Income`, `Age`, or `Dependents`, drive the model. |
-| 2 | Are there notable interaction effects (e.g., `City_Tier` × `Dependents`)? | The specific `Dependents` × `City_Tier` example does **not** hold — `Dependents`' SHAP contribution is negligible in every tier. A real interaction exists instead between `City_Tier` and expense-ratio burden: `Education_Ratio`'s effect is ~5× more variable in Tier-1 than Tier-3, and `Loan_Repayment_Ratio`'s is ~2.6× more variable in Tier-1 than Tier-2/3. |
-| 3 | Can individual predictions be explained in plain business language? | Yes — SHAP decomposes each prediction into the same handful of globally important, business-tracked features (expense ratios, city tier), producing a concrete, actionable sentence per individual rather than an opaque score. |
+| 1 | Which features matter most globally for the winning model? | `Loan_Repayment_Ratio` dominates (mean \|SHAP\| ≈ 6.21, more than 2× the next feature), followed by `Education_Ratio`, `City_Tier_Tier_1`, `Groceries_Ratio`, `City_Tier_Tier_2`, `Utilities_Ratio`, and `Rent_Ratio` — expense-ratio and city-tier features, not raw `Income`, `Age`, or `Dependents`, drive the model. |
+| 2 | Are there notable interaction effects (e.g., `City_Tier` × `Dependents`)? | **No — structurally impossible for this model.** Because the winning model is linear and SHAP is computed with `feature_perturbation="interventional"`, every feature's contribution is provably a function of that one feature's own value alone (verified: every feature's SHAP values correlate at \|r\| ≥ 0.9999999999 with its own raw values). No feature's contribution can depend on any other feature's value — including the README's `Dependents` × `City_Tier` example. |
+| 3 | Can individual predictions be explained in plain business language? | Yes, and *exactly* — SHAP decomposes each prediction into the same handful of globally important, business-tracked features, producing a concrete, actionable sentence per individual, with no approximation involved. |
 
 The rest of this document walks through *how* the notebook arrives at each answer, cell by cell.
 
@@ -24,51 +26,34 @@ The rest of this document walks through *how* the notebook arrives at each answe
 
 ### Cell 0 (markdown) — Title and scope
 
-States the three Phase 5 questions and Phase 4's handoff: the winning model's identity and hyperparameters, and why explainability is a first-class requirement (Phase 0 framed this as a decision-support tool for a marketing team, not a black box).
+States the three Phase 5 questions and Phase 4's handoff: the winning model's identity, hyperparameters, and threshold, and why it being linear specifically changes the explainability approach available (exact `LinearExplainer` vs. an approximate, sampled explainer).
 
 ### Cell 1 (code) — Rebuilding the feature matrix, cast to `float`
 
-```python
-# SHAP's masker requires numeric (non-boolean) data; the one-hot columns are bool by default.
-X_full = engineered.drop(columns=["Goal_Met"]).astype(float)
-```
+Rebuilds the same engineered matrix and stratified split used in every prior phase, cast to `float` (SHAP's default tabular masker errors on the `bool` dtype `pd.get_dummies` produces for one-hot columns).
 
-**What it does:** Rebuilds the same engineered matrix and stratified split used in every prior phase, with one addition: `X_full` is cast to `float` right after construction.
-
-**Why the cast is necessary:** `pd.get_dummies` produces `bool`-dtype one-hot columns by default in the pandas version this project uses. SHAP's default tabular masker compares feature values with `np.isclose`, which raises a `TypeError` on boolean input. Casting to `float` immediately after building the matrix sidesteps the error without changing any value (`True`/`False` become `1.0`/`0.0`, identical to how they're already treated numerically).
-
-### Cells 3–5 — Retraining Phase 4's winning model
+### Cells 3–4 — Retraining Phase 4's winning model
 
 ```python
-best_mlp = ImbPipeline([
-    ("scaler", StandardScaler()),
-    ("sampler", RandomOverSampler(random_state=42)),
-    ("clf", MLPClassifier(hidden_layer_sizes=(64,), alpha=0.001, max_iter=500, early_stopping=True, random_state=42)),
-])
-best_mlp.fit(X_train, y_train)
-...
-print(f"Accuracy: {accuracy:.4f} (Phase 4: 0.9982)")
-print(f"Macro-F1: {f1_macro:.4f} (Phase 4: 0.9309)")
+scaler = StandardScaler()
+X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=X_full.columns, index=X_train.index)
+X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_full.columns, index=X_test.index)
+
+svm_clf = LinearSVC(class_weight="balanced", C=10, max_iter=5000, random_state=42)
+svm_clf.fit(X_train_scaled, y_train)
+
+CHOSEN_THRESHOLD = -0.4
+test_scores = svm_clf.decision_function(X_test_scaled)
+pred = (test_scores >= CHOSEN_THRESHOLD).astype(int)
 ```
 
-**What it does:** Hardcodes Phase 4's found hyperparameters and refits the exact pipeline directly, rather than re-running the search — the search's job (choosing the hyperparameters) is already done. Prints the refit model's test metrics next to Phase 4's original numbers for direct comparison.
+**What it does:** Hardcodes Phase 4's found hyperparameters and threshold, and refits directly rather than re-running the search. Unlike Phase 4's `ImbPipeline`, the scaler and classifier are fit as two **separate** steps here — `LinearExplainer` needs direct access to the linear estimator's coefficients, which a bundled `Pipeline` object doesn't expose as conveniently.
 
-**Why this sanity check matters before any explainability work:** the printed numbers match Phase 4's exactly (accuracy 0.9982, macro-F1 0.9309, `recall_0` 1.0000, `precision_0` 0.7586). If they hadn't, it would mean this notebook's "identical" rebuild wasn't actually identical, and every SHAP value that follows would be explaining a subtly different model than the one Phase 4 selected.
+**Sanity check:** the refit model's metrics (accuracy 0.9992, macro-F1 0.9679, `recall_0` 1.0000, `precision_0` 0.8800) match Phase 4's final test-set numbers exactly — confirming this notebook explains the actual model Phase 4 selected, not an approximation of it.
 
-### Cells 6–8 — Question 1 setup: why SHAP, and the computational trade-off
+### Cells 6–8 — Question 1 setup: why `LinearExplainer`, and what its output means
 
-`MLPClassifier` has no built-in feature-importance attribute — no split gains like a tree, no coefficients like a linear model. Its "reasoning" is distributed across hidden-layer weights that don't map cleanly onto input features. **SHAP** works around this by treating the model as a black box and calling only its `predict_proba`, attributing each prediction's deviation from the average to each input feature in a way that's mathematically guaranteed to add up exactly (Shapley values).
-
-```python
-background = shap.sample(X_train, 100, random_state=42)
-sample_test = X_test.sample(300, random_state=42)
-explainer = shap.Explainer(predict_class1_proba, background, seed=42)
-shap_values = explainer(sample_test)
-```
-
-**What it does:** Wraps `best_mlp.predict_proba`'s `P(Goal_Met = 1)` column in a plain function, and computes SHAP values with a **permutation-based** explainer (the fallback for an arbitrary black-box function) against a **100-row background sample** and a **300-row test sample** — not the full 4,000-row test set.
-
-**Why sample rather than explain the whole test set, and why `seed=42`:** permutation-based SHAP is computationally expensive (roughly 30 seconds for 300 rows against a 100-row background on this hardware); explaining all 4,000 test rows would scale that up substantially for a notebook meant to run in a reasonable time. This trade-off is disclosed explicitly here, not hidden — the sampled values are representative, not exhaustive. The explicit `seed=42` matters separately: SHAP's permutation explainer has its own internal randomness that isn't controlled by `numpy`'s global random state, so without a seed, re-running this cell would produce slightly different SHAP values each time (verified during development — the same code without a seed gave `Loan_Repayment_Ratio`'s mean \|SHAP\| as 0.0200 on one run and 0.0204 on another). Setting `seed=42` makes every number in this notebook exactly reproducible.
+`LinearSVC` has coefficients, which are themselves a form of feature importance — but they don't decompose an *individual* prediction the way Question 3 needs, and aren't directly comparable to a SHAP value. `shap.LinearExplainer(svm_clf, X_train_scaled, feature_perturbation="interventional")` computes **exact** Shapley values for a linear model — for this setting, the SHAP value of feature *j* on row *i* is provably `coefficient_j × (x_ij − mean_j)`, with no approximation and no cross-feature term. Because it's exact, it runs on **all 4,000 test rows in under a second** — no background-sample-size trade-off to disclose, unlike a permutation-based explainer would need.
 
 ### Cells 9–13 — Global feature importance and Answer to Question 1
 
@@ -76,63 +61,50 @@ shap_values = explainer(sample_test)
 mean_abs_shap = pd.Series(np.abs(shap_values.values).mean(axis=0), index=X_full.columns).sort_values(ascending=False)
 ```
 
-**What it does:** Averages each feature's *absolute* SHAP value across the 300 sampled rows (largest-average-impact features first, whether they typically push predictions up or down), plotted as a bar chart, followed by SHAP's beeswarm plot (adds direction: point color = raw feature value, position = impact).
+**Answer to Question 1** (Cell 13, markdown): `Loan_Repayment_Ratio` is by far the most important feature (mean \|SHAP\| ≈ 6.21, more than double `Education_Ratio`'s ≈ 2.66). Behind those two: `City_Tier_Tier_1`, `Groceries_Ratio`, `City_Tier_Tier_2`, `Utilities_Ratio`, and `Rent_Ratio`, all in a similar (~1.0–1.2) range. This matches Phase 3's finding that `Loan_Repayment_Ratio` was the strongest raw correlate of `Goal_Met` — the model relies on a signal a simple correlation already flagged. `Income`, `Age`, and `Dependents` are absent from the top features: spending discipline, not income level, is what the model leans on.
 
-**Why absolute value:** a feature that pushes some rows up and others down in equal measure would average to ~0 under a plain mean, hiding that it matters a great deal to individual predictions.
+### Cells 14–16 — Question 2: proving interaction effects are structurally absent
 
-**Answer to Question 1** (Cell 13, markdown): `Loan_Repayment_Ratio` is by far the most important feature (mean \|SHAP\| ≈ 0.0204, ~1.7× the next-highest), and the beeswarm plot shows a clean pattern — high `Loan_Repayment_Ratio` (red) pushes predicted `P(Goal_Met=1)` down, low (blue) pushes it up. This matches Phase 3's finding that it was the strongest raw correlate of `Goal_Met`, confirming the model relies on a signal a simple correlation already flagged, not something spurious. Behind it: `City_Tier_Tier_1`, `Education_Ratio`, `Groceries_Ratio`, `Utilities_Ratio` — all expense-ratio or city-tier features, none of them `Income`, `Age`, or `Dependents` directly. Notably, `Rent_Ratio` — the second-strongest raw correlate in Phase 3 — ranks *lower* in SHAP importance than `City_Tier`, plausibly because `City_Tier` already captures much of the same signal (Phase 2 found rent burden rises with city tier), leaving less additional value for the model to extract from the ratio directly.
+```python
+same_feature_corr = {
+    feature: np.corrcoef(shap_values.values[:, j], X_test_scaled[feature].values)[0, 1]
+    for j, feature in enumerate(X_full.columns)
+}
+worst_feature, worst_corr = min(same_feature_corr.items(), key=lambda kv: abs(kv[1]))
+```
 
-### Cells 14–18 — Question 2: checking for interaction effects
+**What it does:** For every feature, correlates that feature's column of SHAP values against that same feature's own raw values across all 4,000 test rows. If any interaction existed — if `Loan_Repayment_Ratio`'s contribution depended even slightly on `City_Tier` — rows sharing a `Loan_Repayment_Ratio` value but differing in `City_Tier` would get different SHAP values, pulling this correlation measurably below 1.0.
+
+**Result:** every feature's correlation is 1.0 to at least 9 decimal places (worst case: `Occupation_Student` at 0.9999999999). Each feature's SHAP contribution is fully and exactly determined by that feature's own value alone, with zero influence from any other feature.
 
 ```python
 tier_cols = [c for c in X_full.columns if c.startswith("City_Tier_")]
-tier_of_row = sample_test[tier_cols].idxmax(axis=1).str.replace("City_Tier_", "")
-dep_shap = shap_values.values[:, dep_idx]
-dep_by_tier = pd.DataFrame(...).groupby("tier")["dependents_shap"].agg(["mean", "std", "count"])
-```
-
-**What it does:** Recovers each sampled row's `City_Tier` from its one-hot columns, then checks the README's specific example first — does `Dependents`' SHAP contribution vary by tier? — by grouping its SHAP values by tier and comparing spread (`std`) and direction (`mean`).
-
-**Result for the specific example:** `Dependents`' SHAP values are tiny in every tier (`std` ≈ 0.001–0.003, two orders of magnitude below `Loan_Repayment_Ratio`'s typical contribution) and don't differ meaningfully across tiers. **The interaction the question poses as an example does not hold up** — `Dependents` simply isn't important enough, in any tier, for an interaction to be visible. This is reported as-is rather than treated as a reason to keep searching for a "yes" — Phase 5's job is to report what the model actually does.
-
-```python
-top_ratio_features = ["Loan_Repayment_Ratio", "Education_Ratio", "Rent_Ratio", "Income"]
 interaction_df["max_over_min_ratio"] = interaction_df.max(axis=1) / interaction_df.min(axis=1)
 ```
 
-**What it does:** Repeats the by-tier grouping for the four highest-ranked non-categorical features from Question 1, comparing the SHAP-value spread across tiers with a single sortable ratio (`max_over_min_ratio`).
+**Answer to Question 2** (Cell 16, markdown): a clean, structural **no**. Because the winning model is linear and its SHAP values are provably additive (verified above), `City_Tier` cannot mathematically change how much `Dependents` — or any other feature — contributes to a prediction. A supplementary by-tier grouping confirms this empirically: `Loan_Repayment_Ratio` and `Education_Ratio`'s SHAP spread is nearly identical across tiers (ratios ~1.0–1.1); `Dependents` (the README's specific example) is similarly flat and, more importantly, tiny in absolute size (SHAP std ≈ 0.23 vs. `Loan_Repayment_Ratio`'s ≈ 6.6–6.8) — it simply isn't important in any tier. `Rent_Ratio` shows a large spread ratio (~3×) but with near-zero *within-tier* variance — almost every individual in a given city tier has nearly the same `Rent_Ratio`, a **data characteristic** (plausibly this dataset generating `Rent` as a roughly fixed proportion of income conditional on tier, consistent with the README's Limitations note about possibly-synthetic figures), not a model-learned interaction. Capturing genuine interactions, if ever needed, would require one of Phase 4's non-linear candidates — a trade-off Phase 4 made deliberately in favor of this model's superior cross-validated recall.
 
-**Answer to Question 2** (Cell 18, inline): `Education_Ratio` shows the clearest interaction with `City_Tier` — its SHAP-value spread is ~5× wider in Tier-1 than Tier-3 — and `Loan_Repayment_Ratio` shows a smaller version of the same pattern (~2.6× wider in Tier-1 than Tier-2/3). In plain terms: **a high education- or loan-repayment burden moves the model's prediction much more sharply for a Tier-1 resident than for someone in Tier-2 or Tier-3** — the model has effectively learned that the same expense ratio is a stronger risk signal in a higher cost-of-living area. So the *specific* example the question poses (`Dependents`) doesn't hold, but a related, more consequential interaction — between `City_Tier` and expense-ratio burden generally — does, and it involves feature families Question 1 already flagged as globally important.
-
-### Cells 19–24 — Question 3: individual predictions in plain language
+### Cells 17–21 — Question 3: individual predictions in plain language
 
 ```python
-proba_sample = best_mlp.predict_proba(sample_test)[:, 1]
-at_risk_pos = np.argsort(proba_sample)[0]    # lowest P(Goal_Met=1) => most confidently at-risk
-on_track_pos = np.argsort(proba_sample)[-1]  # highest P(Goal_Met=1) => most confidently on-track
+at_risk_pos = np.argsort(test_scores)[0]     # lowest decision score => most confidently at-risk
+on_track_pos = np.argsort(test_scores)[-1]   # highest decision score => most confidently on-track
 ```
 
-**What it does:** Picks the two most confidently-predicted individuals in the 300-row sample — one at-risk, one on-track — prints each one's top-5 SHAP contributors alongside their raw feature values, and renders SHAP's waterfall plot for each (a step-by-step chart from the background-average prediction to that individual's final one).
+**Answer to Question 3** (Cell 21, markdown), with the actual computed numbers:
 
-**Answer to Question 3** (Cell 24, markdown), with the actual computed numbers:
+- **At-risk example** (test row 18909, decision score ≈ −5.46, actual `Goal_Met = 0`): the single largest reason is an unusually high `Loan_Repayment_Ratio` (≈19% of income, shap ≈ −13.64 — more than double the next contributor); below-typical `Education_Ratio`, living in a **Tier-1 city**, an above-typical `Rent_Ratio`, and above-typical `Groceries_Ratio` each add further downward pressure. In plain business language: *"This customer is flagged at-risk mainly because loan repayments are consuming an unusually large share of their income, compounded by above-typical rent and grocery spending while living in a higher cost-of-living city — a savings nudge focused on debt repayment burden is the most relevant intervention."*
+- **On-track example** (test row 786, decision score ≈ +41.97, actual `Goal_Met = 1`): the two largest drivers are zero education spending and zero loan-repayment burden, together contributing more than every other feature combined; above-typical `Groceries_Ratio`, `Utilities_Ratio`, and `Insurance_Ratio` each add a smaller positive contribution. In plain language: *"This customer isn't at risk primarily because they carry no loan-repayment or education-spending burden — that comfortably outweighs their other, more typical living expenses, and no outreach is needed here."*
 
-- **At-risk example** (test row 18421, predicted `P(Goal_Met=1)` ≈ 0.088, actual `Goal_Met = 0`): the single largest reason is an unusually high `Loan_Repayment_Ratio` (shap ≈ −0.329), with elevated `Groceries_Ratio`, `Insurance_Ratio`, and `Utilities_Ratio` each adding further downward pressure; a below-typical `Education_Ratio` (shap ≈ +0.076) pulls the other way but not nearly enough to offset the rest. In plain business language: *"This customer is flagged at-risk mainly because loan repayments are consuming an unusually large share of their income, compounded by above-typical grocery, insurance, and utility spending — a savings nudge focused on debt repayment burden is the most relevant intervention."*
-- **On-track example** (test row 3290, predicted `P(Goal_Met=1)` ≈ 1.000, actual `Goal_Met = 1`): the two largest drivers are effectively tied — zero loan-repayment burden (shap ≈ +0.0135) and zero education spending (shap ≈ +0.0136) — together outweighing the small negative pull of also living in a Tier-1 city (shap ≈ −0.0119). In plain language: *"This customer isn't at risk primarily because they carry no loan-repayment or education-spending burden — that outweighs the higher cost-of-living pressure of their city, and no outreach is needed here."*
+Both examples share the property a stakeholder needs: the explanation is always in terms of features the business already tracks, and — because the model is linear — every explanation is mathematically exact, not an approximation.
 
-Both examples share the property a stakeholder actually needs: **the explanation is always in terms of features the business already tracks** (expense ratios, city tier) **and can act on**, not an opaque score.
+### Cells 22–23 — Persisting results
 
-### Cells 25–26 — Persisting results
+Saves the global SHAP importance chart to `results/shap_summary.png`.
 
-```python
-os.makedirs("../results", exist_ok=True)
-fig.savefig("../results/shap_summary.png", dpi=150)
-```
+### Cell 24 (markdown) — Summary table and handoff to Phase 6
 
-**What it does:** Saves the global SHAP importance chart to `results/shap_summary.png`, matching the repository structure the README documents as planned for this phase.
-
-### Cell 27 (markdown) — Summary table and handoff to Phase 6
-
-Closes with the three questions and answers, and points to Phase 6 — Unsupervised Extension, which clusters individuals on the same expense-ratio features this notebook just showed drive the supervised model, from a complementary unsupervised angle.
+Closes with the three questions and answers, points to Phase 6 — Unsupervised Extension, and notes explicitly that Phase 4's non-linear candidates (Random Forest, XGBoost, MLP) remain available if a future iteration needs genuine interaction-capturing capability — a trade-off knowingly made in favor of the linear model's superior cross-validated recall.
 
 ---
 
@@ -140,9 +112,9 @@ Closes with the three questions and answers, and points to Phase 6 — Unsupervi
 
 | Finding | Where it gets used |
 |---|---|
-| `Loan_Repayment_Ratio` is the dominant global driver, followed by `City_Tier_Tier_1`, `Education_Ratio`, `Groceries_Ratio`, `Utilities_Ratio` | Candidate features to check as clustering inputs in Phase 6, and the headline finding for Phase 7's business translation |
-| `City_Tier` amplifies the effect of `Education_Ratio` and `Loan_Repayment_Ratio` specifically (not `Dependents`) | An actionable, non-obvious finding for Phase 7 — expense-ratio-based interventions should be prioritized differently by city tier |
-| Individual predictions decompose into a small number of business-tracked features with a concrete plain-language explanation | Demonstrates the model is usable by a non-technical marketing team, directly answering Phase 0's framing requirement |
-| SHAP computation requires a `float`-cast feature matrix and a fixed `seed` for reproducibility | A reusable technical note for any future notebook in this project that applies SHAP to a non-tree model |
+| `Loan_Repayment_Ratio` is the dominant global driver, followed by `Education_Ratio`, `City_Tier_Tier_1`, `Groceries_Ratio` | Candidate features to check as clustering inputs in Phase 6, and the headline finding for Phase 7's business translation |
+| No interaction effects exist for this model, by construction | An honest scope-limiting finding for Phase 7 — any interaction-based recommendation would need a different (non-linear) model |
+| `Rent_Ratio` has near-zero within-tier variance | A data-generation observation worth flagging in Phase 8's reporting, tying back to the README's synthetic-data limitation |
+| Individual predictions decompose exactly into a small number of business-tracked features | Demonstrates the model is usable by a non-technical marketing team, directly answering Phase 0's framing requirement |
 
 **Next:** Phase 6 — Unsupervised Extension (`06_clustering_personas.ipynb`, not yet created), which clusters individuals on expense-category proportions to find natural spending personas, and checks whether those personas correlate with `Goal_Met` — using the same expense-ratio features this phase just showed drive the supervised model's predictions.
