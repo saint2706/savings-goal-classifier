@@ -241,23 +241,27 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── 01_eda_and_leakage_check.ipynb
 │   ├── 02_feature_engineering.ipynb
 │   ├── 03_baseline.ipynb
-│   ├── 04_model_comparison.ipynb           (planned)
-│   ├── 05_explainability.ipynb             (planned)
+│   ├── 04_model_comparison.ipynb
+│   ├── 05_explainability.ipynb
 │   └── 06_clustering_personas.ipynb        (planned)
 ├── src/
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
 │   └── evaluation.py                       (planned)
 ├── results/
-│   ├── model_comparison.csv                (planned)
-│   ├── shap_summary.png                    (planned)
+│   ├── model_comparison.csv
+│   ├── model_comparison.png
+│   ├── final_test_evaluation.csv
+│   ├── shap_summary.png
 │   └── persona_clusters.png                (planned)
 ├── walkthrough/
 │   ├── phase0.md
 │   ├── phase1.md
 │   ├── phase2.md
 │   ├── phase3.md
-│   └── phase4.md …                         (planned, added alongside each new notebook)
+│   ├── phase4.md
+│   ├── phase5.md
+│   └── phase6.md …                         (planned, added alongside each new notebook)
 ├── README.md
 └── requirements.txt
 ```
@@ -275,17 +279,23 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-*(Fill in after running the full pipeline — recommended: final model, F1-macro, top 3 SHAP features, number of personas found.)*
+*(Phase 6–8 results — persona count, business translation — still to be filled in once those notebooks exist.)*
 
-| Model | Accuracy | F1 (macro) | Notes |
+**Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect *cross-validated* recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
+
+**Top 3 SHAP features (Phase 5):** `Loan_Repayment_Ratio` (dominant, >2× the next feature), `Education_Ratio`, `City_Tier_Tier_1`.
+
+The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for every candidate — not test-set numbers — because Phase 4 selects its winning model from cross-validated predictions specifically to avoid biasing the reported score of whichever model happens to look best on the held-out test set. See [`walkthrough/phase4.md`](walkthrough/phase4.md) for why, and for the winning model's separate, single, final test-set evaluation.
+
+| Model | CV Accuracy | CV F1 (macro) | Notes |
 |---|---|---|---|
-| Majority baseline | — | — | |
-| Logistic Regression | — | — | |
-| Decision Tree | — | — | |
-| Random Forest | — | — | |
-| XGBoost | — | — | |
-| SVM | — | — | |
-| Neural Net | — | — | |
+| Majority baseline | 0.9944 | 0.4986 | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class |
+| Decision Tree | 0.9947 | 0.8028 | `class_weight="balanced"`; `recall_0 = 0.73` — class weighting alone under-serves the minority class in a single tree |
+| XGBoost | 0.9969 | 0.8255 | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula; `recall_0 = 0.51` |
+| Random Forest | 0.9965 | 0.8436 | `class_weight="balanced"`; `recall_0 = 0.69` — same limitation as the decision tree, only partly offset by ensembling |
+| Neural Net (MLP) | 0.9959 | 0.8579 | `RandomOverSampler`-based imbalance handling; `recall_0 = 0.93` — close, but not perfect, under cross-validation |
+| Logistic Regression | 0.9970 | 0.8940 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` |
+| SVM (Linear) | 0.9979 | **0.9220** | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
 
 ## 9. Limitations
 
