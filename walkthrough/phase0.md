@@ -3,7 +3,7 @@
 **Source:** [README § Phase 0 — Framing](../README.md#phase-0--framing)
 **Notebook:** none — Phase 0 is a framing exercise, answered directly in prose (in the README and here), not through data analysis. There's nothing to load or compute yet: the point of this phase is to pin down *what problem we're solving and how we'll know if we solved it* before touching the data, so every later phase has a fixed target to build toward instead of drifting.
 
-This document exists mainly so the phase-by-phase walkthrough series is complete from the start (`phase0.md` → `phase2.md` and onward) — Phases 1 and 2 (`phase1.md`, `phase2.md`) additionally walk through a notebook cell by cell, since those phases involve actual code and analysis.
+This document exists mainly so the phase-by-phase walkthrough series is complete from the start — Phases 1 through 7 each additionally walk through a notebook cell by cell, since those phases involve actual code and analysis.
 
 ---
 

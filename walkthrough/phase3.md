@@ -21,9 +21,9 @@ The rest of this document walks through *how* the notebook arrives at each answe
 
 ## Notebook walkthrough
 
-### Cell 0 (markdown) — Title and scope
+The notebook carries only section headers and code; the reasoning behind each step lives here. Its purpose is to establish a floor, not find a winning model — "plain" is deliberately minimal on two axes, a small feature set and no imbalance handling, so those omissions are intentional rather than oversights to fix later in this same notebook.
 
-States the two Phase 3 questions and frames the notebook's purpose explicitly: this is about establishing a floor, not finding a winning model. It also states the two ways "plain" is being kept deliberately minimal — a small feature set, and no imbalance handling — so the reader knows those omissions are intentional, not oversights to be fixed later in this same notebook.
+### Cell 0 (markdown) — Title
 
 ### Cell 1 (code) — Imports, data load, and rebuilding the Phase 2 feature matrix
 
@@ -68,7 +68,9 @@ engineered = pd.get_dummies(
 
 **Why rebuild from scratch:** Reloading from `dataset/data.csv` rather than depending on Phase 2's live notebook state keeps this notebook runnable on its own, matching the pattern already set by `01_eda_and_leakage_check.ipynb` and `02_feature_engineering.ipynb` — each phase's notebook is self-contained and reproducible independently of the others.
 
-### Cells 3–4 (markdown + code) — Train/test split
+### Cell 2 (markdown) — "Train/test split"
+
+### Cell 3 (code) — Train/test split
 
 ```python
 X_full = engineered.drop(columns=["Goal_Met"])
@@ -83,7 +85,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 **Why stratify:** With only 112 minority-class rows in the full 20,000-row dataset, a plain random split risks an unlucky test set with very few (or unusually many) `Goal_Met = 0` cases by chance alone — that would make a single evaluation noisy and unreliable for comparing models. Stratifying removes that source of noise, so any difference between the baseline and logistic regression later in the notebook reflects the models themselves, not which rows happened to land in the test set. This split (and its stratification strategy) is reused for every model in this notebook, and is the same principle Phase 4 will extend into stratified k-fold cross-validation.
 
-### Cells 6–11 (markdown + code) — Question 1: the majority-class baseline
+### Cell 4 (markdown) — "Majority-class baseline"
+
+### Cell 5 (code) — Fitting the baseline
 
 ```python
 def evaluate(name, y_true, y_pred):
@@ -111,11 +115,15 @@ results = [evaluate("Majority-class baseline", y_test, pred_dummy)]
 
 **Why report per-class metrics, not just accuracy:** Accuracy alone (~99.4%) makes this do-nothing baseline look almost perfect — exactly the trap Phase 1's class-balance finding warned about. Breaking metrics out by class shows what accuracy hides: class 0 (`Goal not met`) precision, recall, and F1 are all *zero* — the baseline never once predicts the minority class, making it structurally incapable of catching the exact at-risk customers the Phase 0 business decision cares about. Macro-F1 (which weights both classes' F1 equally, regardless of class size) collapses this failure into one number that a weighted average or plain accuracy would hide.
 
-A confusion-matrix heatmap follows, visualizing the same result: the entire "Pred 0" column is empty, confirming the metrics table isn't a computation mistake and making the failure visible at a glance.
+### Cell 6 (code) — Confusion matrix
 
-**Answer to Q1** (Cell 11, markdown): ~99.4% accuracy but 0.0 precision/recall/F1 on the minority class and ~0.499 macro-F1 — barely above the ~0.5 floor a coin flip would produce on a two-class problem. States plainly that accuracy is not a usable metric for this project and that every Phase 4 model will be judged on macro-F1 (or an equivalent class-balanced metric) instead.
+Visualizes the same result as a heatmap: the entire "Pred 0" column is empty, confirming the metrics table isn't a computation mistake and making the failure visible at a glance.
 
-### Cells 12–14 (markdown + code) — Question 2 setup: choosing the minimal feature set
+**Answer to Q1:** ~99.4% accuracy but 0.0 precision/recall/F1 on the minority class and ~0.499 macro-F1 — barely above the ~0.5 floor a coin flip would produce on a two-class problem. Accuracy is not a usable metric for this project; every Phase 4 model is judged on macro-F1 (or an equivalent class-balanced metric) instead.
+
+### Cell 7 (markdown) — "Plain logistic regression"
+
+### Cell 8 (code) — Choosing the minimal feature set
 
 ```python
 candidate_cols = ["Income"] + ratio_cols
@@ -130,7 +138,7 @@ target_corr.sort_values(key=lambda s: -s.abs())
 
 **Why these two ratios:** The question asks for logistic regression on "income and 1–2 expense ratios" without specifying which ratios — rather than picking two arbitrarily, this cell lets the (training) data decide. `Loan_Repayment_Ratio` (r ≈ -0.152) and `Rent_Ratio` (r ≈ -0.109) come out clearly ahead of the rest, which matches domain intuition: rent and loan repayments are typically the largest, least-discretionary expense categories, so a higher share of income going to either one directly squeezes the disposable income `Goal_Met` depends on. `Income` itself barely correlates with `Goal_Met` (r ≈ -0.008) — a first hint that income level alone says little about whether someone hits their own self-defined savings goal, since the goal itself scales with income.
 
-### Cells 15–19 (markdown + code) — Question 2: fitting and evaluating plain logistic regression
+### Cell 9 (code) — Fitting and evaluating plain logistic regression
 
 ```python
 baseline_features = ["Income", "Loan_Repayment_Ratio", "Rent_Ratio"]
@@ -155,13 +163,13 @@ results.append(evaluate("Plain LogisticRegression (Income + 2 ratios)", y_test, 
 
 **Why scale `Income` but not the ratios:** Consistent with Phase 2's Q3 answer — `Income` ranges from roughly ₹1.3k to ₹1.08M, while the ratio columns are already small and bounded (roughly 0–0.3), so only `Income` risks dominating a gradient-based linear model's optimization if left unscaled.
 
-A grouped bar chart follows, plotting accuracy and macro-F1 for both models side by side, next to the logistic regression's own confusion matrix (same layout as the baseline's, for direct visual comparison).
+### Cell 10 (code) — Comparison chart
 
-**Answer to Q2** (Cell 19, markdown): plain logistic regression scores ~99.4% accuracy and ~0.499 macro-F1 — statistically indistinguishable from the majority-class baseline. Its confusion matrix shows it predicts class 0 for at most one of the 22 true at-risk test individuals. The fitted coefficients for `Loan_Repayment_Ratio` and `Rent_Ratio` are both strongly negative — the model *did* learn the right relationship — but with no `class_weight` or resampling, its default 0.5 probability threshold is dominated by the 99.4% majority class and almost never crosses into predicting the minority one.
+Plots accuracy and macro-F1 for both models side by side, next to the logistic regression's own confusion matrix (same layout as the baseline's, for direct visual comparison).
 
-### Cell 20 (markdown) — Summary table and handoff to Phase 4
+**Answer to Q2:** plain logistic regression scores ~99.4% accuracy and ~0.499 macro-F1 — statistically indistinguishable from the majority-class baseline. Its confusion matrix shows it predicts class 0 for at most one of the 22 true at-risk test individuals. The fitted coefficients for `Loan_Repayment_Ratio` and `Rent_Ratio` are both strongly negative — the model *did* learn the right relationship — but with no `class_weight` or resampling, its default 0.5 probability threshold is dominated by the 99.4% majority class and almost never crosses into predicting the minority one.
 
-Closes with a compact table of both answers and a pointer to `04_model_comparison.ipynb` (not yet created), stating explicitly *why* Phase 4 can't skip imbalance handling: this notebook already showed that a plain, imbalance-unaware classifier — however reasonable its learned coefficients — cannot clear the baseline floor on its own.
+This notebook already shows *why* Phase 4 can't skip imbalance handling: a plain, imbalance-unaware classifier — however reasonable its learned coefficients — cannot clear the baseline floor on its own.
 
 ---
 
@@ -174,4 +182,4 @@ Closes with a compact table of both answers and a pointer to `04_model_compariso
 | `Loan_Repayment_Ratio` and `Rent_Ratio` are the two expense ratios most associated with `Goal_Met` | A candidate signal for Phase 5's explainability review, to check whether the winning model agrees |
 | The stratified 80/20 train/test split (`random_state=42`) | Reused as the basis for Phase 4's stratified k-fold cross-validation |
 
-**Next:** Phase 4 — Model Comparison (`04_model_comparison.ipynb`, not yet created), which compares 5–7 model families under stratified cross-validation and imbalance-aware handling, evaluated against the macro-F1 floor this phase established.
+**Next:** [Phase 4 — Model Comparison](phase4.md) (`04_model_comparison.ipynb`), which compares 5–7 model families under stratified cross-validation and imbalance-aware handling, evaluated against the macro-F1 floor this phase established.

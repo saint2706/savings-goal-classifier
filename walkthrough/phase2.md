@@ -23,9 +23,9 @@ The rest of this document walks through *how* the notebook arrives at each answe
 
 ## Notebook walkthrough
 
-### Cell 0 (markdown) — Title and scope
+The notebook carries only section headers and code; the reasoning behind each step lives here.
 
-States the four Phase 2 questions and explicitly names the dependency on Phase 1: the leakage columns are excluded from the start, and the income↔expense correlation from Phase 1 is the direct motivation for Question 1.
+### Cell 0 (markdown) — Title
 
 ### Cell 1 (code) — Imports, data load, and target reconstruction
 
@@ -58,9 +58,9 @@ df.head()
 
 **Why:** Naming `LEAKAGE_COLS` as a variable right at the top — rather than just remembering to avoid three column names by convention — makes the exclusion an explicit, checkable artifact of the code instead of a rule that only lives in a comment. `statsmodels` is imported here rather than lazily later so all dependencies for the notebook are visible in one place, matching Phase 1's pattern.
 
-### Cell 2 (markdown) — Question 1 setup
+### Cell 2 (markdown) — "Expense-to-income ratios vs. raw expense values"
 
-Restates the Phase 1 finding (raw expenses correlate with income at up to r = 0.99) and frames the hypothesis under test: dividing each expense by `Income` should strip out the income-driven component and leave the actual *spending mix* signal behind.
+Frames the hypothesis under test, restating Phase 1's finding that raw expenses correlate with income at up to r = 0.99: dividing each expense by `Income` should strip out the income-driven component and leave the actual *spending mix* signal behind.
 
 ### Cell 3 (code) — Building ratio features and comparing correlation with income
 
@@ -114,15 +114,11 @@ plt.show()
 
 **Why:** Putting the "scales up" and "flat" charts side by side, at the same width, makes the contrast immediate — a reader can see in one glance that the left chart has a rising staircase shape and the right one doesn't, which is a much faster way to absorb "ratios generalize across income levels" than reading the quartile table in Cell 4.
 
-### Cell 6 (markdown) — Answer to Q1
+**Answer to Q1:** raw expense↔income correlation of 0.79–0.99 collapses to <0.01 for every category once converted to ratios; the ~8× rise in raw grocery spend vs. the flat ~0.125 ratio across quartiles makes the mechanism concrete. Ratios replace raw expense columns in the feature set, with `Income` kept separately.
 
-States the answer: raw expense↔income correlation of 0.79–0.99 collapses to <0.01 for every category once converted to ratios; the ~8× rise in raw grocery spend vs. the flat ~0.125 ratio across quartiles makes the mechanism concrete. Concludes that ratios should replace raw expense columns in the feature set, with `Income` kept separately.
+### Cell 6 (markdown) — "Encoding `Occupation` and `City_Tier`"
 
-### Cell 7 (markdown) — Question 2 setup
-
-Introduces the encoding question for `Occupation` and `City_Tier`.
-
-### Cell 8 (code) — Category cardinality and income association
+### Cell 7 (code) — Category cardinality and income association
 
 ```python
 print("Occupation categories:", df["Occupation"].value_counts().to_dict())
@@ -136,9 +132,9 @@ print("\nMean Income by City_Tier:\n", income_by_tier)
 
 **What it does:** Prints the value counts for both categorical columns (confirming low cardinality: 4 and 3 levels respectively, and roughly balanced group sizes), then compares mean `Income` across the groups of each. `income_by_tier` is explicitly `.reindex(["Tier_1", "Tier_2", "Tier_3"])`'d so the output prints in the categories' natural order rather than whatever order `groupby` happens to produce.
 
-**Why:** Cardinality is the first thing that determines whether one-hot encoding is even viable — with only 3–4 levels each, the one-hot cost (extra columns) is trivial, so cardinality alone doesn't rule anything out here. The income comparison is the real test: if `Occupation` or `City_Tier` correlated strongly with `Income`, that would be worth knowing (it could imply the categorical column is partly a proxy for something already captured elsewhere). It turns out neither does — a result that's reported plainly here and feeds directly into the encoding decision in Cell 10.
+**Why:** Cardinality is the first thing that determines whether one-hot encoding is even viable — with only 3–4 levels each, the one-hot cost (extra columns) is trivial, so cardinality alone doesn't rule anything out here. The income comparison is the real test: if `Occupation` or `City_Tier` correlated strongly with `Income`, that would be worth knowing (it could imply the categorical column is partly a proxy for something already captured elsewhere). It turns out neither does.
 
-### Cell 9 (code) — Testing for a monotonic relationship in `City_Tier`
+### Cell 8 (code) — Testing for a monotonic relationship in `City_Tier`
 
 ```python
 rent_ratio_by_tier = df.groupby("City_Tier", observed=True)["Rent_Ratio"].mean().reindex(["Tier_1", "Tier_2", "Tier_3"])
@@ -152,19 +148,15 @@ fig.tight_layout()
 plt.show()
 ```
 
-**What it does:** Even though `Income` doesn't differ by `City_Tier` (Cell 8), this checks whether `Rent_Ratio` — the ratio feature just engineered in Cell 3 — does, and plots the result as a bar chart.
+**What it does:** Even though `Income` doesn't differ by `City_Tier` (Cell 7), this checks whether `Rent_Ratio` — the ratio feature just engineered in Cell 3 — does, and plots the result as a bar chart.
 
-**Why:** This is the cell that actually justifies treating `City_Tier` as more than a plain nominal category. `Income` alone showing no relationship (Cell 8) could have made it tempting to conclude `City_Tier` carries no meaningful signal at all — checking `Rent_Ratio` specifically (cost of living should show up in rent burden, not necessarily in income) is what surfaces the real, strongly monotonic pattern (0.30 → 0.20 → 0.15 from Tier_1 to Tier_3) that the answer in Cell 10 hinges on. This is also a nice validation that the ratio features from Question 1 aren't just theoretically motivated — they're already surfacing genuine structure the raw columns didn't make visible as clearly.
+**Why:** This is the cell that actually justifies treating `City_Tier` as more than a plain nominal category. `Income` alone showing no relationship (Cell 7) could have made it tempting to conclude `City_Tier` carries no meaningful signal at all — checking `Rent_Ratio` specifically (cost of living should show up in rent burden, not necessarily in income) is what surfaces the real, strongly monotonic pattern (0.30 → 0.20 → 0.15 from Tier_1 to Tier_3) the answer below hinges on. This is also a nice validation that the ratio features from Question 1 aren't just theoretically motivated — they're already surfacing genuine structure the raw columns didn't make visible as clearly.
 
-### Cell 10 (markdown) — Answer to Q2
+**Answer to Q2:** `Occupation` is one-hot encoded as a purely nominal category (no income association). `City_Tier` is also one-hot encoded by default — despite having a real, monotonic cost-of-living order evidenced by the `Rent_Ratio` pattern — because with only 3 levels the one-hot cost is trivial and it avoids forcing linear/distance-based models to assume equal spacing between tiers. Ordinal encoding (`Tier_1=1, Tier_2=2, Tier_3=3`) is a defensible cheaper alternative specifically for tree-based models, which aren't hurt by an imposed order.
 
-States the answer: `Occupation` is one-hot encoded as a purely nominal category (no income association). `City_Tier` is also one-hot encoded by default — despite having a real, monotonic cost-of-living order evidenced by the `Rent_Ratio` pattern — because with only 3 levels the one-hot cost is trivial and it avoids forcing linear/distance-based models to assume equal spacing between tiers. Notes ordinal encoding (`Tier_1=1, Tier_2=2, Tier_3=3`) as a defensible cheaper alternative specifically for tree-based models, which aren't hurt by an imposed order.
+### Cell 9 (markdown) — "Scaling requirements"
 
-### Cell 11 (markdown) — Question 3 setup
-
-Introduces the scaling question.
-
-### Cell 12 (code) — Feature scale summary
+### Cell 10 (code) — Feature scale summary
 
 ```python
 feature_cols = ["Income", "Age", "Dependents"] + ratio_cols
@@ -177,15 +169,11 @@ scale_summary.sort_values("range", ascending=False)
 
 **Why:** Sorting by `range` makes the scale mismatch impossible to miss: `Income`'s range (from ~₹1.3k to ~₹1.08M) dwarfs `Age`'s (18–64), which in turn dwarfs the ratio columns' (each bounded within roughly 0–0.3). This table is the direct evidence for the scaling answer — rather than asserting "features are on different scales," it quantifies exactly how different, which is what determines whether that difference will actually matter to a given model.
 
-### Cell 13 (markdown) — Answer to Q3
+**Answer to Q3:** `Income` (and to a lesser extent `Age`) need scaling before use with magnitude-sensitive models. Model families split into two groups — Logistic Regression / SVM / KNN / neural nets need scaling because they're distance- or gradient-magnitude-sensitive, while Decision Tree / Random Forest / XGBoost are scale-invariant because they split on per-feature thresholds independently of other features' units. Phase 3/4 maintain both a scaled and an unscaled feature matrix rather than assuming one preprocessing pipeline fits every model.
 
-States the answer: `Income` (and to a lesser extent `Age`) need scaling before use with magnitude-sensitive models. Splits the model families into two groups — Logistic Regression / SVM / KNN / neural nets need scaling because they're distance- or gradient-magnitude-sensitive, while Decision Tree / Random Forest / XGBoost are scale-invariant because they split on per-feature thresholds independently of other features' units. Recommends maintaining both a scaled and an unscaled feature matrix for Phase 4 rather than assuming one preprocessing pipeline fits every model.
+### Cell 11 (markdown) — "Redundancy and collinearity"
 
-### Cell 14 (markdown) — Question 4 setup
-
-Introduces the redundancy/collinearity question.
-
-### Cell 15 (code) — Correlation heatmap of the engineered feature set
+### Cell 12 (code) — Correlation heatmap of the engineered feature set
 
 ```python
 corr_matrix = df[["Income", "Age", "Dependents"] + ratio_cols].corr()
@@ -200,7 +188,7 @@ plt.show()
 
 **Why:** This is the direct follow-up to Phase 1's finding that raw expenses were highly collinear with each other — the natural question is whether converting to ratios (Question 1) also fixed that problem, or only fixed the income-correlation problem. Running the same diagnostic again, on the new features, is what actually answers that rather than assuming it.
 
-### Cell 16 (code) — Variance Inflation Factor (VIF)
+### Cell 13 (code) — Variance Inflation Factor (VIF)
 
 ```python
 X = df[["Income", "Age", "Dependents"] + ratio_cols].dropna()
@@ -215,19 +203,17 @@ vif.to_frame()
 
 **What it does:** Computes the Variance Inflation Factor for every feature — for each one, how well it can be linearly predicted from *all the other* features combined (a VIF of 1.0 means "not predictable from the others at all"; conventionally, 5 or 10 is treated as a concern threshold).
 
-**Why VIF, and not just the correlation heatmap:** Pairwise correlation (Cell 15) only catches redundancy between *two* features at a time. A feature can look uncorrelated with every other feature individually while still being almost perfectly predictable from a *combination* of several others — VIF catches that multivariate case, which is exactly the kind of collinearity a pairwise heatmap is structurally blind to.
+**Why VIF, and not just the correlation heatmap:** Pairwise correlation (Cell 12) only catches redundancy between *two* features at a time. A feature can look uncorrelated with every other feature individually while still being almost perfectly predictable from a *combination* of several others — VIF catches that multivariate case, which is exactly the kind of collinearity a pairwise heatmap is structurally blind to.
 
 **Why `sm.add_constant` specifically:** `variance_inflation_factor` from `statsmodels` computes each feature's VIF by regressing it on the rest of the design matrix — and that regression needs an intercept term to be meaningful. Without `sm.add_constant`, the underlying regression is forced through the origin, which inflates every VIF score by an amount related to each feature's distance from zero — so features with large, non-zero means (like `Income`, in the tens of thousands) would show artificially huge VIFs that reflect their *scale*, not genuine collinearity. Adding the constant column removes that artifact and makes the VIF numbers a true measure of multicollinearity. This is a well-known `statsmodels` sharp edge worth calling out explicitly, since skipping it silently produces misleading results rather than an error.
 
-### Cell 17 (markdown) — Answer to Q4
+**Answer to Q4:** the correlation heatmap shows only one pair worth flagging (`Dependents`/`Education_Ratio` at r ≈ 0.65), and the properly-computed VIF confirms it quantitatively — every feature scores ≈1.0 except `Dependents` and `Education_Ratio` at ≈1.73, both comfortably under the standard concern threshold. No features need to be dropped, though the `Dependents`/`Education_Ratio` link is worth watching in Phase 5's explainability step since their individual contributions may partially trade off against each other.
 
-States the answer: the correlation heatmap shows only one pair worth flagging (`Dependents`/`Education_Ratio` at r ≈ 0.65), and the properly-computed VIF confirms it quantitatively — every feature scores ≈1.0 except `Dependents` and `Education_Ratio` at ≈1.73, both comfortably under the standard concern threshold. Concludes no features need to be dropped, though the `Dependents`/`Education_Ratio` link is worth watching in Phase 5's explainability step since their individual contributions may partially trade off against each other.
+### Cell 14 (markdown) — "Final feature matrix"
 
-### Cell 18 (markdown) — Transition to building the final feature set
+The four answers combine into one concrete decision: replace raw expenses with ratios, one-hot encode both categoricals, keep `Income`/`Age`/`Dependents` as numeric (to be scaled per model family downstream), and drop the leakage columns plus the now-redundant raw expense columns.
 
-Summarizes how the four answers combine into one concrete decision: replace raw expenses with ratios, one-hot encode both categoricals, keep `Income`/`Age`/`Dependents` as numeric (to be scaled per model family downstream), and drop the leakage columns plus the now-redundant raw expense columns.
-
-### Cell 19 (code) — Assembling the engineered feature matrix
+### Cell 15 (code) — Assembling the engineered feature matrix
 
 ```python
 engineered = pd.get_dummies(
@@ -245,10 +231,6 @@ engineered.head()
 **What it does:** Selects exactly the columns the four answers settled on — `Income`, `Age`, `Dependents`, the two categoricals, the 11 ratio columns, and the target — and one-hot encodes the categoricals with `pd.get_dummies`. Prints the resulting shape and explicitly restates which columns were left out and why.
 
 **Why `drop_first=False`:** Keeping all dummy columns (rather than dropping one reference category, which is standard practice for OLS-style linear regression to avoid perfect multicollinearity with the intercept) is deliberate here — this feature set is meant to feed several model families in Phase 4, including tree-based ones that benefit from having every category as an explicit, independently-splittable column, and Question 4 already confirmed collinearity isn't a real concern for this feature set. Explicitly printing the leakage and redundant-column exclusions in the output — rather than just silently not including them — keeps the notebook self-auditing: anyone reading the output can verify what was excluded without re-reading the code.
-
-### Cell 20 (markdown) — Summary table and handoff to Phase 3
-
-Closes with a compact table of all four answers and a pointer to `03_baseline.ipynb`, so Phase 3 can start directly from this engineered feature matrix instead of re-deriving it.
 
 ---
 

@@ -24,9 +24,11 @@ The rest of this document walks through *how* the notebook arrives at each answe
 
 ## Notebook walkthrough
 
-### Cell 0 (markdown) — Title and scope
+The notebook itself carries no narrative — section headers and code only, real results in the executed output. This document is where the reasoning behind each step lives.
 
-States the six Phase 1 questions up front and the "state question → run analysis → answer" pattern the rest of the notebook follows. This mirrors how the README frames Phase 1, so the notebook can be read on its own without flipping back to the README constantly.
+### Cell 0 (markdown) — Title
+
+Points back to this document; no restated questions or narration in the notebook itself.
 
 ### Cell 1 (code) — Imports and data load
 
@@ -49,9 +51,7 @@ df.head()
 
 **Why:** Setting `display.max_columns` before doing anything else avoids a recurring annoyance in a table this wide (27 columns) — without it, `df.head()` and `.describe()` truncate output and hide exactly the columns you need to compare. Printing `df.shape` first is a cheap sanity check that the file loaded as expected (20,000 rows × 27 columns) before any analysis is trusted.
 
-### Cell 2 (markdown) — Question 1 setup
-
-Introduces the column-meaning question and states up front (from the README's data dictionary) that this is a monthly, per-individual snapshot with no time dimension.
+### Cell 2 (markdown) — "Column types and cardinality"
 
 ### Cell 3 (code) — Dtype and cardinality check
 
@@ -65,15 +65,11 @@ dtypes_table
 
 **Why:** This is the fastest way to confirm the data dictionary in the README actually matches what's in the file, rather than trusting documentation blindly. `n_unique` specifically distinguishes the categorical columns (`Occupation`: 4, `City_Tier`: 3) from the continuous ones (thousands of unique values) at a glance, and it's a cheap way to catch surprises — e.g. an `Age` column that turned out to have only 3 unique values would be a red flag worth investigating before going further.
 
-### Cell 4 (markdown) — Answer to Q1
+**Answer to Q1:** every money column is a monthly ₹ amount, `Age`/`Dependents` are counts, `Occupation`/`City_Tier` are categorical, `Desired_Savings_Percentage` is the one percentage-of-income column, and there's no date/time column because this is a single snapshot.
 
-States the answer: every money column is a monthly ₹ amount, `Age`/`Dependents` are counts, `Occupation`/`City_Tier` are categorical, `Desired_Savings_Percentage` is the one percentage-of-income column, and there's no date/time column because this is a single snapshot.
+### Cell 4 (markdown) — "Distributions"
 
-### Cell 5 (markdown) — Question 2 setup
-
-Introduces the distribution/skew/outlier/implausible-value question.
-
-### Cell 6 (code) — Descriptive statistics and skew
+### Cell 5 (code) — Descriptive statistics and skew
 
 ```python
 money_cols = [
@@ -90,7 +86,7 @@ desc
 
 **Why:** `.describe()` alone tells you *where* the data sits, but not its *shape* — a mean far above the median is the classic tell of a right-skewed distribution, and the explicit `skew` column quantifies exactly how skewed. This matters concretely for later phases: strongly skewed features (skew ≈ 4–5 here) are candidates for a log transform before feeding them into scale-sensitive models like logistic regression, and skew this consistent across every money column suggests it's a structural property of income/spending data, not a fluke in one column.
 
-### Cell 7 (code) — Distribution histograms
+### Cell 6 (code) — Distribution histograms
 
 ```python
 fig, axes = plt.subplots(2, 3, figsize=(15, 8))
@@ -103,9 +99,9 @@ plt.show()
 
 **What it does:** Plots histograms (with a KDE overlay) for six representative money columns in a 2×3 grid, each titled with its skew value.
 
-**Why:** Numbers alone (Cell 6) can hide *shape* — two distributions can share a skew statistic while looking completely different (one long smooth tail vs. a handful of extreme spikes). A visual check confirms whether the skew is a smooth, well-behaved long tail (which it is here) rather than something pathological like a bimodal distribution or a cluster of duplicate extreme values, which would need different handling.
+**Why:** Numbers alone (Cell 5) can hide *shape* — two distributions can share a skew statistic while looking completely different (one long smooth tail vs. a handful of extreme spikes). A visual check confirms whether the skew is a smooth, well-behaved long tail (which it is here) rather than something pathological like a bimodal distribution or a cluster of duplicate extreme values, which would need different handling.
 
-### Cell 8 (code) — IQR-based outlier counts
+### Cell 7 (code) — IQR-based outlier counts
 
 ```python
 def iqr_outlier_count(s):
@@ -122,7 +118,7 @@ pd.Series(outlier_counts, name="n_outliers_iqr_1.5x").sort_values(ascending=Fals
 
 **Why:** The IQR rule is a scale-independent, distribution-agnostic way to quantify "how many rows are unusually extreme" — useful specifically *because* it doesn't assume normality, which these skewed columns clearly violate. It's a triage step, not a decision to delete anything: a high outlier count on a right-skewed column like `Income` is expected (that's what a long tail *is*), so the number is reported for downstream phases to weigh, not acted on here.
 
-### Cell 9 (code) — Implausible-value check (expenses exceeding income)
+### Cell 8 (code) — Implausible-value check (expenses exceeding income)
 
 ```python
 expense_cols = [
@@ -141,15 +137,11 @@ df.loc[implausible_mask, ["Income", "Total_Expenses"] + expense_cols].head()
 
 **Why:** This is a domain-specific plausibility check that a generic outlier statistic can't catch — a row can look perfectly unremarkable by IQR standards (moderate income, moderate individual expenses) and still be internally inconsistent if the expenses simply don't add up to less than the income. This check directly informs Phase 2: whether to clip, drop, or keep the ~112 rows (0.56%) where it happens.
 
-### Cell 10 (markdown) — Answer to Q2
+**Answer to Q2:** strong right-skew across all money columns (skew ≈ 4–5), a smooth (not erratic) IQR tail, and ~0.5–0.6% of rows with expenses exceeding income — flagged for a Phase 2 decision rather than resolved here.
 
-States the answer: strong right-skew across all money columns, a smooth (not erratic) IQR tail, and ~0.5–0.6% of rows with expenses exceeding income — flagged for a Phase 2 decision rather than resolved here.
+### Cell 9 (markdown) — "Missing values and duplicate rows"
 
-### Cell 11 (markdown) — Question 3 setup
-
-Introduces the missing-values/duplicates question.
-
-### Cell 12 (code) — Missing values and duplicate rows
+### Cell 10 (code) — Missing values and duplicate rows
 
 ```python
 missing = df.isnull().sum()
@@ -161,17 +153,13 @@ print("Duplicate rows (all columns):", int(df.duplicated().sum()))
 
 **What it does:** Counts nulls per column (filtering to only the columns that have any) and counts fully-duplicate rows across the entire table.
 
-**Why:** These are the two cheapest, highest-value checks in any EDA — if either comes back non-zero, it changes everything downstream (imputation strategy, dedup logic). Checking explicitly and printing the result — rather than silently assuming a clean dataset — is what lets Phase 2's `src/preprocessing.py` skip imputation code entirely with a documented reason, instead of adding defensive handling for a problem that doesn't exist.
+**Why:** These are the two cheapest, highest-value checks in any EDA — if either comes back non-zero, it changes everything downstream (imputation strategy, dedup logic). Checking explicitly and printing the result — rather than silently assuming a clean dataset — is what lets Phase 2's preprocessing skip imputation code entirely with a documented reason, instead of adding defensive handling for a problem that doesn't exist.
 
-### Cell 13 (markdown) — Answer to Q3
+**Answer to Q3:** zero missing values, zero duplicate rows across all 20,000 records.
 
-States the answer: zero missing values, zero duplicate rows across all 20,000 records.
+### Cell 11 (markdown) — "Correlation: income vs. expenses"
 
-### Cell 14 (markdown) — Question 4 setup
-
-Introduces the expense-category correlation question.
-
-### Cell 15 (code) — Income–expense correlation
+### Cell 12 (code) — Income–expense correlation
 
 ```python
 corr_full = df[["Income"] + expense_cols].corr()
@@ -182,7 +170,7 @@ corr_full["Income"].drop("Income").sort_values(ascending=False)
 
 **Why:** This is the first direct evidence for the leakage-adjacent concern that motivates Phase 2's entire ratio-conversion strategy: if expense columns are near-perfectly correlated with income, they're not really independent signal about *spending behavior* — they're mostly restating *how much this person earns*, scaled down.
 
-### Cell 16 (code) — Correlation heatmap
+### Cell 13 (code) — Correlation heatmap
 
 ```python
 fig, ax = plt.subplots(figsize=(9, 7))
@@ -196,7 +184,7 @@ plt.show()
 
 **Why:** A 12×12 correlation matrix is hard to scan as raw numbers — the heatmap makes the *pattern* (almost everything is a warm, strongly-positive color) immediately obvious, which is the point: this isn't one or two coincidentally-correlated columns, it's a structural property of the whole expense block.
 
-### Cell 17 (code) — Most correlated expense-expense pairs
+### Cell 14 (code) — Most correlated expense-expense pairs
 
 ```python
 import itertools
@@ -210,17 +198,15 @@ pd.DataFrame(pairs[:8], columns=["feature_a", "feature_b", "correlation"])
 
 **What it does:** Enumerates every unique pair of expense columns (`itertools.combinations` avoids double-counting `(A, B)` and `(B, A)`), looks up each pair's correlation, sorts by absolute value, and shows the top 8.
 
-**Why:** The heatmap in Cell 16 shows the overall pattern, but reading off the *specific* highest pairs from a heatmap by eye is error-prone at this size. Extracting them programmatically gives a precise, rankable answer to "which expense categories are most redundant with each other" — directly useful for Phase 2's collinearity analysis.
+**Why:** The heatmap in Cell 13 shows the overall pattern, but reading off the *specific* highest pairs from a heatmap by eye is error-prone at this size. Extracting them programmatically gives a precise, rankable answer to "which expense categories are most redundant with each other" — directly useful for Phase 2's collinearity analysis.
 
-### Cell 18 (markdown) — Answer to Q4
+**Answer to Q4:** expense categories correlate strongly with income (r ≈ 0.79–0.99) and with each other (several pairs > 0.94), which is exactly why Phase 2 converts raw expenses to income ratios.
 
-States the answer: expense categories correlate strongly with income (r ≈ 0.79–0.99) and with each other (several pairs > 0.94), which is exactly why Phase 2 converts raw expenses to income ratios.
+### Cell 15 (markdown) — "Leakage check"
 
-### Cell 19 (markdown) — Question 5 setup
+Arguably the most consequential section in the whole notebook, since getting it wrong would silently produce a model with meaningless, artificially perfect accuracy.
 
-Introduces the leakage-check question — arguably the most consequential question in the whole notebook, since getting it wrong would silently produce a model with meaningless, artificially perfect accuracy.
-
-### Cell 20 (code) — Verifying `Disposable_Income` is internally consistent
+### Cell 16 (code) — Verifying `Disposable_Income` is internally consistent
 
 ```python
 df["Disposable_Income_recalculated"] = df["Income"] - df["Total_Expenses"]
@@ -232,7 +218,7 @@ print(f"Max |Income - sum(expenses) - Disposable_Income| across all rows: {max_a
 
 **Why:** This doesn't just describe the leakage relationship — it *proves* it, row by row, rather than trusting the README's stated formula on faith. A max difference on the order of `1e-10` (floating-point noise, not a real discrepancy) confirms the provided `Disposable_Income` column really is deterministically `Income` minus expenses, which matters because it means excluding `Disposable_Income` from the feature set isn't enough on its own — a model could just as easily reconstruct it (and therefore the target) from `Income` and the expense columns *together*, which is worth keeping in mind when engineering features in Phase 2.
 
-### Cell 21 (code) — Confirming the target formula and naming the leakage columns
+### Cell 17 (code) — Confirming the target formula and naming the leakage columns
 
 ```python
 df["Goal_Met"] = (df["Disposable_Income"] >= df["Desired_Savings"]).astype(int)
@@ -250,15 +236,13 @@ print("\nColumns excluded from the feature set due to leakage:", leakage_cols)
 
 **Why:** This is the concrete, quantified version of the abstract warning in the README — rather than just asserting "these columns would leak," the notebook shows *exactly* what would happen (perfect, meaningless accuracy) if they were included, which is a much stronger and more convincing check to leave in the project's history. `Desired_Savings_Percentage` is included in the exclusion list even though it isn't part of the `>=` comparison directly, because `Desired_Savings` is a deterministic function of it (`Income × percentage`) — excluding the percentage but not the derived amount would just move the leak one column over.
 
-### Cell 22 (markdown) — Answer to Q5
+**Answer to Q5:** `Goal_Met` is deterministically derivable from `Disposable_Income` + `Desired_Savings`, `Disposable_Income` is itself deterministic from `Income` minus expenses, and all three leakage-adjacent columns (`Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage`) are excluded from the feature set — matching README § 3.
 
-States the answer: `Goal_Met` is deterministically derivable from `Disposable_Income` + `Desired_Savings`, `Disposable_Income` is itself deterministic from `Income` minus expenses, and all three leakage-adjacent columns (`Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage`) are excluded from the feature set — matching README § 3.
+### Cell 18 (markdown) — "Class balance of `Goal_Met`"
 
-### Cell 23 (markdown) — Question 6 setup
+Scoped explicitly to *after* leakage columns are excluded — the label itself is still legitimately computed from them; only feeding them to the model as *inputs* is forbidden.
 
-Introduces the class-balance question, explicitly scoped to *after* leakage columns are excluded (since the label itself is still legitimately computed from them — only feeding them to the model as *inputs* is forbidden).
-
-### Cell 24 (code) — Class balance table
+### Cell 19 (code) — Class balance table
 
 ```python
 balance = df["Goal_Met"].value_counts().rename({0: "Goal not met (0)", 1: "Goal met (1)"})
@@ -270,7 +254,7 @@ pd.DataFrame({"count": balance, "proportion": balance_pct.round(4)})
 
 **Why:** Reporting proportion alongside raw count avoids ambiguity when the imbalance is severe — "19,888 vs. 112" and "99.4% vs. 0.6%" are the same fact, but the percentage form is what directly tells Phase 3/4 that accuracy alone will be a useless metric (a model that always predicts `1` already scores ~99.4%).
 
-### Cell 25 (code) — Class balance chart
+### Cell 20 (code) — Class balance chart
 
 ```python
 fig, ax = plt.subplots(figsize=(5, 4))
@@ -289,13 +273,7 @@ plt.show()
 
 **Why:** A picture of a 99.4/0.6 split communicates the severity of the imbalance faster than a table for a Phase 8 stakeholder audience — one bar is visibly a hairline next to the other. This is exactly the kind of chart the README's Phase 8 question ("which visualizations communicate findings fastest to a non-technical reader?") is asking for, produced here as a byproduct of the Phase 1 analysis.
 
-### Cell 26 (markdown) — Answer to Q6
-
-States the answer: ~99.4%/0.6% split, and spells out the consequence for later phases — accuracy isn't a usable metric on its own, stratified validation is required, and resampling or imbalance-aware metrics are likely necessary before model comparison is meaningful.
-
-### Cell 27 (markdown) — Summary table and handoff to Phase 2
-
-Closes with a compact table of all six answers and a pointer to `02_feature_engineering.ipynb`, so Phase 2 can pick up from a known, verified state rather than re-deriving these facts.
+**Answer to Q6:** ~99.4%/0.6% split. Consequence for later phases: accuracy isn't a usable metric on its own, stratified validation is required, and resampling or imbalance-aware metrics are likely necessary before model comparison is meaningful.
 
 ---
 

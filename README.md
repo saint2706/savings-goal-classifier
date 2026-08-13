@@ -243,7 +243,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── 03_baseline.ipynb
 │   ├── 04_model_comparison.ipynb
 │   ├── 05_explainability.ipynb
-│   └── 06_clustering_personas.ipynb        (planned)
+│   ├── 06_clustering_personas.ipynb
+│   └── 07_business_translation.ipynb
 ├── src/
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
@@ -253,7 +254,9 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── model_comparison.png
 │   ├── final_test_evaluation.csv
 │   ├── shap_summary.png
-│   └── persona_clusters.png                (planned)
+│   ├── persona_profiles.csv
+│   ├── persona_clusters.png
+│   └── business_recommendations.csv
 ├── walkthrough/
 │   ├── phase0.md
 │   ├── phase1.md
@@ -261,12 +264,13 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase3.md
 │   ├── phase4.md
 │   ├── phase5.md
-│   └── phase6.md …                         (planned, added alongside each new notebook)
+│   ├── phase6.md
+│   └── phase7.md
 ├── README.md
 └── requirements.txt
 ```
 
-Each `walkthrough/phaseN.md` answers that phase's research questions and, for phases with a notebook, walks through it cell by cell — what each cell does and the motivation behind it — so the reasoning behind the code doesn't have to be reconstructed from the code alone.
+Each `walkthrough/phaseN.md` answers that phase's research questions and, for phases with a notebook, walks through it cell by cell — what each cell does and the motivation behind it — so the reasoning behind the code doesn't have to be reconstructed from the code alone. Notebooks themselves carry only section headers and code; all narrative explanation lives in the matching walkthrough document.
 
 ## 7. Setup & Usage
 
@@ -279,7 +283,7 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-*(Phase 6–8 results — persona count, business translation — still to be filled in once those notebooks exist.)*
+*(Phase 8's final stakeholder write-up is still to be produced; the modeling, explainability, and business-translation results below are final.)*
 
 **Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect *cross-validated* recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
 
@@ -297,11 +301,16 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 | Logistic Regression | 0.9970 | 0.8940 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` |
 | SVM (Linear) | 0.9979 | **0.9220** | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
 
+**Spending personas (Phase 6):** `k=3` (silhouette-selected) — Persona 0, Tier-1 residents with dependents (n=4,758); Persona 1, no dependents, any tier (n=4,061); Persona 2, Tier-2/Tier-3 residents with dependents (n=11,181). **All 112 at-risk individuals fall in Persona 0** (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹), independently corroborating Phase 5's SHAP finding that `City_Tier_Tier_1` drives the model toward "at-risk." See [`walkthrough/phase6.md`](walkthrough/phase6.md).
+
+**Business translation (Phase 7):** every one of the 112 at-risk individuals lives in a Tier-1 city — the single highest-leverage targeting signal. `Groceries` carries the most unrealized savings potential (₹18.2M/month aggregate, ~2× the next category). For 99.1% of at-risk individuals, addressable savings across all 8 tracked categories already exceeds their shortfall — the gap is recoverable, not structural. See [`walkthrough/phase7.md`](walkthrough/phase7.md) and [`results/business_recommendations.csv`](results/business_recommendations.csv) for the full set of five recommendations and their supporting evidence.
+
 ## 9. Limitations
 
 - The dataset's income/expense figures may be synthetically generated rather than survey-collected — treat absolute figures as illustrative rather than nationally representative.
 - `Goal_Met` is a self-referential target (defined from the individual's own stated goal), not an external measure of financial health.
-- Clustering results (Phase 6) are sensitive to the chosen expense-ratio features and scaling method; persona labels are interpretive, not ground truth.
+- Phase 6's clustering silhouette scores are uniformly low (< 0.1) across every `k` tested, and the chosen 3-cluster solution is driven almost entirely by two features (`Education_Ratio`, `Rent_Ratio`) that are themselves proxies for `Dependents` and `City_Tier` — the personas are a demographic/geographic split already present in the raw data, not a richly discovered multivariate spending archetype.
+- The winning model (SVM, linear) is provably incapable of representing any feature-interaction effect (Phase 5); the minority class (`Goal_Met = 0`) contains only 112 rows, so its `recall_0 = 1.0` result — while consistent across cross-validation and the held-out test set — rests on a small sample and is not a guarantee against a genuinely new population.
 
 ## 10. License
 
