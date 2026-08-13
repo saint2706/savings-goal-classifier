@@ -1,0 +1,6 @@
+recommendation,evidence
+"Prioritize outreach by City_Tier, not occupation or age",100% of at-risk individuals (112/112) live in Tier-1 cities; Occupation and Age show no comparable skew
+Lead nudge campaigns with grocery-spend reduction,"Groceries is the largest unrealized-savings category: Rs 18.2M/month aggregate, ~2x the next category (Transport)"
+"Frame the ask as small and achievable, not remedial",Groceries + Transport alone closes the shortfall for 87.5% of at-risk individuals; all 8 tracked categories close it for 99.1%
+Deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging,"recall_0 = 1.0 (test set), precision_0 = 0.88 -- catches every at-risk case at the cost of ~12% unnecessary low-cost nudges"
+Do not build a separate persona-based targeting layer,"Phase 6 clustering found personas driven by City_Tier and Dependents -- signal already used by the Phase 4/5 model, not an independent source of lift"
