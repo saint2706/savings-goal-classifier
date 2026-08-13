@@ -44,7 +44,6 @@ sns.set_theme(style="whitegrid")
 DATA_PATH = "../dataset/data.csv"
 df = pd.read_csv(DATA_PATH)
 
-LEAKAGE_COLS = ["Disposable_Income", "Desired_Savings", "Desired_Savings_Percentage"]
 df["Goal_Met"] = (df["Disposable_Income"] >= df["Desired_Savings"]).astype(int)
 
 expense_cols = [
