@@ -10,13 +10,13 @@ Phases 1–6 answer analytical questions. Phase 7 asks a different one: **given 
 
 ## Research questions & answers
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What are the 3–5 most actionable findings, stated as recommendations rather than statistics? | Five: (1) target outreach by `City_Tier`, not occupation or age; (2) lead nudge campaigns with grocery-spend reduction; (3) frame the ask as small and achievable, not remedial; (4) deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging; (5) don't build a separate persona-based targeting layer. See the Recommendations table below for the evidence behind each. |
-| 2 | Which expense category carries the most unrealized (potential) savings across the population? | `Groceries` — ₹18.2M/month in aggregate (35% of the ₹51.6M addressable across all 8 tracked categories) and ₹912/month per person, roughly double the next-largest category (`Transport`). |
-| 3 | Where does the model fail or lose reliability — what should a stakeholder be told before acting on it? | Four caveats: the minority-class sample is tiny (112 of 20,000 rows); precision is ~0.88, not 1.0 (~1 in 8 flagged individuals are false positives); the model is linear and structurally blind to any real interaction effect (Phase 5); and the dataset shows signs of being synthetically generated (Phases 1, 2, 5). |
+| #   | Question                                                                                               | Answer                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | What are the 3–5 most actionable findings, stated as recommendations rather than statistics?           | Five: (1) target outreach by `City_Tier`, not occupation or age; (2) lead nudge campaigns with grocery-spend reduction; (3) frame the ask as small and achievable, not remedial; (4) deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging; (5) don't build a separate persona-based targeting layer. See the Recommendations table below for the evidence behind each. |
+| 2   | Which expense category carries the most unrealized (potential) savings across the population?          | `Groceries` — ₹18.2M/month in aggregate (35% of the ₹51.6M addressable across all 8 tracked categories) and ₹912/month per person, roughly double the next-largest category (`Transport`).                                                                                                                                                                                            |
+| 3   | Where does the model fail or lose reliability — what should a stakeholder be told before acting on it? | Four caveats: the minority-class sample is tiny (112 of 20,000 rows); precision is ~0.88, not 1.0 (~1 in 8 flagged individuals are false positives); the model is linear and structurally blind to any real interaction effect (Phase 5); and the dataset shows signs of being synthetically generated (Phases 1, 2, 5).                                                              |
 
-The rest of this document walks through *how* the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
 
 ---
 
@@ -58,9 +58,9 @@ coverage = {
 }
 ```
 
-**What it does:** For each of the 112 at-risk individuals, compares their addressable savings potential (under three different scopes: all 8 categories, the top-2 categories, or `Groceries` alone) against their actual shortfall, and reports what fraction of at-risk individuals have *enough* addressable potential to fully close their gap.
+**What it does:** For each of the 112 at-risk individuals, compares their addressable savings potential (under three different scopes: all 8 categories, the top-2 categories, or `Groceries` alone) against their actual shortfall, and reports what fraction of at-risk individuals have _enough_ addressable potential to fully close their gap.
 
-**Why this matters, beyond "which category is biggest":** Question 2's answer alone doesn't say whether the recoverable savings are *large enough to matter* for the people who actually need them — a category could be the biggest source of unrealized savings in aggregate while still being a drop in the bucket for the specific people this project cares about (the at-risk group). This cell tests that directly.
+**Why this matters, beyond "which category is biggest":** Question 2's answer alone doesn't say whether the recoverable savings are _large enough to matter_ for the people who actually need them — a category could be the biggest source of unrealized savings in aggregate while still being a drop in the bucket for the specific people this project cares about (the at-risk group). This cell tests that directly.
 
 **Result:** for **99.1%** of at-risk individuals, their total addressable savings potential across all 8 tracked categories already exceeds their shortfall (mean shortfall ≈ ₹784/month vs. mean total potential ≈ ₹2,912/month — potential exceeds the gap by roughly 3.7× on average). A narrower two-category nudge (`Groceries` + `Transport`) still closes the gap for **87.5%** of them. This is the evidence behind recommendation 3 below: the at-risk classification reflects a recoverable gap, not a structural one.
 
@@ -82,7 +82,7 @@ Reads `results/final_test_evaluation.csv` (written by Phase 4) rather than retra
 
 1. **Small minority-class sample.** Only 112 of 20,000 individuals (0.56%) are at-risk. Phase 4's `recall_0 = 1.0` — both cross-validated and on the held-out test set — is measured against roughly 90–112 examples; it is strong evidence, not a guarantee that a genuinely new population would also be caught perfectly.
 2. **Precision, not certainty.** `precision_0 ≈ 0.88` means about 1 in 8 people the model flags as at-risk are not. Phase 4's cost framing treats this as acceptable (an unneeded nudge is low-cost), but a stakeholder acting on a specific flagged individual should know it is not a certainty.
-3. **No interaction effects, by construction.** The winning model is linear, and Phase 5 proved its SHAP explanations cannot represent any interaction between features. A real-world risk factor that only shows up as a *combination* of features (e.g., high rent stacked with high loan repayment specifically) would not be visible to this model even if it existed in the data.
+3. **No interaction effects, by construction.** The winning model is linear, and Phase 5 proved its SHAP explanations cannot represent any interaction between features. A real-world risk factor that only shows up as a _combination_ of features (e.g., high rent stacked with high loan repayment specifically) would not be visible to this model even if it existed in the data.
 4. **Possibly synthetic data.** Phases 1, 2, and 5 each separately noted signs the dataset may be synthetically generated (e.g., `Rent_Ratio`'s near-zero within-tier variance). Absolute figures — and possibly the relationships themselves — should be validated against real customer data before this model or these recommendations are deployed operationally.
 
 ### Cell 11 (markdown) — "Recommendations"
@@ -91,13 +91,13 @@ Reads `results/final_test_evaluation.csv` (written by Phase 4) rather than retra
 
 Builds and saves `results/business_recommendations.csv`:
 
-| Recommendation | Evidence |
-|---|---|
-| Prioritize outreach by `City_Tier`, not occupation or age | 100% of at-risk individuals (112/112) live in Tier-1 cities; `Occupation` and `Age` show no comparable skew |
-| Lead nudge campaigns with grocery-spend reduction | `Groceries` is the largest unrealized-savings category: ₹18.2M/month aggregate, ~2× the next category (`Transport`) |
-| Frame the ask as small and achievable, not remedial | `Groceries` + `Transport` alone closes the shortfall for 87.5% of at-risk individuals; all 8 tracked categories close it for 99.1% |
-| Deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging | `recall_0 = 1.0` (test set), `precision_0 = 0.88` — catches every at-risk case at the cost of ~12% unnecessary low-cost nudges |
-| Do not build a separate persona-based targeting layer | Phase 6 clustering found personas driven by `City_Tier` and `Dependents` — signal already used by the Phase 4/5 model, not an independent source of lift |
+| Recommendation                                                      | Evidence                                                                                                                                                 |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prioritize outreach by `City_Tier`, not occupation or age           | 100% of at-risk individuals (112/112) live in Tier-1 cities; `Occupation` and `Age` show no comparable skew                                              |
+| Lead nudge campaigns with grocery-spend reduction                   | `Groceries` is the largest unrealized-savings category: ₹18.2M/month aggregate, ~2× the next category (`Transport`)                                      |
+| Frame the ask as small and achievable, not remedial                 | `Groceries` + `Transport` alone closes the shortfall for 87.5% of at-risk individuals; all 8 tracked categories close it for 99.1%                       |
+| Deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging | `recall_0 = 1.0` (test set), `precision_0 = 0.88` — catches every at-risk case at the cost of ~12% unnecessary low-cost nudges                           |
+| Do not build a separate persona-based targeting layer               | Phase 6 clustering found personas driven by `City_Tier` and `Dependents` — signal already used by the Phase 4/5 model, not an independent source of lift |
 
 **Why these five, and in this order:** they're ordered by how directly actionable they are for a marketing team — the first two are "who to target" and "with what message," the middle one is a framing choice for that same message, and the last two are guidance for whoever owns the classifier deployment (deploy this, don't build that). Each recommendation is paired with the specific number behind it rather than left as an unsupported assertion, so a stakeholder can trace every claim back to a phase and a cell.
 
@@ -105,11 +105,11 @@ Builds and saves `results/business_recommendations.csv`:
 
 ## What Phase 7 sets up for later phases
 
-| Finding | Where it gets used |
-|---|---|
-| `Groceries` is the dominant unrealized-savings category, both in aggregate and per-person | The headline number for Phase 8's stakeholder-facing report |
-| 99.1% of at-risk individuals have addressable savings potential exceeding their shortfall | Reframes "at-risk" as "recoverable" for Phase 8 — an important tone-setting fact for a non-technical audience |
-| Four explicit model-reliability caveats (sample size, precision, no interactions, possibly-synthetic data) | Phase 8 should carry these forward rather than presenting the model's numbers without qualification |
-| Five ranked, evidence-backed recommendations | The direct input to Phase 8's "3–4 visualizations that communicate findings fastest" — each recommendation is a candidate headline finding |
+| Finding                                                                                                    | Where it gets used                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Groceries` is the dominant unrealized-savings category, both in aggregate and per-person                  | The headline number for Phase 8's stakeholder-facing report                                                                                |
+| 99.1% of at-risk individuals have addressable savings potential exceeding their shortfall                  | Reframes "at-risk" as "recoverable" for Phase 8 — an important tone-setting fact for a non-technical audience                              |
+| Four explicit model-reliability caveats (sample size, precision, no interactions, possibly-synthetic data) | Phase 8 should carry these forward rather than presenting the model's numbers without qualification                                        |
+| Five ranked, evidence-backed recommendations                                                               | The direct input to Phase 8's "3–4 visualizations that communicate findings fastest" — each recommendation is a candidate headline finding |
 
 **Next:** Phase 8 — Reporting, which assembles the final write-up: the reasoning behind each modeling and business decision across all seven prior phases, plus the 3–4 visualizations that communicate the findings fastest to a non-technical reader.

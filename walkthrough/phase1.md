@@ -3,22 +3,22 @@
 **Source:** [README § Phase 1 — Data Understanding](../README.md#phase-1--data-understanding)
 **Notebook:** [`notebooks/01_eda_and_leakage_check.ipynb`](../notebooks/01_eda_and_leakage_check.ipynb)
 
-Phase 0 fixed *what* we're predicting and *why*. Phase 1 turns to the data itself: what's actually in it, whether it's trustworthy, and — critically — whether the leakage risk flagged in the README (`Disposable_Income` / `Desired_Savings` mathematically defining `Goal_Met`) is real. Everything here is read-only exploration; no features are engineered yet (that's Phase 2) and no leakage columns are ever fed to a model.
+Phase 0 fixed _what_ we're predicting and _why_. Phase 1 turns to the data itself: what's actually in it, whether it's trustworthy, and — critically — whether the leakage risk flagged in the README (`Disposable_Income` / `Desired_Savings` mathematically defining `Goal_Met`) is real. Everything here is read-only exploration; no features are engineered yet (that's Phase 2) and no leakage columns are ever fed to a model.
 
 ---
 
 ## Research questions & answers
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What does each column mean, and what unit/time period does it represent? | All money columns are monthly ₹ amounts; `Age`/`Dependents` are counts; `Occupation`/`City_Tier` are categorical; the dataset is a single cross-sectional snapshot, not a time series. |
-| 2 | What is the distribution of income, expenses, and savings — skew, outliers, implausible values? | Every money column is strongly right-skewed (skew ≈ 4–5); an IQR check flags a smooth high-value tail rather than obvious errors; ~0.5–0.6% of rows have total expenses exceeding income (implausible / negative disposable income). |
-| 3 | Are there missing values or duplicate rows, and how are they handled? | Zero missing values, zero duplicate rows across all 20,000 records — no imputation or dedup logic is needed. |
-| 4 | How correlated are expense categories with income and with each other? | Every expense category correlates strongly with `Income` (r ≈ 0.79–0.99), and expense categories are highly correlated with each other (several pairs > 0.94) — raw amounts mostly re-encode income level. |
-| 5 | Is the target mathematically derivable from any candidate feature (leakage check)? | Yes — `Goal_Met` is 100% reconstructable from `Disposable_Income` + `Desired_Savings` (that's its definition), and `Disposable_Income` itself is exactly `Income` minus the 11 expense columns. `Disposable_Income`, `Desired_Savings`, and `Desired_Savings_Percentage` are excluded from the feature set. |
-| 6 | What is the class balance of `Goal_Met` once leakage columns are excluded? | ~99.4% `Goal_Met = 1` vs. ~0.6% `Goal_Met = 0` — a severe imbalance that constrains every later phase's metric and validation choices. |
+| #   | Question                                                                                        | Answer                                                                                                                                                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | What does each column mean, and what unit/time period does it represent?                        | All money columns are monthly ₹ amounts; `Age`/`Dependents` are counts; `Occupation`/`City_Tier` are categorical; the dataset is a single cross-sectional snapshot, not a time series.                                                                                                                      |
+| 2   | What is the distribution of income, expenses, and savings — skew, outliers, implausible values? | Every money column is strongly right-skewed (skew ≈ 4–5); an IQR check flags a smooth high-value tail rather than obvious errors; ~0.5–0.6% of rows have total expenses exceeding income (implausible / negative disposable income).                                                                        |
+| 3   | Are there missing values or duplicate rows, and how are they handled?                           | Zero missing values, zero duplicate rows across all 20,000 records — no imputation or dedup logic is needed.                                                                                                                                                                                                |
+| 4   | How correlated are expense categories with income and with each other?                          | Every expense category correlates strongly with `Income` (r ≈ 0.79–0.99), and expense categories are highly correlated with each other (several pairs > 0.94) — raw amounts mostly re-encode income level.                                                                                                  |
+| 5   | Is the target mathematically derivable from any candidate feature (leakage check)?              | Yes — `Goal_Met` is 100% reconstructable from `Disposable_Income` + `Desired_Savings` (that's its definition), and `Disposable_Income` itself is exactly `Income` minus the 11 expense columns. `Disposable_Income`, `Desired_Savings`, and `Desired_Savings_Percentage` are excluded from the feature set. |
+| 6   | What is the class balance of `Goal_Met` once leakage columns are excluded?                      | ~99.4% `Goal_Met = 1` vs. ~0.6% `Goal_Met = 0` — a severe imbalance that constrains every later phase's metric and validation choices.                                                                                                                                                                      |
 
-The rest of this document walks through *how* the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
 
 ---
 
@@ -84,7 +84,7 @@ desc
 
 **What it does:** Runs `.describe()` (count, mean, std, min, quartiles, max) on every money column and appends a skewness statistic.
 
-**Why:** `.describe()` alone tells you *where* the data sits, but not its *shape* — a mean far above the median is the classic tell of a right-skewed distribution, and the explicit `skew` column quantifies exactly how skewed. This matters concretely for later phases: strongly skewed features (skew ≈ 4–5 here) are candidates for a log transform before feeding them into scale-sensitive models like logistic regression, and skew this consistent across every money column suggests it's a structural property of income/spending data, not a fluke in one column.
+**Why:** `.describe()` alone tells you _where_ the data sits, but not its _shape_ — a mean far above the median is the classic tell of a right-skewed distribution, and the explicit `skew` column quantifies exactly how skewed. This matters concretely for later phases: strongly skewed features (skew ≈ 4–5 here) are candidates for a log transform before feeding them into scale-sensitive models like logistic regression, and skew this consistent across every money column suggests it's a structural property of income/spending data, not a fluke in one column.
 
 ### Cell 6 (code) — Distribution histograms
 
@@ -99,7 +99,7 @@ plt.show()
 
 **What it does:** Plots histograms (with a KDE overlay) for six representative money columns in a 2×3 grid, each titled with its skew value.
 
-**Why:** Numbers alone (Cell 5) can hide *shape* — two distributions can share a skew statistic while looking completely different (one long smooth tail vs. a handful of extreme spikes). A visual check confirms whether the skew is a smooth, well-behaved long tail (which it is here) rather than something pathological like a bimodal distribution or a cluster of duplicate extreme values, which would need different handling.
+**Why:** Numbers alone (Cell 5) can hide _shape_ — two distributions can share a skew statistic while looking completely different (one long smooth tail vs. a handful of extreme spikes). A visual check confirms whether the skew is a smooth, well-behaved long tail (which it is here) rather than something pathological like a bimodal distribution or a cluster of duplicate extreme values, which would need different handling.
 
 ### Cell 7 (code) — IQR-based outlier counts
 
@@ -116,7 +116,7 @@ pd.Series(outlier_counts, name="n_outliers_iqr_1.5x").sort_values(ascending=Fals
 
 **What it does:** Applies the standard Tukey rule (flag anything beyond 1.5× the interquartile range past Q1/Q3) to every money column and counts the flagged rows.
 
-**Why:** The IQR rule is a scale-independent, distribution-agnostic way to quantify "how many rows are unusually extreme" — useful specifically *because* it doesn't assume normality, which these skewed columns clearly violate. It's a triage step, not a decision to delete anything: a high outlier count on a right-skewed column like `Income` is expected (that's what a long tail *is*), so the number is reported for downstream phases to weigh, not acted on here.
+**Why:** The IQR rule is a scale-independent, distribution-agnostic way to quantify "how many rows are unusually extreme" — useful specifically _because_ it doesn't assume normality, which these skewed columns clearly violate. It's a triage step, not a decision to delete anything: a high outlier count on a right-skewed column like `Income` is expected (that's what a long tail _is_), so the number is reported for downstream phases to weigh, not acted on here.
 
 ### Cell 8 (code) — Implausible-value check (expenses exceeding income)
 
@@ -168,7 +168,7 @@ corr_full["Income"].drop("Income").sort_values(ascending=False)
 
 **What it does:** Computes the Pearson correlation matrix across `Income` and the 11 expense columns, then isolates and sorts just the `Income` row.
 
-**Why:** This is the first direct evidence for the leakage-adjacent concern that motivates Phase 2's entire ratio-conversion strategy: if expense columns are near-perfectly correlated with income, they're not really independent signal about *spending behavior* — they're mostly restating *how much this person earns*, scaled down.
+**Why:** This is the first direct evidence for the leakage-adjacent concern that motivates Phase 2's entire ratio-conversion strategy: if expense columns are near-perfectly correlated with income, they're not really independent signal about _spending behavior_ — they're mostly restating _how much this person earns_, scaled down.
 
 ### Cell 13 (code) — Correlation heatmap
 
@@ -182,7 +182,7 @@ plt.show()
 
 **What it does:** Visualizes the same correlation matrix as a heatmap, annotated with the actual coefficient values, using a diverging colormap centered at 0.
 
-**Why:** A 12×12 correlation matrix is hard to scan as raw numbers — the heatmap makes the *pattern* (almost everything is a warm, strongly-positive color) immediately obvious, which is the point: this isn't one or two coincidentally-correlated columns, it's a structural property of the whole expense block.
+**Why:** A 12×12 correlation matrix is hard to scan as raw numbers — the heatmap makes the _pattern_ (almost everything is a warm, strongly-positive color) immediately obvious, which is the point: this isn't one or two coincidentally-correlated columns, it's a structural property of the whole expense block.
 
 ### Cell 14 (code) — Most correlated expense-expense pairs
 
@@ -198,7 +198,7 @@ pd.DataFrame(pairs[:8], columns=["feature_a", "feature_b", "correlation"])
 
 **What it does:** Enumerates every unique pair of expense columns (`itertools.combinations` avoids double-counting `(A, B)` and `(B, A)`), looks up each pair's correlation, sorts by absolute value, and shows the top 8.
 
-**Why:** The heatmap in Cell 13 shows the overall pattern, but reading off the *specific* highest pairs from a heatmap by eye is error-prone at this size. Extracting them programmatically gives a precise, rankable answer to "which expense categories are most redundant with each other" — directly useful for Phase 2's collinearity analysis.
+**Why:** The heatmap in Cell 13 shows the overall pattern, but reading off the _specific_ highest pairs from a heatmap by eye is error-prone at this size. Extracting them programmatically gives a precise, rankable answer to "which expense categories are most redundant with each other" — directly useful for Phase 2's collinearity analysis.
 
 **Answer to Q4:** expense categories correlate strongly with income (r ≈ 0.79–0.99) and with each other (several pairs > 0.94), which is exactly why Phase 2 converts raw expenses to income ratios.
 
@@ -216,7 +216,7 @@ print(f"Max |Income - sum(expenses) - Disposable_Income| across all rows: {max_a
 
 **What it does:** Independently recomputes `Disposable_Income` as `Income - Total_Expenses` and compares it to the `Disposable_Income` column already provided in the dataset, reporting the largest absolute discrepancy across all 20,000 rows.
 
-**Why:** This doesn't just describe the leakage relationship — it *proves* it, row by row, rather than trusting the README's stated formula on faith. A max difference on the order of `1e-10` (floating-point noise, not a real discrepancy) confirms the provided `Disposable_Income` column really is deterministically `Income` minus expenses, which matters because it means excluding `Disposable_Income` from the feature set isn't enough on its own — a model could just as easily reconstruct it (and therefore the target) from `Income` and the expense columns *together*, which is worth keeping in mind when engineering features in Phase 2.
+**Why:** This doesn't just describe the leakage relationship — it _proves_ it, row by row, rather than trusting the README's stated formula on faith. A max difference on the order of `1e-10` (floating-point noise, not a real discrepancy) confirms the provided `Disposable_Income` column really is deterministically `Income` minus expenses, which matters because it means excluding `Disposable_Income` from the feature set isn't enough on its own — a model could just as easily reconstruct it (and therefore the target) from `Income` and the expense columns _together_, which is worth keeping in mind when engineering features in Phase 2.
 
 ### Cell 17 (code) — Confirming the target formula and naming the leakage columns
 
@@ -234,13 +234,13 @@ print("\nColumns excluded from the feature set due to leakage:", leakage_cols)
 
 **What it does:** Constructs `Goal_Met` per its Phase 0 definition, then demonstrates that a "model" using nothing but a direct comparison of the two defining columns reproduces the label with 100% accuracy — by construction, since it's the literal same formula. Finally states the three columns that must be excluded from any legitimate feature set.
 
-**Why:** This is the concrete, quantified version of the abstract warning in the README — rather than just asserting "these columns would leak," the notebook shows *exactly* what would happen (perfect, meaningless accuracy) if they were included, which is a much stronger and more convincing check to leave in the project's history. `Desired_Savings_Percentage` is included in the exclusion list even though it isn't part of the `>=` comparison directly, because `Desired_Savings` is a deterministic function of it (`Income × percentage`) — excluding the percentage but not the derived amount would just move the leak one column over.
+**Why:** This is the concrete, quantified version of the abstract warning in the README — rather than just asserting "these columns would leak," the notebook shows _exactly_ what would happen (perfect, meaningless accuracy) if they were included, which is a much stronger and more convincing check to leave in the project's history. `Desired_Savings_Percentage` is included in the exclusion list even though it isn't part of the `>=` comparison directly, because `Desired_Savings` is a deterministic function of it (`Income × percentage`) — excluding the percentage but not the derived amount would just move the leak one column over.
 
 **Answer to Q5:** `Goal_Met` is deterministically derivable from `Disposable_Income` + `Desired_Savings`, `Disposable_Income` is itself deterministic from `Income` minus expenses, and all three leakage-adjacent columns (`Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage`) are excluded from the feature set — matching README § 3.
 
 ### Cell 18 (markdown) — "Class balance of `Goal_Met`"
 
-Scoped explicitly to *after* leakage columns are excluded — the label itself is still legitimately computed from them; only feeding them to the model as *inputs* is forbidden.
+Scoped explicitly to _after_ leakage columns are excluded — the label itself is still legitimately computed from them; only feeding them to the model as _inputs_ is forbidden.
 
 ### Cell 19 (code) — Class balance table
 
@@ -279,12 +279,12 @@ plt.show()
 
 ## What Phase 1 sets up for later phases
 
-| Finding | Where it gets used |
-|---|---|
-| Expense columns are ~0.8–0.99 correlated with `Income` | Motivates Phase 2's conversion to expense-to-income ratios |
-| `Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage` leak the target | Excluded from the feature set from Phase 2 onward |
-| No missing values, no duplicates | Phase 2 skips imputation/dedup logic entirely |
-| Money columns are strongly right-skewed | Candidates for scaling/log-transform in Phase 2's model-specific preprocessing |
-| `Goal_Met` is ~99.4%/0.6% imbalanced | Drives Phase 3's baseline metric choice and Phase 4's stratified validation strategy |
+| Finding                                                                              | Where it gets used                                                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Expense columns are ~0.8–0.99 correlated with `Income`                               | Motivates Phase 2's conversion to expense-to-income ratios                           |
+| `Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage` leak the target | Excluded from the feature set from Phase 2 onward                                    |
+| No missing values, no duplicates                                                     | Phase 2 skips imputation/dedup logic entirely                                        |
+| Money columns are strongly right-skewed                                              | Candidates for scaling/log-transform in Phase 2's model-specific preprocessing       |
+| `Goal_Met` is ~99.4%/0.6% imbalanced                                                 | Drives Phase 3's baseline metric choice and Phase 4's stratified validation strategy |
 
 **Next:** [Phase 2 — Feature Engineering](phase2.md), which builds the ratio features and encoding decisions this phase's findings point toward.

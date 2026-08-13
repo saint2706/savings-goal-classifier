@@ -10,13 +10,13 @@ Phases 1–5 build a supervised model of `Goal_Met`. Phase 6 asks a different ki
 
 ## Research questions & answers
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What spending personas emerge from clustering on expense-category proportions? | Three personas, separated almost entirely by two near-categorical signals already present in the raw data: **Persona 0** — Tier-1 residents with dependents (n=4,758); **Persona 1** — no dependents, any city tier (n=4,061); **Persona 2** — Tier-2/Tier-3 residents with dependents (n=11,181). Not a rich multivariate spending-mix discovery — `Education_Ratio` and `Rent_Ratio` alone account for essentially all the separation. |
-| 2 | How many clusters are statistically justified? | `k=3` — silhouette score peaks there (0.096) and declines for every larger `k`; the elbow in inertia is also past by `k=3`. Silhouette scores are uniformly low (< 0.1) across every `k` tested — the dataset supports only weak cluster structure overall. |
-| 3 | Do the resulting personas correlate meaningfully with `Goal_Met`? | Yes, sharply: **all 112 at-risk individuals (100%) fall in Persona 0**; Personas 1 and 2 have an at-risk rate of exactly 0% (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹). This independently corroborates Phase 5's SHAP finding that `City_Tier_Tier_1` pushes the model's decision score toward "at-risk." |
+| #   | Question                                                                       | Answer                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | What spending personas emerge from clustering on expense-category proportions? | Three personas, separated almost entirely by two near-categorical signals already present in the raw data: **Persona 0** — Tier-1 residents with dependents (n=4,758); **Persona 1** — no dependents, any city tier (n=4,061); **Persona 2** — Tier-2/Tier-3 residents with dependents (n=11,181). Not a rich multivariate spending-mix discovery — `Education_Ratio` and `Rent_Ratio` alone account for essentially all the separation. |
+| 2   | How many clusters are statistically justified?                                 | `k=3` — silhouette score peaks there (0.096) and declines for every larger `k`; the elbow in inertia is also past by `k=3`. Silhouette scores are uniformly low (< 0.1) across every `k` tested — the dataset supports only weak cluster structure overall.                                                                                                                                                                              |
+| 3   | Do the resulting personas correlate meaningfully with `Goal_Met`?              | Yes, sharply: **all 112 at-risk individuals (100%) fall in Persona 0**; Personas 1 and 2 have an at-risk rate of exactly 0% (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹). This independently corroborates Phase 5's SHAP finding that `City_Tier_Tier_1` pushes the model's decision score toward "at-risk."                                                                                                                                              |
 
-The rest of this document walks through *how* the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
 
 ---
 
@@ -72,9 +72,9 @@ total_var = pd.DataFrame(X_ratios, columns=ratio_cols).var()
 (between_var / total_var).sort_values(ascending=False)
 ```
 
-**What it does:** For each standardized feature, computes the variance *of the three persona means* relative to that feature's *total* variance across the whole population — a quick, single-number version of a one-way ANOVA's eta-squared, showing how much of each feature's spread is "explained" by which persona a row belongs to.
+**What it does:** For each standardized feature, computes the variance _of the three persona means_ relative to that feature's _total_ variance across the whole population — a quick, single-number version of a one-way ANOVA's eta-squared, showing how much of each feature's spread is "explained" by which persona a row belongs to.
 
-**Why this is necessary, not just a nice-to-have:** the persona profile table (Cell 5) shows *what* each persona's average ratios are, but with 11 features it's easy to eyeball small, meaningless differences as if they were the defining trait. This ranks features by how much they actually *drove* the clustering, which is a very different (and much shorter) list.
+**Why this is necessary, not just a nice-to-have:** the persona profile table (Cell 5) shows _what_ each persona's average ratios are, but with 11 features it's easy to eyeball small, meaningless differences as if they were the defining trait. This ranks features by how much they actually _drove_ the clustering, which is a very different (and much shorter) list.
 
 **Result:** `Education_Ratio` (share ≈ 1.74) and `Rent_Ratio` (share ≈ 1.12) dominate; every other feature's share is below 0.001 — three orders of magnitude smaller. The clustering is, in effect, a 2-feature clustering wearing an 11-feature label.
 
@@ -84,9 +84,9 @@ total_var = pd.DataFrame(X_ratios, columns=ratio_cols).var()
 
 ### Cell 9 (code) — Persona × `City_Tier` crosstab
 
-**What it does:** Cross-references the personas against columns that were never part of the clustering input (`Dependents`, `City_Tier`, `Income`, `Age`, and the raw share of individuals with `Education_Ratio == 0`) to explain *why* `Education_Ratio` and `Rent_Ratio` split the way they do.
+**What it does:** Cross-references the personas against columns that were never part of the clustering input (`Dependents`, `City_Tier`, `Income`, `Age`, and the raw share of individuals with `Education_Ratio == 0`) to explain _why_ `Education_Ratio` and `Rent_Ratio` split the way they do.
 
-**Result, and why it matters:** `Education_Ratio` is exactly 0 for every individual with 0 `Dependents` and positive otherwise — in this dataset it functions as a `Dependents == 0` indicator, not a continuous spending choice. `Rent_Ratio` separates `City_Tier_1` residents from `City_Tier_2`/`City_Tier_3` residents, which lines up exactly with Phase 2's and Phase 5's finding that `Rent_Ratio` has near-zero *within*-tier variance (plausibly because this dataset generates `Rent` as a roughly fixed proportion of income conditional on tier). `Income`, `Age`, and `Occupation` are flat across all three personas (mean age ≈ 41 in every persona; occupation split ≈25%/25%/25%/25% in every persona) — they play no role in the split at all.
+**Result, and why it matters:** `Education_Ratio` is exactly 0 for every individual with 0 `Dependents` and positive otherwise — in this dataset it functions as a `Dependents == 0` indicator, not a continuous spending choice. `Rent_Ratio` separates `City_Tier_1` residents from `City_Tier_2`/`City_Tier_3` residents, which lines up exactly with Phase 2's and Phase 5's finding that `Rent_Ratio` has near-zero _within_-tier variance (plausibly because this dataset generates `Rent` as a roughly fixed proportion of income conditional on tier). `Income`, `Age`, and `Occupation` are flat across all three personas (mean age ≈ 41 in every persona; occupation split ≈25%/25%/25%/25% in every persona) — they play no role in the split at all.
 
 **Conclusion for Question 1:** the three personas are **Persona 0 — Tier-1 residents with dependents**, **Persona 1 — no dependents (any tier)**, and **Persona 2 — Tier-2/Tier-3 residents with dependents**. This is a demographic/geographic split that was already fully present in the raw `Dependents` and `City_Tier` columns — clustering on 11 ratio features rediscovered a 2-column segmentation rather than surfacing a new, richer behavioral archetype. That's a legitimate, useful finding in its own right (see Question 3), just not the kind of discovery "spending persona" might suggest at first read.
 
@@ -123,10 +123,10 @@ Saves `results/persona_profiles.csv` (the full per-persona ratio-feature means) 
 
 ## What Phase 6 sets up for later phases
 
-| Finding | Where it gets used |
-|---|---|
-| All 112 at-risk individuals fall in the Tier-1-with-dependents persona | Headline targeting finding for Phase 7's business translation — corroborates Phase 5's SHAP result via an independent, unsupervised method |
+| Finding                                                                                                                                          | Where it gets used                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All 112 at-risk individuals fall in the Tier-1-with-dependents persona                                                                           | Headline targeting finding for Phase 7's business translation — corroborates Phase 5's SHAP result via an independent, unsupervised method                                             |
 | Clustering on 11 ratio features reduces to a 2-feature (`Education_Ratio`, `Rent_Ratio`) split, both proxies for columns already in the raw data | An honest scope note for Phase 7: a persona-based targeting layer would add complexity without adding signal beyond `City_Tier` and `Dependents`, which the Phase 4 model already uses |
-| Silhouette scores are uniformly low (< 0.1) across every `k` tested | A limitation worth stating plainly rather than overstating "3 natural personas" as strong multivariate structure |
+| Silhouette scores are uniformly low (< 0.1) across every `k` tested                                                                              | A limitation worth stating plainly rather than overstating "3 natural personas" as strong multivariate structure                                                                       |
 
 **Next:** [Phase 7 — Business Translation](phase7.md) (`07_business_translation.ipynb`), which converts this phase's and Phase 4/5's findings into stakeholder-facing recommendations and quantifies where the most actionable, recoverable savings potential sits.

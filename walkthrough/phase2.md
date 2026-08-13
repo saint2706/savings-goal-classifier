@@ -10,14 +10,14 @@ Phase 1 established two facts this phase acts on directly: raw expense columns a
 
 ## Research questions & answers
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | Do expense-to-income ratios generalize better across income levels than raw expense values? | Yes, decisively. Raw expense↔income correlation of 0.79–0.99 collapses to ≈0 once converted to `category / Income`; mean raw `Groceries` spend rises ~8× from the lowest to highest income quartile while `Groceries_Ratio` stays flat at ≈0.125 in every quartile. |
-| 2 | How should `Occupation` and `City_Tier` be encoded? | Both one-hot encoded. `Occupation` is purely nominal (mean income is ~identical across all 4 groups). `City_Tier` has a real, monotonic cost-of-living order (`Rent_Ratio` steps 0.30 → 0.20 → 0.15 from Tier_1 to Tier_3) but stays one-hot by default given only 3 levels; ordinal encoding is a defensible cheaper alternative for tree-based models only. |
-| 3 | Which features require scaling, and does that depend on the downstream model? | `Income` (and to a lesser extent `Age`) need scaling for linear/distance/NN models (Logistic Regression, SVM, KNN, neural nets); tree-based models (Decision Tree, Random Forest, XGBoost) are scale-invariant, so scaling is unnecessary — but harmless — for them. |
-| 4 | Are any features redundant or highly collinear? | Minimal redundancy after the ratio transform — every VIF ≈ 1.0 except `Dependents`/`Education_Ratio` at ≈1.73, well below any concerning threshold (5, let alone 10). No features need to be dropped. |
+| #   | Question                                                                                    | Answer                                                                                                                                                                                                                                                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Do expense-to-income ratios generalize better across income levels than raw expense values? | Yes, decisively. Raw expense↔income correlation of 0.79–0.99 collapses to ≈0 once converted to `category / Income`; mean raw `Groceries` spend rises ~8× from the lowest to highest income quartile while `Groceries_Ratio` stays flat at ≈0.125 in every quartile.                                                                                           |
+| 2   | How should `Occupation` and `City_Tier` be encoded?                                         | Both one-hot encoded. `Occupation` is purely nominal (mean income is ~identical across all 4 groups). `City_Tier` has a real, monotonic cost-of-living order (`Rent_Ratio` steps 0.30 → 0.20 → 0.15 from Tier_1 to Tier_3) but stays one-hot by default given only 3 levels; ordinal encoding is a defensible cheaper alternative for tree-based models only. |
+| 3   | Which features require scaling, and does that depend on the downstream model?               | `Income` (and to a lesser extent `Age`) need scaling for linear/distance/NN models (Logistic Regression, SVM, KNN, neural nets); tree-based models (Decision Tree, Random Forest, XGBoost) are scale-invariant, so scaling is unnecessary — but harmless — for them.                                                                                          |
+| 4   | Are any features redundant or highly collinear?                                             | Minimal redundancy after the ratio transform — every VIF ≈ 1.0 except `Dependents`/`Education_Ratio` at ≈1.73, well below any concerning threshold (5, let alone 10). No features need to be dropped.                                                                                                                                                         |
 
-The rest of this document walks through *how* the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
 
 ---
 
@@ -60,7 +60,7 @@ df.head()
 
 ### Cell 2 (markdown) — "Expense-to-income ratios vs. raw expense values"
 
-Frames the hypothesis under test, restating Phase 1's finding that raw expenses correlate with income at up to r = 0.99: dividing each expense by `Income` should strip out the income-driven component and leave the actual *spending mix* signal behind.
+Frames the hypothesis under test, restating Phase 1's finding that raw expenses correlate with income at up to r = 0.99: dividing each expense by `Income` should strip out the income-driven component and leave the actual _spending mix_ signal behind.
 
 ### Cell 3 (code) — Building ratio features and comparing correlation with income
 
@@ -80,7 +80,7 @@ comparison["abs_reduction"] = comparison["raw_corr_with_income"].abs() - compari
 comparison.sort_values("raw_corr_with_income", ascending=False)
 ```
 
-**What it does:** Creates one `{category}_Ratio` column per expense category (`expense / Income`), then computes each *raw* column's correlation with `Income` side by side with each *ratio* column's correlation with `Income`. The `ratio_corr.index = expense_cols` line re-labels the ratio series with the plain category names so the two series can be concatenated into one directly comparable table.
+**What it does:** Creates one `{category}_Ratio` column per expense category (`expense / Income`), then computes each _raw_ column's correlation with `Income` side by side with each _ratio_ column's correlation with `Income`. The `ratio_corr.index = expense_cols` line re-labels the ratio series with the plain category names so the two series can be concatenated into one directly comparable table.
 
 **Why:** This is the actual experiment behind Question 1, not just an assertion — rather than claiming ratios generalize better, it measures the before/after correlation with income directly. `corrwith` is used instead of building a full correlation matrix because only one relationship (each column vs. `Income`) is needed here, which is both faster and produces exactly the comparison table required without extra columns to filter out.
 
@@ -94,9 +94,9 @@ quartile_means.columns = ["Mean raw Groceries (₹)", "Mean Groceries_Ratio"]
 quartile_means
 ```
 
-**What it does:** Buckets individuals into four equal-sized income quartiles using `pd.qcut` (quantile-based cuts, so each bucket has ~5,000 people regardless of income's skew), then compares the mean *raw* `Groceries` spend against the mean `Groceries_Ratio` within each bucket. `observed=True` in the `groupby` avoids pandas materializing empty categorical combinations that don't apply here.
+**What it does:** Buckets individuals into four equal-sized income quartiles using `pd.qcut` (quantile-based cuts, so each bucket has ~5,000 people regardless of income's skew), then compares the mean _raw_ `Groceries` spend against the mean `Groceries_Ratio` within each bucket. `observed=True` in the `groupby` avoids pandas materializing empty categorical combinations that don't apply here.
 
-**Why:** The correlation numbers in Cell 3 are already conclusive, but a single aggregate statistic can be hard to build intuition from. Breaking it down by income quartile turns "correlation ≈ 0" into something directly readable: raw grocery spend should visibly scale up across quartiles while the ratio should look flat — a concrete, inspectable version of the abstract claim. `pd.qcut` (quantile cuts) is used rather than `pd.cut` (equal-width bins) specifically *because* `Income` is right-skewed (per Phase 1) — equal-width bins on skewed data would put almost everyone in the first bin and leave the rest nearly empty.
+**Why:** The correlation numbers in Cell 3 are already conclusive, but a single aggregate statistic can be hard to build intuition from. Breaking it down by income quartile turns "correlation ≈ 0" into something directly readable: raw grocery spend should visibly scale up across quartiles while the ratio should look flat — a concrete, inspectable version of the abstract claim. `pd.qcut` (quantile cuts) is used rather than `pd.cut` (equal-width bins) specifically _because_ `Income` is right-skewed (per Phase 1) — equal-width bins on skewed data would put almost everyone in the first bin and leave the rest nearly empty.
 
 ### Cell 5 (code) — Visualizing the quartile comparison
 
@@ -184,7 +184,7 @@ fig.tight_layout()
 plt.show()
 ```
 
-**What it does:** Computes and visualizes the full pairwise correlation matrix across the engineered numeric feature set (`Income`, `Age`, `Dependents`, and the 11 ratio columns) — the same style of heatmap as Phase 1 Cell 16, but now over the *post-engineering* features rather than the raw ones.
+**What it does:** Computes and visualizes the full pairwise correlation matrix across the engineered numeric feature set (`Income`, `Age`, `Dependents`, and the 11 ratio columns) — the same style of heatmap as Phase 1 Cell 16, but now over the _post-engineering_ features rather than the raw ones.
 
 **Why:** This is the direct follow-up to Phase 1's finding that raw expenses were highly collinear with each other — the natural question is whether converting to ratios (Question 1) also fixed that problem, or only fixed the income-correlation problem. Running the same diagnostic again, on the new features, is what actually answers that rather than assuming it.
 
@@ -201,11 +201,11 @@ vif = pd.Series(
 vif.to_frame()
 ```
 
-**What it does:** Computes the Variance Inflation Factor for every feature — for each one, how well it can be linearly predicted from *all the other* features combined (a VIF of 1.0 means "not predictable from the others at all"; conventionally, 5 or 10 is treated as a concern threshold).
+**What it does:** Computes the Variance Inflation Factor for every feature — for each one, how well it can be linearly predicted from _all the other_ features combined (a VIF of 1.0 means "not predictable from the others at all"; conventionally, 5 or 10 is treated as a concern threshold).
 
-**Why VIF, and not just the correlation heatmap:** Pairwise correlation (Cell 12) only catches redundancy between *two* features at a time. A feature can look uncorrelated with every other feature individually while still being almost perfectly predictable from a *combination* of several others — VIF catches that multivariate case, which is exactly the kind of collinearity a pairwise heatmap is structurally blind to.
+**Why VIF, and not just the correlation heatmap:** Pairwise correlation (Cell 12) only catches redundancy between _two_ features at a time. A feature can look uncorrelated with every other feature individually while still being almost perfectly predictable from a _combination_ of several others — VIF catches that multivariate case, which is exactly the kind of collinearity a pairwise heatmap is structurally blind to.
 
-**Why `sm.add_constant` specifically:** `variance_inflation_factor` from `statsmodels` computes each feature's VIF by regressing it on the rest of the design matrix — and that regression needs an intercept term to be meaningful. Without `sm.add_constant`, the underlying regression is forced through the origin, which inflates every VIF score by an amount related to each feature's distance from zero — so features with large, non-zero means (like `Income`, in the tens of thousands) would show artificially huge VIFs that reflect their *scale*, not genuine collinearity. Adding the constant column removes that artifact and makes the VIF numbers a true measure of multicollinearity. This is a well-known `statsmodels` sharp edge worth calling out explicitly, since skipping it silently produces misleading results rather than an error.
+**Why `sm.add_constant` specifically:** `variance_inflation_factor` from `statsmodels` computes each feature's VIF by regressing it on the rest of the design matrix — and that regression needs an intercept term to be meaningful. Without `sm.add_constant`, the underlying regression is forced through the origin, which inflates every VIF score by an amount related to each feature's distance from zero — so features with large, non-zero means (like `Income`, in the tens of thousands) would show artificially huge VIFs that reflect their _scale_, not genuine collinearity. Adding the constant column removes that artifact and makes the VIF numbers a true measure of multicollinearity. This is a well-known `statsmodels` sharp edge worth calling out explicitly, since skipping it silently produces misleading results rather than an error.
 
 **Answer to Q4:** the correlation heatmap shows only one pair worth flagging (`Dependents`/`Education_Ratio` at r ≈ 0.65), and the properly-computed VIF confirms it quantitatively — every feature scores ≈1.0 except `Dependents` and `Education_Ratio` at ≈1.73, both comfortably under the standard concern threshold. No features need to be dropped, though the `Dependents`/`Education_Ratio` link is worth watching in Phase 5's explainability step since their individual contributions may partially trade off against each other.
 
@@ -236,11 +236,11 @@ engineered.head()
 
 ## What Phase 2 sets up for later phases
 
-| Decision made here | Where it gets used |
-|---|---|
-| Raw expenses replaced with income ratios | The `engineered` feature matrix built in Cell 19, used as-is starting in Phase 3 |
-| `Occupation` and `City_Tier` one-hot encoded | Same `engineered` matrix; ordinal `City_Tier` noted as a tree-model-only alternative if Phase 4 wants to compare |
-| `Income`/`Age` flagged as needing scaling for some models | Phase 3/4 build both a scaled and unscaled version of `engineered` depending on model family |
-| No features dropped for collinearity | Phase 4's full feature set carries forward unchanged; the mild `Dependents`↔`Education_Ratio` link is flagged for Phase 5's explainability review |
+| Decision made here                                        | Where it gets used                                                                                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raw expenses replaced with income ratios                  | The `engineered` feature matrix built in Cell 19, used as-is starting in Phase 3                                                                  |
+| `Occupation` and `City_Tier` one-hot encoded              | Same `engineered` matrix; ordinal `City_Tier` noted as a tree-model-only alternative if Phase 4 wants to compare                                  |
+| `Income`/`Age` flagged as needing scaling for some models | Phase 3/4 build both a scaled and unscaled version of `engineered` depending on model family                                                      |
+| No features dropped for collinearity                      | Phase 4's full feature set carries forward unchanged; the mild `Dependents`↔`Education_Ratio` link is flagged for Phase 5's explainability review |
 
 **Next:** [Phase 3 — Baseline](phase3.md) (`03_baseline.ipynb`), which trains a majority-class baseline and a plain logistic regression on this feature set, informed directly by Phase 1's ~99.4%/0.6% class imbalance finding.

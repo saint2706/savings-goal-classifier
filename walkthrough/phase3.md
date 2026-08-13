@@ -4,18 +4,18 @@
 **Notebook:** [`notebooks/03_baseline.ipynb`](../notebooks/03_baseline.ipynb)
 **Builds on:** [Phase 2 — Feature Engineering](phase2.md)
 
-Phase 2 produced a clean, leakage-free feature matrix — income ratios in place of raw expenses, `Occupation`/`City_Tier` one-hot encoded. Phase 3 asks the question that has to be answered before any "real" model comparison is meaningful: what does the *worst* reasonable model score, and what does the *simplest* real model score, without any of the imbalance-handling machinery Phase 4 will bring in? Both numbers exist to be beaten — Phase 4 only means something once there's a floor to compare against.
+Phase 2 produced a clean, leakage-free feature matrix — income ratios in place of raw expenses, `Occupation`/`City_Tier` one-hot encoded. Phase 3 asks the question that has to be answered before any "real" model comparison is meaningful: what does the _worst_ reasonable model score, and what does the _simplest_ real model score, without any of the imbalance-handling machinery Phase 4 will bring in? Both numbers exist to be beaten — Phase 4 only means something once there's a floor to compare against.
 
 ---
 
 ## Research questions & answers
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What accuracy/F1 does a majority-class or simple single-rule baseline achieve? | ~99.4% accuracy, but 0.0 precision/recall/F1 on the minority class (`Goal_Met = 0`) and ~0.499 macro-F1. Accuracy alone is not a usable metric for this problem. |
-| 2 | What does plain logistic regression achieve using only income and 1–2 expense ratios? | ~99.4% accuracy, ~0.499 macro-F1 — statistically indistinguishable from the baseline. The model learns the right coefficient signs but its default 0.5 threshold almost never predicts the minority class under this level of imbalance. |
+| #   | Question                                                                              | Answer                                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | What accuracy/F1 does a majority-class or simple single-rule baseline achieve?        | ~99.4% accuracy, but 0.0 precision/recall/F1 on the minority class (`Goal_Met = 0`) and ~0.499 macro-F1. Accuracy alone is not a usable metric for this problem.                                                                         |
+| 2   | What does plain logistic regression achieve using only income and 1–2 expense ratios? | ~99.4% accuracy, ~0.499 macro-F1 — statistically indistinguishable from the baseline. The model learns the right coefficient signs but its default 0.5 threshold almost never predicts the minority class under this level of imbalance. |
 
-The rest of this document walks through *how* the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
 
 ---
 
@@ -111,9 +111,9 @@ pred_dummy = dummy.predict(X_test)
 results = [evaluate("Majority-class baseline", y_test, pred_dummy)]
 ```
 
-**What it does:** Defines a reusable `evaluate()` helper — used for every model in this notebook — that reports accuracy plus precision/recall/F1 broken out *per class*, alongside macro-F1. Fits `scikit-learn`'s `DummyClassifier(strategy="most_frequent")`, which is exactly the "simple single-rule baseline" the question asks about: with a 99.4%/0.6% split, "predict the majority class" and "always predict `Goal_Met = 1`" are the same rule.
+**What it does:** Defines a reusable `evaluate()` helper — used for every model in this notebook — that reports accuracy plus precision/recall/F1 broken out _per class_, alongside macro-F1. Fits `scikit-learn`'s `DummyClassifier(strategy="most_frequent")`, which is exactly the "simple single-rule baseline" the question asks about: with a 99.4%/0.6% split, "predict the majority class" and "always predict `Goal_Met = 1`" are the same rule.
 
-**Why report per-class metrics, not just accuracy:** Accuracy alone (~99.4%) makes this do-nothing baseline look almost perfect — exactly the trap Phase 1's class-balance finding warned about. Breaking metrics out by class shows what accuracy hides: class 0 (`Goal not met`) precision, recall, and F1 are all *zero* — the baseline never once predicts the minority class, making it structurally incapable of catching the exact at-risk customers the Phase 0 business decision cares about. Macro-F1 (which weights both classes' F1 equally, regardless of class size) collapses this failure into one number that a weighted average or plain accuracy would hide.
+**Why report per-class metrics, not just accuracy:** Accuracy alone (~99.4%) makes this do-nothing baseline look almost perfect — exactly the trap Phase 1's class-balance finding warned about. Breaking metrics out by class shows what accuracy hides: class 0 (`Goal not met`) precision, recall, and F1 are all _zero_ — the baseline never once predicts the minority class, making it structurally incapable of catching the exact at-risk customers the Phase 0 business decision cares about. Macro-F1 (which weights both classes' F1 equally, regardless of class size) collapses this failure into one number that a weighted average or plain accuracy would hide.
 
 ### Cell 6 (code) — Confusion matrix
 
@@ -167,19 +167,19 @@ results.append(evaluate("Plain LogisticRegression (Income + 2 ratios)", y_test, 
 
 Plots accuracy and macro-F1 for both models side by side, next to the logistic regression's own confusion matrix (same layout as the baseline's, for direct visual comparison).
 
-**Answer to Q2:** plain logistic regression scores ~99.4% accuracy and ~0.499 macro-F1 — statistically indistinguishable from the majority-class baseline. Its confusion matrix shows it predicts class 0 for at most one of the 22 true at-risk test individuals. The fitted coefficients for `Loan_Repayment_Ratio` and `Rent_Ratio` are both strongly negative — the model *did* learn the right relationship — but with no `class_weight` or resampling, its default 0.5 probability threshold is dominated by the 99.4% majority class and almost never crosses into predicting the minority one.
+**Answer to Q2:** plain logistic regression scores ~99.4% accuracy and ~0.499 macro-F1 — statistically indistinguishable from the majority-class baseline. Its confusion matrix shows it predicts class 0 for at most one of the 22 true at-risk test individuals. The fitted coefficients for `Loan_Repayment_Ratio` and `Rent_Ratio` are both strongly negative — the model _did_ learn the right relationship — but with no `class_weight` or resampling, its default 0.5 probability threshold is dominated by the 99.4% majority class and almost never crosses into predicting the minority one.
 
-This notebook already shows *why* Phase 4 can't skip imbalance handling: a plain, imbalance-unaware classifier — however reasonable its learned coefficients — cannot clear the baseline floor on its own.
+This notebook already shows _why_ Phase 4 can't skip imbalance handling: a plain, imbalance-unaware classifier — however reasonable its learned coefficients — cannot clear the baseline floor on its own.
 
 ---
 
 ## What Phase 3 sets up for later phases
 
-| Finding | Where it gets used |
-|---|---|
-| Majority-class baseline: ~99.4% accuracy, ~0.499 macro-F1, 0.0 recall on the minority class | The floor every Phase 4 model must clear; accuracy is retired as a decision metric in favor of macro-F1 |
-| Plain logistic regression does not beat the baseline under this imbalance | Justifies Phase 4's use of `class_weight`, resampling, and/or threshold tuning rather than treating them as optional extras |
-| `Loan_Repayment_Ratio` and `Rent_Ratio` are the two expense ratios most associated with `Goal_Met` | A candidate signal for Phase 5's explainability review, to check whether the winning model agrees |
-| The stratified 80/20 train/test split (`random_state=42`) | Reused as the basis for Phase 4's stratified k-fold cross-validation |
+| Finding                                                                                            | Where it gets used                                                                                                          |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Majority-class baseline: ~99.4% accuracy, ~0.499 macro-F1, 0.0 recall on the minority class        | The floor every Phase 4 model must clear; accuracy is retired as a decision metric in favor of macro-F1                     |
+| Plain logistic regression does not beat the baseline under this imbalance                          | Justifies Phase 4's use of `class_weight`, resampling, and/or threshold tuning rather than treating them as optional extras |
+| `Loan_Repayment_Ratio` and `Rent_Ratio` are the two expense ratios most associated with `Goal_Met` | A candidate signal for Phase 5's explainability review, to check whether the winning model agrees                           |
+| The stratified 80/20 train/test split (`random_state=42`)                                          | Reused as the basis for Phase 4's stratified k-fold cross-validation                                                        |
 
 **Next:** [Phase 4 — Model Comparison](phase4.md) (`04_model_comparison.ipynb`), which compares 5–7 model families under stratified cross-validation and imbalance-aware handling, evaluated against the macro-F1 floor this phase established.

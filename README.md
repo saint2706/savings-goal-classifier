@@ -19,28 +19,28 @@ The project is framed as a decision-support tool for a hypothetical fintech / sa
 
 ### Column reference
 
-| Column | Description | Role |
-|---|---|---|
-| `Income` | Monthly income, currency units (verify ₹ in raw file) | Feature |
-| `Age` | Age of individual | Feature |
-| `Dependents` | Number of dependents | Feature |
-| `Occupation` | Employment / job category | Feature (categorical) |
-| `City_Tier` | Tier 1 / Tier 2 / Tier 3 living area | Feature (categorical) |
-| `Rent`, `Loan_Repayment`, `Insurance`, `Groceries`, `Transport`, `Eating_Out`, `Entertainment`, `Utilities`, `Healthcare`, `Education`, `Miscellaneous` | Monthly spend per category | Features |
-| `Desired_Savings_Percentage` | Target % of income the person wants to save | Used to derive target — **excluded from feature set** |
-| `Desired_Savings` | Target absolute monthly savings amount | Used to derive target — **excluded from feature set** |
-| `Disposable_Income` | Income minus all expenses | Used to derive target — **excluded from feature set** |
-| `Potential_Savings_*` (8 columns, one per expense category) | Estimated recoverable savings per category | Feature / exploratory use |
+| Column                                                                                                                                                  | Description                                           | Role                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| `Income`                                                                                                                                                | Monthly income, currency units (verify ₹ in raw file) | Feature                                               |
+| `Age`                                                                                                                                                   | Age of individual                                     | Feature                                               |
+| `Dependents`                                                                                                                                            | Number of dependents                                  | Feature                                               |
+| `Occupation`                                                                                                                                            | Employment / job category                             | Feature (categorical)                                 |
+| `City_Tier`                                                                                                                                             | Tier 1 / Tier 2 / Tier 3 living area                  | Feature (categorical)                                 |
+| `Rent`, `Loan_Repayment`, `Insurance`, `Groceries`, `Transport`, `Eating_Out`, `Entertainment`, `Utilities`, `Healthcare`, `Education`, `Miscellaneous` | Monthly spend per category                            | Features                                              |
+| `Desired_Savings_Percentage`                                                                                                                            | Target % of income the person wants to save           | Used to derive target — **excluded from feature set** |
+| `Desired_Savings`                                                                                                                                       | Target absolute monthly savings amount                | Used to derive target — **excluded from feature set** |
+| `Disposable_Income`                                                                                                                                     | Income minus all expenses                             | Used to derive target — **excluded from feature set** |
+| `Potential_Savings_*` (8 columns, one per expense category)                                                                                             | Estimated recoverable savings per category            | Feature / exploratory use                             |
 
 ## 3. Target Variable
 
-```
+```text
 Goal_Met = 1 if Disposable_Income >= Desired_Savings else 0
 Goal_Met = 0 otherwise
 ```
 
 **⚠️ Data leakage constraint (read before modifying the feature set):**
-`Disposable_Income` and `Desired_Savings` are used to *construct* `Goal_Met`. They must **never** be included as model input features — doing so lets the model trivially reconstruct the label rather than predict it, producing artificially perfect accuracy that has no real-world meaning. The legitimate feature set is limited to columns known independently of the target: `Income`, `Age`, `Dependents`, `Occupation`, `City_Tier`, and the raw expense category columns (optionally converted to income ratios).
+`Disposable_Income` and `Desired_Savings` are used to _construct_ `Goal_Met`. They must **never** be included as model input features — doing so lets the model trivially reconstruct the label rather than predict it, producing artificially perfect accuracy that has no real-world meaning. The legitimate feature set is limited to columns known independently of the target: `Income`, `Age`, `Dependents`, `Occupation`, `City_Tier`, and the raw expense category columns (optionally converted to income ratios).
 
 ## 4. Research Questions
 
@@ -53,9 +53,10 @@ Every question below maps to one phase of the project pipeline (Section 5). Ques
 - **What is the precise, one-sentence definition of the target variable?**
   `Goal_Met = 1` if `Disposable_Income >= Desired_Savings`, else `0` — i.e., a binary label that is `1` when an individual's actual leftover income (after all recorded expenses) is enough to cover the monthly savings amount they themselves said they want to save (see Section 3 for the full leakage discussion).
 - **Is the primary task classification or regression, and why?**
-  **Binary classification.** The business decision this project informs is a yes/no call — is this person on-track or not, so the pipeline can flag them for a marketing/outreach decision — not a request for a precise savings-shortfall forecast. A regression on `Disposable_Income` or on the savings gap would be a reasonable *follow-up* analysis, but it is not what the stated business decision requires, and the target as defined is already binary by construction — framing it as regression would mean predicting a continuous quantity and then re-thresholding it, which throws away information about *why* that threshold was chosen and complicates evaluation against the yes/no decision the business actually needs to make.
+  **Binary classification.** The business decision this project informs is a yes/no call — is this person on-track or not, so the pipeline can flag them for a marketing/outreach decision — not a request for a precise savings-shortfall forecast. A regression on `Disposable_Income` or on the savings gap would be a reasonable _follow-up_ analysis, but it is not what the stated business decision requires, and the target as defined is already binary by construction — framing it as regression would mean predicting a continuous quantity and then re-thresholding it, which throws away information about _why_ that threshold was chosen and complicates evaluation against the yes/no decision the business actually needs to make.
 
 ### Phase 1 — Data Understanding
+
 - What does each column mean, and what unit/time period does it represent?
 - What is the distribution of income, expenses, and savings — skew, outliers, implausible values (e.g., expenses exceeding income)?
 - Are there missing values or duplicate rows, and how are they handled?
@@ -64,41 +65,49 @@ Every question below maps to one phase of the project pipeline (Section 5). Ques
 - What is the class balance of `Goal_Met` once leakage columns are excluded?
 
 ### Phase 2 — Feature Engineering
+
 - Do expense-to-income ratios generalize better across income levels than raw expense values?
 - How should `Occupation` and `City_Tier` be encoded?
 - Which features require scaling, and does that depend on the downstream model?
 - Are any features redundant or highly collinear?
 
 ### Phase 3 — Baseline
+
 - What accuracy/F1 does a majority-class or simple single-rule baseline achieve?
 - What does plain logistic regression achieve using only income and 1–2 expense ratios?
 
 ### Phase 4 — Model Comparison
+
 - Which 5–7 model families are appropriate given the data (n=20,000, mixed numeric/categorical, moderate dimensionality)?
 - What validation strategy fits the class balance found in Phase 1 (e.g., stratified k-fold)?
 - What hyperparameter search method is used, and what parameters move performance most?
 - Given the business framing, is precision or recall more important — i.e., is a false negative (missing someone who would meet their goal) more costly than a false positive?
 
 ### Phase 5 — Explainability
+
 - Which features matter most globally for the winning model (SHAP / permutation importance)?
 - Are there notable interaction effects (e.g., does `City_Tier` change how much `Dependents` reduces savings potential)?
 - Can individual predictions be explained in plain business language?
 
 ### Phase 6 — Unsupervised Extension
+
 - What spending personas emerge from clustering on expense-category proportions?
 - How many clusters are statistically justified (elbow method, silhouette score)?
 - Do the resulting personas correlate meaningfully with `Goal_Met`?
 
 ### Phase 7 — Business Translation
+
 - What are the 3–5 most actionable findings, stated as recommendations rather than statistics?
 - Which expense category carries the most unrealized (potential) savings across the population?
 - Where does the model fail or lose reliability — what should a stakeholder be told before acting on it?
 
 ### Phase 8 — Reporting
-- Does the final write-up explain *reasoning* (e.g., why leakage columns were excluded, why a given metric was chosen) rather than just reporting numbers?
+
+- Does the final write-up explain _reasoning_ (e.g., why leakage columns were excluded, why a given metric was chosen) rather than just reporting numbers?
 - Which 3–4 visualizations communicate the findings fastest to a non-technical reader?
 
 ### Bonus / extension questions (not required for core deliverable)
+
 - Can `City_Tier` be predicted from spending mix alone?
 - Can `Occupation` be predicted from income + expense pattern?
 - Does a lifecycle pattern exist between age and discretionary spending (entertainment, eating out)?
@@ -112,7 +121,8 @@ target_variable:
   name: Goal_Met
   definition: "1 if Disposable_Income >= Desired_Savings else 0"
   derived_from: [Disposable_Income, Desired_Savings]
-  leakage_excluded_features: [Disposable_Income, Desired_Savings, Desired_Savings_Percentage]
+  leakage_excluded_features:
+    [Disposable_Income, Desired_Savings, Desired_Savings_Percentage]
 questions:
   - id: P0-Q1
     phase: framing
@@ -224,7 +234,7 @@ questions:
 
 ## 5. Methodology / Pipeline
 
-```
+```text
 data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
         → Phase 3 (baseline) → Phase 4 (model comparison, 5-7 models, CV + tuning)
         → Phase 5 (SHAP explainability) → Phase 6 (clustering / personas)
@@ -233,7 +243,7 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 
 ## 6. Repository Structure
 
-```
+```text
 .
 ├── dataset/
 │   └── data.csv
@@ -283,23 +293,23 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-*(Phase 8's final stakeholder write-up is still to be produced; the modeling, explainability, and business-translation results below are final.)*
+> Phase 8's final stakeholder write-up is still to be produced; the modeling, explainability, and business-translation results below are final.
 
-**Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect *cross-validated* recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
+**Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect _cross-validated_ recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
 
 **Top 3 SHAP features (Phase 5):** `Loan_Repayment_Ratio` (dominant, >2× the next feature), `Education_Ratio`, `City_Tier_Tier_1`.
 
 The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for every candidate — not test-set numbers — because Phase 4 selects its winning model from cross-validated predictions specifically to avoid biasing the reported score of whichever model happens to look best on the held-out test set. See [`walkthrough/phase4.md`](walkthrough/phase4.md) for why, and for the winning model's separate, single, final test-set evaluation.
 
-| Model | CV Accuracy | CV F1 (macro) | Notes |
-|---|---|---|---|
-| Majority baseline | 0.9944 | 0.4986 | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class |
-| Decision Tree | 0.9947 | 0.8028 | `class_weight="balanced"`; `recall_0 = 0.73` — class weighting alone under-serves the minority class in a single tree |
-| XGBoost | 0.9969 | 0.8255 | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula; `recall_0 = 0.51` |
-| Random Forest | 0.9965 | 0.8436 | `class_weight="balanced"`; `recall_0 = 0.69` — same limitation as the decision tree, only partly offset by ensembling |
-| Neural Net (MLP) | 0.9959 | 0.8579 | `RandomOverSampler`-based imbalance handling; `recall_0 = 0.93` — close, but not perfect, under cross-validation |
-| Logistic Regression | 0.9970 | 0.8940 | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0` |
-| SVM (Linear) | 0.9979 | **0.9220** | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
+| Model               | CV Accuracy | CV F1 (macro) | Notes                                                                                                                                                                                       |
+| ------------------- | ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Majority baseline   | 0.9944      | 0.4986        | Predicts `Goal_Met = 1` for everyone; 0 precision/recall/F1 on the minority class                                                                                                           |
+| Decision Tree       | 0.9947      | 0.8028        | `class_weight="balanced"`; `recall_0 = 0.73` — class weighting alone under-serves the minority class in a single tree                                                                       |
+| XGBoost             | 0.9969      | 0.8255        | Search preferred `scale_pos_weight=1` (no reweighting) over the textbook formula; `recall_0 = 0.51`                                                                                         |
+| Random Forest       | 0.9965      | 0.8436        | `class_weight="balanced"`; `recall_0 = 0.69` — same limitation as the decision tree, only partly offset by ensembling                                                                       |
+| Neural Net (MLP)    | 0.9959      | 0.8579        | `RandomOverSampler`-based imbalance handling; `recall_0 = 0.93` — close, but not perfect, under cross-validation                                                                            |
+| Logistic Regression | 0.9970      | 0.8940        | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0`                                                                                                                                 |
+| SVM (Linear)        | 0.9979      | **0.9220**    | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
 
 **Spending personas (Phase 6):** `k=3` (silhouette-selected) — Persona 0, Tier-1 residents with dependents (n=4,758); Persona 1, no dependents, any tier (n=4,061); Persona 2, Tier-2/Tier-3 residents with dependents (n=11,181). **All 112 at-risk individuals fall in Persona 0** (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹), independently corroborating Phase 5's SHAP finding that `City_Tier_Tier_1` drives the model toward "at-risk." See [`walkthrough/phase6.md`](walkthrough/phase6.md).
 
@@ -319,4 +329,4 @@ Dataset: refer to the original Kaggle listing for license terms.
 
 ## 11. Citation
 
-Dataset: shriyashjagtap, *Indian Personal Finance and Spending Habits*, Kaggle. https://www.kaggle.com/datasets/shriyashjagtap/indian-personal-finance-and-spending-habits
+Dataset: shriyashjagtap, _Indian Personal Finance and Spending Habits_, Kaggle. <https://www.kaggle.com/datasets/shriyashjagtap/indian-personal-finance-and-spending-habits>
