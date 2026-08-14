@@ -275,7 +275,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase4.md
 │   ├── phase5.md
 │   ├── phase6.md
-│   └── phase7.md
+│   ├── phase7.md
+│   └── phase8.md
 ├── README.md
 └── requirements.txt
 ```
@@ -293,7 +294,7 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-> Phase 8's final stakeholder write-up is still to be produced; the modeling, explainability, and business-translation results below are final.
+> Phase 8's final stakeholder write-up is complete — see [`walkthrough/phase8.md`](walkthrough/phase8.md) for the plain-language report, the reasoning trail behind every modeling decision, and the 3-chart visual appendix. The modeling, explainability, and business-translation results below are final.
 
 **Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect _cross-validated_ recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
 
@@ -314,6 +315,8 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 **Spending personas (Phase 6):** `k=3` (silhouette-selected) — Persona 0, Tier-1 residents with dependents (n=4,758); Persona 1, no dependents, any tier (n=4,061); Persona 2, Tier-2/Tier-3 residents with dependents (n=11,181). **All 112 at-risk individuals fall in Persona 0** (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹), independently corroborating Phase 5's SHAP finding that `City_Tier_Tier_1` drives the model toward "at-risk." See [`walkthrough/phase6.md`](walkthrough/phase6.md).
 
 **Business translation (Phase 7):** every one of the 112 at-risk individuals lives in a Tier-1 city — the single highest-leverage targeting signal. `Groceries` carries the most unrealized savings potential (₹18.2M/month aggregate, ~2× the next category). For 99.1% of at-risk individuals, addressable savings across all 8 tracked categories already exceeds their shortfall — the gap is recoverable, not structural. See [`walkthrough/phase7.md`](walkthrough/phase7.md) and [`results/business_recommendations.csv`](results/business_recommendations.csv) for the full set of five recommendations and their supporting evidence.
+
+**Final report (Phase 8):** [`walkthrough/phase8.md`](walkthrough/phase8.md) assembles the above into a stakeholder-facing write-up — an executive summary, a reasoning trail explaining *why* each modeling decision was made (not just its score), and a 3-chart visual appendix drawn from `results/`.
 
 ## 9. Limitations
 
