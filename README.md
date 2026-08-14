@@ -330,3 +330,33 @@ Dataset: refer to the original Kaggle listing for license terms.
 ## 11. Citation
 
 Dataset: shriyashjagtap, _Indian Personal Finance and Spending Habits_, Kaggle. <https://www.kaggle.com/datasets/shriyashjagtap/indian-personal-finance-and-spending-habits>
+
+## 12. Course Submission Information
+
+This project is submitted for **Advanced Machine Learning for Business Transformation (AMLBT)**, Goa Institute of Management — Big Data Analytics, per the instructor-provided report template and instructions in [`project/main.tex`](project/main.tex).
+
+### Team
+
+| Name             | Student ID | Email                             |
+| ---------------- | ---------- | ---------------------------------- |
+| Rishabh Agrawal  | B2025100   | rishabh.agrawal25b@gim.ac.in       |
+| Prisha Kothari   | B2026092   | prisha.kothari2026b@gim.ac.in      |
+| Akshit Kashyap   | B2026059   | akshit.kashyap2026b@gim.ac.in      |
+
+### Project Report
+
+The IEEE-format project report (max 6 pages including references, built from the instructor's Overleaf IEEE template) is maintained at [`project/main.tex`](project/main.tex). It follows the instructor's Evaluation Rubric — Relevance, Significance, Originality, Achievement, Writing, Reproducibility, and Technical Quality — and its Reproducibility section links back to this repository, whose [Setup & Usage](#7-setup--usage) steps (clone, `pip install -r requirements.txt`, run the phase notebooks in order) are the canonical replication instructions.
+
+### Submission Deadlines
+
+All deadlines are 11:59 PM AoE.
+
+| Milestone                 | Date              |
+| -------------------------- | ----------------- |
+| First Review Submission    | 9 October 2026    |
+| Second Review Submission   | 20 November 2026  |
+| Final Submission           | 4 December 2026   |
+
+### AI Use Declaration
+
+The course's AI-use policy caps AI-generated content in the **written project report** (`project/main.tex`) at 20%, as measured by Turnitin. That threshold governs the report's prose specifically — it does not extend to code, notebooks, or supporting engineering documentation such as this README, where AI-assisted development is normal practice and is visible in the repository's commit history on a per-file basis. Before submission, the team must complete the report's own AI Use Declaration subsection (`project/main.tex`, "AI Use Declaration") naming the AI tool(s) used and confirming the report narrative is majority team-authored and Turnitin-checked.
