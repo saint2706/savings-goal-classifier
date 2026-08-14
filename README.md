@@ -267,6 +267,10 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── persona_profiles.csv
 │   ├── persona_clusters.png
 │   └── business_recommendations.csv
+├── project/
+│   ├── main.tex                            (instructor's template/instructions)
+│   ├── report.tex                          (team's IEEE report, draft)
+│   └── figures/                            (report-specific regenerated charts)
 ├── walkthrough/
 │   ├── phase0.md
 │   ├── phase1.md
@@ -275,7 +279,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase4.md
 │   ├── phase5.md
 │   ├── phase6.md
-│   └── phase7.md
+│   ├── phase7.md
+│   └── phase8.md
 ├── README.md
 └── requirements.txt
 ```
@@ -293,7 +298,7 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ## 8. Results
 
-> Phase 8's final stakeholder write-up is still to be produced; the modeling, explainability, and business-translation results below are final.
+> Phase 8's final stakeholder write-up is complete — see [`walkthrough/phase8.md`](walkthrough/phase8.md) for the plain-language report, the reasoning trail behind every modeling decision, and the 3-chart visual appendix. The modeling, explainability, and business-translation results below are final.
 
 **Winning model:** SVM (Linear) — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (tuned via cross-validation) — selected in Phase 4 as one of only two models reaching perfect _cross-validated_ recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. Final single test-set evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`.
 
@@ -315,6 +320,8 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 
 **Business translation (Phase 7):** every one of the 112 at-risk individuals lives in a Tier-1 city — the single highest-leverage targeting signal. `Groceries` carries the most unrealized savings potential (₹18.2M/month aggregate, ~2× the next category). For 99.1% of at-risk individuals, addressable savings across all 8 tracked categories already exceeds their shortfall — the gap is recoverable, not structural. See [`walkthrough/phase7.md`](walkthrough/phase7.md) and [`results/business_recommendations.csv`](results/business_recommendations.csv) for the full set of five recommendations and their supporting evidence.
 
+**Final report (Phase 8):** [`walkthrough/phase8.md`](walkthrough/phase8.md) assembles the above into a stakeholder-facing write-up — an executive summary, a reasoning trail explaining *why* each modeling decision was made (not just its score), and a 3-chart visual appendix drawn from `results/`.
+
 ## 9. Limitations
 
 - The dataset's income/expense figures may be synthetically generated rather than survey-collected — treat absolute figures as illustrative rather than nationally representative.
@@ -330,3 +337,35 @@ Dataset: refer to the original Kaggle listing for license terms.
 ## 11. Citation
 
 Dataset: shriyashjagtap, _Indian Personal Finance and Spending Habits_, Kaggle. <https://www.kaggle.com/datasets/shriyashjagtap/indian-personal-finance-and-spending-habits>
+
+## 12. Course Submission Information
+
+This project is submitted for **Advanced Machine Learning for Business Transformation (AMLBT)**, Goa Institute of Management — Big Data Analytics, per the instructor-provided report template and instructions in [`project/main.tex`](project/main.tex).
+
+`project/main.tex` is the instructor's own template/instructions file (submission requirements, rubric, prompts) and is not edited by the team. The team's actual report is [`project/report.tex`](project/report.tex), built from that template's structure.
+
+### Team
+
+| Name             | Student ID | Email                             |
+| ---------------- | ---------- | ---------------------------------- |
+| Rishabh Agrawal  | B2025100   | rishabh.agrawal25b@gim.ac.in       |
+| Prisha Kothari   | B2026092   | prisha.kothari2026b@gim.ac.in      |
+| Akshit Kashyap   | B2026059   | akshit.kashyap2026b@gim.ac.in      |
+
+### Project Report
+
+The IEEE-format project report (6 pages including references, compiles cleanly with `pdflatex`) is maintained at [`project/report.tex`](project/report.tex) — a full first draft is in place, pending the team's own rewrite before submission (see AI Use Declaration below). It follows the instructor's Evaluation Rubric — Relevance, Significance, Originality, Achievement, Writing, Reproducibility, and Technical Quality — and its Reproducibility section links back to this repository, whose [Setup & Usage](#7-setup--usage) steps (clone, `pip install -r requirements.txt`, run the phase notebooks in order) are the canonical replication instructions. Its three figures (`project/figures/*.png`) are regenerated directly from `dataset/data.csv` using the exact documented hyperparameters from Phases 4–6, not copied from `results/`.
+
+### Submission Deadlines
+
+All deadlines are 11:59 PM AoE.
+
+| Milestone                 | Date              |
+| -------------------------- | ----------------- |
+| First Review Submission    | 9 October 2026    |
+| Second Review Submission   | 20 November 2026  |
+| Final Submission           | 4 December 2026   |
+
+### AI Use Declaration
+
+The course's AI-use policy caps AI-generated content in the **written project report** (`project/report.tex`) at 20%, as measured by Turnitin. That threshold governs the report's prose specifically — it does not extend to code, notebooks, or supporting engineering documentation such as this README, where AI-assisted development is normal practice and is visible in the repository's commit history on a per-file basis. The current `project/report.tex` is an AI-drafted first pass, explicitly intended as a starting point for the team to rewrite in their own words — not a submittable draft as-is. Before submission, the team must rewrite the narrative and complete the report's own AI Use Declaration subsection (`project/report.tex`, "AI Use Declaration") naming the AI tool(s) used and confirming the final report narrative is majority team-authored and Turnitin-checked.
