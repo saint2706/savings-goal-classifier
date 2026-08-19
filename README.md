@@ -15,7 +15,7 @@
 > | Money units | monthly ₹ | annual ₹ |
 > | Target | `Disposable_Income >= Desired_Savings` (self-declared) | savings rate ≥ 20% (normative benchmark) |
 > | Class balance | 0.56% minority (178:1) | 31.9% positive (2.13:1) |
-> | Status | Phases 0–8 complete + bonus | Migration, Phases 0–5 complete |
+> | Status | Phases 0–8 complete + bonus | Migration, Phases 0–6 complete |
 
 ## 1. Overview
 
@@ -285,7 +285,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── ihds_02_feature_engineering.ipynb   (IHDS-II track)
 │   ├── ihds_03_baseline.ipynb              (IHDS-II track)
 │   ├── ihds_04_model_comparison.ipynb      (IHDS-II track)
-│   └── ihds_05_explainability.ipynb        (IHDS-II track)
+│   ├── ihds_05_explainability.ipynb        (IHDS-II track)
+│   └── ihds_06_clustering_personas.ipynb   (IHDS-II track)
 ├── src/
 │   ├── build_ihds_dataset.py               (IHDS-II -> analysis-ready CSV)
 │   ├── preprocessing.py                    (planned)
@@ -322,7 +323,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── ihds_phase2.md                      (IHDS-II track)
 │   ├── ihds_phase3.md                      (IHDS-II track)
 │   ├── ihds_phase4.md                      (IHDS-II track)
-│   └── ihds_phase5.md                      (IHDS-II track)
+│   ├── ihds_phase5.md                      (IHDS-II track)
+│   └── ihds_phase6.md                      (IHDS-II track)
 ├── README.md
 └── requirements.txt
 ```
@@ -360,6 +362,8 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 **The honest margin is +0.095 macro-F1 over a single income threshold** (predict "on track" if annual income > ₹121,685), not +0.432 over the majority baseline.
 
 **Explainability (Phase 5, SHAP on XGBoost):** `Log_Income` alone is **38.4%** of all attribution (mean |SHAP| 2.617, 4.5× the next feature); spending mix is 26.7%. **Interactions are 41.9% of total attribution**, and 8 of the 10 strongest pairs involve income — the reason a linear model was not selected.
+
+**Spending personas (Phase 6):** k=3 on a 6-part ILR basis, silhouette **0.4115** — but the clusters are keyed on *which categories are absent* (adjusted Rand index 0.858 against the raw zero-pattern), largely an artifact of zero replacement. Their association with `Goal_Met` looks weak unconditionally (Cramér's V 0.076) yet **nearly doubles once income is held constant** (within-decile spread 0.167 vs 0.092 raw) — income was suppressing it. Personas are nearly independent of income (ARI 0.006).
 
 **Findings that reverse the synthetic conclusions:**
 
