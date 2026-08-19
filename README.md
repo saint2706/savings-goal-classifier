@@ -15,7 +15,7 @@
 > | Money units | monthly ₹ | annual ₹ |
 > | Target | `Disposable_Income >= Desired_Savings` (self-declared) | savings rate ≥ 20% (normative benchmark) |
 > | Class balance | 0.56% minority (178:1) | 31.9% positive (2.13:1) |
-> | Status | Phases 0–8 complete + bonus | Migration, Phases 1–4 complete |
+> | Status | Phases 0–8 complete + bonus | Migration, Phases 0–5 complete |
 
 ## 1. Overview
 
@@ -284,7 +284,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── ihds_01_eda_and_leakage_check.ipynb (IHDS-II track)
 │   ├── ihds_02_feature_engineering.ipynb   (IHDS-II track)
 │   ├── ihds_03_baseline.ipynb              (IHDS-II track)
-│   └── ihds_04_model_comparison.ipynb      (IHDS-II track)
+│   ├── ihds_04_model_comparison.ipynb      (IHDS-II track)
+│   └── ihds_05_explainability.ipynb        (IHDS-II track)
 ├── src/
 │   ├── build_ihds_dataset.py               (IHDS-II -> analysis-ready CSV)
 │   ├── preprocessing.py                    (planned)
@@ -316,10 +317,12 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase8.md
 │   ├── bonus.md
 │   ├── ihds_migration.md                   (IHDS-II track)
+│   ├── ihds_phase0.md                      (IHDS-II track)
 │   ├── ihds_phase1.md                      (IHDS-II track)
 │   ├── ihds_phase2.md                      (IHDS-II track)
 │   ├── ihds_phase3.md                      (IHDS-II track)
-│   └── ihds_phase4.md                      (IHDS-II track)
+│   ├── ihds_phase4.md                      (IHDS-II track)
+│   └── ihds_phase5.md                      (IHDS-II track)
 ├── README.md
 └── requirements.txt
 ```
@@ -356,12 +359,15 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 **The honest margin is +0.095 macro-F1 over a single income threshold** (predict "on track" if annual income > ₹121,685), not +0.432 over the majority baseline.
 
+**Explainability (Phase 5, SHAP on XGBoost):** `Log_Income` alone is **38.4%** of all attribution (mean |SHAP| 2.617, 4.5× the next feature); spending mix is 26.7%. **Interactions are 41.9% of total attribution**, and 8 of the 10 strongest pairs involve income — the reason a linear model was not selected.
+
 **Findings that reverse the synthetic conclusions:**
 
 - **Income dominates, not spending mix.** `Log_Income` alone reaches ROC-AUC 0.835; adding one feature (`Groceries_Share`) reaches 0.876 against the full model's 0.921. The synthetic project's headline was the opposite.
 - **Geography reverses.** Goal attainment falls monotonically metro → village (0.4212 / 0.3698 / 0.3091 / 0.2666). The synthetic data put *all* risk in Tier-1 cities.
 - **Occupation is real signal**, not noise: salaried households meet the goal at 1.76× the rate of agricultural labourers (0.4410 vs 0.2512).
 - **Engel's law appears unprompted** — `Groceries_Share` correlates −0.266 with log income.
+- **A high grocery share predicts being _on track_, conditional on income** — the reverse of the naive Engel reading. Once income is controlled, a food-dominated budget signals the *absence* of large lumpy outlays (health shocks, durables, fees) that push consumption above income.
 - **Rent is absent for 90.5% of households** (most own their homes), retiring the synthetic dataset's deterministic rent-to-tier relationship entirely.
 
 **Caveat that must travel with every figure above:** 55.9% of IHDS households report consumption exceeding income (documented survey under-reporting of income), so `Goal_Met` is biased downward at any threshold. Relative comparisons are sound; absolute levels are not.
