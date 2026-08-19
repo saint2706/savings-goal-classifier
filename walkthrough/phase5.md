@@ -4,7 +4,6 @@
 **Notebook:** [`notebooks/05_explainability.ipynb`](../notebooks/05_explainability.ipynb)
 **Builds on:** [Phase 4 (IHDS-II)](phase4.md), [Phase 2 (IHDS-II)](phase2.md)
 **Artifacts:** `results/shap_importance.csv`, `results/shap_summary.png`, `results/shap_dependence.png`
-**Replaces:** [`phase5.md`](phase5.md)
 
 Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to 1, so they are **exactly singular** (VIF = ∞) and no coefficient on them is identified. Phase 4 confirmed the logistic fit is only unique because of its L2 penalty. This phase deals with that first, then explains the model.
 
@@ -93,7 +92,7 @@ The `ColumnTransformer` is applied explicitly and XGBoost fitted on the resultin
 | Debt | 3.3% |
 | Education | 3.2% |
 
-**This confirms Phase 3's prediction and completes the reversal of the synthetic project.** There, `Loan_Repayment_Ratio` dominated and raw income mattered far less than *how* income was spent. Here income is 38.4% of all attribution on its own, and Phase 3 showed a single income threshold already reaches macro-F1 0.7425. **Spending mix is real and worth 26.7%, but it is the second story, not the first.**
+**This confirms Phase 3's prediction.** Income is 38.4% of all attribution on its own, and Phase 3 showed a single income threshold already reaches macro-F1 0.7425. **Spending mix is real and worth 26.7%, but it is the second story, not the first** — any narrative that leads with spending behaviour is contradicting the model's own attribution.
 
 `Household_Size` at second place is new and was not visible in the univariate work — larger households consume more at any income, mechanically depressing the savings rate.
 
@@ -113,7 +112,7 @@ Computed with `pred_interactions=True` on a 3,000-household sample (the full ten
 
 Main effects total 6.509; interactions total 4.689 — **interactions are 41.9% of all attribution.**
 
-**Why this is a substantive finding, not a technical footnote.** The synthetic project's winning model was a *linear SVM*, which is provably incapable of representing any interaction — a limitation its Phase 5 had to acknowledge. Here, more than two-fifths of the model's behaviour is interaction, and **eight of the ten strongest pairs involve `Log_Income`**. Income is not simply an additive term: it changes what every spending signal means. A high grocery share means something different for a household earning ₹40,000 than for one earning ₹400,000.
+**Why this is a substantive finding, not a technical footnote.** More than two-fifths of the model's behaviour is interaction, and **eight of the ten strongest pairs involve `Log_Income`**. A purely additive model — logistic regression, a linear SVM — is provably incapable of representing any of it. Income is not simply an additive term: it changes what every spending signal means. A high grocery share means something different for a household earning ₹40,000 than for one earning ₹400,000.
 
 This also explains why Phase 4's logistic regression trailed XGBoost on macro-F1 (0.8186 vs 0.8371) while nearly matching it on ROC-AUC (0.9213 vs 0.9306) — a linear model captures the ranking well but misses the interaction structure that sharpens the decision boundary.
 
@@ -151,4 +150,4 @@ This is consistent with the strongest interaction in the model (`Groceries_Share
 | --- | --- |
 | **6 — Clustering** | Personas built on spending mix explain at most ~27% of what drives the outcome. Expect them to segment on income more than on behaviour; say so rather than over-reading them. |
 | **7 — Business translation** | Three constraints: (a) lead with income, which is 38.4% of attribution; (b) **a high grocery share is a positive signal conditional on income** — do not invert it from the Phase 1 correlation; (c) the area-type gradient is largely an income gradient, so geographic targeting is mostly income targeting by proxy. |
-| **8 — Reporting** | `results/shap_summary.png` and `shap_dependence.png` replace the synthetic SHAP figure. The interaction result (41.9%) is the concrete reason a linear model was not selected. |
+| **8 — Reporting** | `results/shap_summary.png` and `shap_dependence.png` are the explainability figures. The interaction result (41.9%) is the concrete reason a linear model was not selected. |

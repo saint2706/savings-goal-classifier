@@ -4,9 +4,8 @@
 **Notebook:** [`notebooks/07_business_translation.ipynb`](../notebooks/07_business_translation.ipynb)
 **Builds on:** Phases 0–6 (IHDS-II)
 **Artifacts:** `results/business_recommendations.csv`, `results/business_translation.png`
-**Replaces:** [`phase7.md`](phase7.md)
 
-This is where the project has to say what it would actually recommend. On the synthetic data that was easy and dramatic: all 112 at-risk individuals lived in Tier-1 cities, groceries held ₹18.2M/month of unrealised savings, and 99.1% of shortfalls were recoverable. **Every one of those findings reverses or dissolves on real data**, and the recommendations that survive are more modest and more honest.
+This is where the project has to say what it would actually recommend. The recommendations that survive contact with the evidence are more modest than a 0.93 ROC-AUC suggests: the model's margin over a plain income rule is small, and for most at-risk households the shortfall is not something a spending nudge can fix.
 
 ---
 
@@ -15,7 +14,7 @@ This is where the project has to say what it would actually recommend. On the sy
 | # | Question | Answer |
 | --- | --- | --- |
 | 1 | What are the 3–5 most actionable findings, stated as recommendations? | Five, below. The lead finding is uncomfortable: **the model beats "contact the poorest households first" by only 1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%). |
-| 2 | Which expense category carries the most unrealised savings? | **Miscellaneous** (₹36 crore/yr aggregate excess vs same-income peers). But the next two — **Healthcare** and **Education** — are largely non-discretionary, and at-risk households spend **8.8pp *less* of their budget on groceries** than on-track peers. The synthetic project's grocery-led recommendation is reversed. |
+| 2 | Which expense category carries the most unrealised savings? | **Miscellaneous** (₹36 crore/yr aggregate excess vs same-income peers). But the next two — **Healthcare** and **Education** — are largely non-discretionary, and at-risk households spend **8.8pp *less* of their budget on groceries** than on-track peers, so food is not the lever it is usually assumed to be. |
 | 3 | Where does the model fail, and what must a stakeholder be told? | Calibration is excellent (max error 0.036), but accuracy sags to **0.78–0.80 in income deciles 5–7** — exactly the middle where the decision is real. And **32.3% of the at-risk group** report spending more than twice their income, which is a measurement artifact rather than observed distress. |
 
 ---
@@ -62,13 +61,13 @@ The comparison is against the **Phase 3 income rule**, not against random contac
 
 **Both columns matter and they say different things.** Less-developed villages have the *highest rate* and also the largest *share* of the at-risk population — so they are the priority on either reading. But metro urban has a 57.9% at-risk rate, which is high in absolute terms even though metro contributes only 6.3% of all at-risk households; a campaign sized by rate alone would misallocate.
 
-**This is the direct reversal of the synthetic project's headline.** There, 100% of at-risk individuals lived in Tier-1 cities and the flagship recommendation was to target them. Here metro households are the *least* likely to be at risk. Any slide deck carrying the Tier-1 recommendation is now wrong.
+**Note the direction.** Metro households are the *least* likely to be at risk, not the most — the intuition that urban living strains a budget does not hold once the whole income distribution is in view.
 
 The income-decile table shows why geography is mostly a proxy: at-risk falls from **97.8%** in decile 0 to **16.9%** in decile 9. Phase 5 already found income's SHAP effect is near-identical across area types, so the area gradient is largely an income gradient wearing a geographic label.
 
-### Cells 6–7 (code) — What "recoverable" means without a `Potential_Savings` column (Q2)
+### Cells 6–7 (code) — Defining "recoverable" (Q2)
 
-The synthetic dataset shipped `Potential_Savings_*` columns that simply asserted how much each household could save. IHDS has nothing equivalent, and inventing a discretionary/non-discretionary split would smuggle in an assumption. Instead, **recoverable is defined by peer benchmarking**: for each at-risk household, how much more of its budget goes to each category than the *median on-track household in the same income decile*.
+IHDS does not say which spending a household could have avoided, and inventing a discretionary/non-discretionary split would smuggle in an assumption about what people can give up. Instead, **recoverable is defined by peer benchmarking**: for each at-risk household, how much more of its budget goes to each category than the *median on-track household in the same income decile*.
 
 **Why the same income decile:** comparing a household earning ₹40,000 against the population median would just re-measure poverty. Holding income roughly constant makes the comparison one of allocation between households with comparable means.
 
@@ -81,9 +80,9 @@ The synthetic dataset shipped `Potential_Savings_*` columns that simply asserted
 | Groceries | **−8.79** | 27.1% | 4.5 |
 | Utilities | −2.77 | 29.8% | 3.4 |
 
-**Two findings that reverse the synthetic recommendation.**
+**Two findings that overturn the obvious campaign.**
 
-First, **groceries is not the lever.** At-risk households spend **8.8 percentage points less** of their budget on food than on-track households at the same income, and only 27.1% exceed their peers. The synthetic project's flagship advice — lead nudge campaigns with grocery-spend reduction — is exactly backwards here. This is the same relationship Phase 5 found conditionally: a high food share marks a household *without* large non-food outlays, and those households save more.
+First, **groceries is not the lever.** At-risk households spend **8.8 percentage points less** of their budget on food than on-track households at the same income, and only 27.1% exceed their peers. A nudge campaign led by grocery-spend reduction — the intuitive choice, since food is the largest single category — would be aimed at the wrong households. This is the same relationship Phase 5 found conditionally: a high food share marks a household *without* large non-food outlays, and those households save more.
 
 Second, **the largest genuine excesses are in categories nobody can be asked to cut.** Healthcare has the biggest median excess (+2.5pp, 63.5% of at-risk households above their peers) and Education is third. Both are close to non-negotiable, and a nudge campaign built on them would be both ineffective and inappropriate. `Miscellaneous` tops the aggregate table, but its median excess is *negative* (−0.21pp) — the aggregate is driven by a minority with very large miscellaneous spend, not by a broad tendency.
 
@@ -97,7 +96,7 @@ Second, **the largest genuine excesses are in categories nobody can be asked to 
 
 **Only 28.5% of at-risk households could reach the benchmark even by matching their income peers' spending in every single category.** For the other 71.5%, the shortfall is not a spending problem that a budgeting nudge can fix.
 
-**The synthetic project reported 99.1%.** That figure came from the generated `Potential_Savings_*` columns — the generator had written recoverability into the data. Measured against real peers, the answer nearly inverts. This is the single largest substantive difference between the two tracks, and it changes the product implication completely: for most at-risk households in this data, **the answer is more income, not less spending.**
+**This is the finding with the largest product implication in the whole project.** A budgeting tool, a round-up savings feature, a spending nudge — all of them assume the shortfall is behavioural. For roughly seven in ten at-risk households here it is not: **the answer is more income, not less spending.** Any product built on the opposite assumption will fail for the majority of the people it targets.
 
 ### Cells 9–10 (code) — Reliability (Q3)
 
@@ -123,21 +122,10 @@ Second, **the largest genuine excesses are in categories nobody can be asked to 
 
 2. **Size the campaign as prioritisation, not needle-finding.** At-risk households are 68.1% of the population; the model's lift over random is **1.46×**. Its real value is precision — 99.6% vs 68.3%. *Caveat: a 1.5× lift will not support a "find the hidden segment" business case.*
 
-3. **Treat the shortfall as structural for most at-risk households.** Only **28.5%** could close the gap by matching peer spending in every category. *Caveat: this reverses the synthetic project's 99.1%; for most households the answer is more income, not less spending.*
+3. **Treat the shortfall as structural for most at-risk households.** Only **28.5%** could close the gap by matching peer spending in every category. *Caveat: a budgeting or nudge product cannot help the other 71.5%; for them the answer is more income, not less spending.*
 
 4. **Where a behavioural lever exists it is Miscellaneous — and it is NOT groceries.** At-risk households spend 8.8pp *less* on food than their income peers. *Caveat: never build a nudge on healthcare or education, the two largest genuine excesses.*
 
 5. **Report relative priority only.** 32.3% of the at-risk group report spending more than twice their income. *Caveat: "X% of Indian households save inadequately" is unsupported by this work.*
 
 ---
-
-## What changed from the synthetic track
-
-| Finding | Synthetic | IHDS-II |
-| --- | --- | --- |
-| Who to target | 100% of at-risk in Tier-1 cities | Metro households are the **least** at risk (57.9% vs 73.3% in villages) |
-| Top savings lever | Groceries, ₹18.2M/month, ~2× next category | Groceries is **negative** (−8.8pp vs peers); largest excesses are non-discretionary |
-| Is the gap closable? | **99.1%** of at-risk | **28.5%** |
-| Model's targeting value | Perfect minority recall on 112 cases | +1.5pp capture over an income rule |
-
-Every headline reverses. The synthetic findings were artifacts of a generator that set rent by tier, made spending a fixed share of income, and wrote recoverability directly into a column.

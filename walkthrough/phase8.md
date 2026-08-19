@@ -3,7 +3,6 @@
 **Source:** [README § Phase 8 — Reporting](../README.md#phase-8--reporting)
 **Builds on:** Phases 0–7 (IHDS-II)
 **No notebook.** Phase 8 runs no new analysis — every figure it cites was computed and persisted by an earlier phase. Its job is to assemble them into something a non-technical stakeholder would read, and to make sure the *reasoning* survives the compression.
-**Replaces:** [`phase8.md`](phase8.md)
 
 ---
 
@@ -42,7 +41,7 @@ A savings-product or financial-inclusion team cannot review 41,518 households by
 
 **1. Who is at risk.** At-risk rates fall steadily with income, from **97.8%** in the poorest decile to **16.9%** in the richest. Geography follows the same gradient: least-developed villages 73.3%, metro urban 57.9%. Occupation matters too — households with no regular worker (75.0%) or in agricultural labour (74.9%) versus salaried households (55.9%).
 
-**This reverses the earlier synthetic-data version of this project**, which found that *all* at-risk individuals lived in Tier-1 cities and recommended targeting them. Metro households are the least likely to be at risk here, and the geographic pattern is largely income wearing a geographic label — Phase 5 found income's effect is near-identical across area types.
+**Geography here is largely income wearing a geographic label.** Phase 5 found income's effect is near-identical across area types, so an area-based campaign is an income-based campaign with extra steps — worth knowing before designing outreach around location.
 
 **2. What drives it.** Income is the dominant factor: 38.4% of the model's total explanation, more than four times the next feature. Spending mix matters too (26.7%), but second.
 
@@ -74,7 +73,6 @@ Every material decision, the phase that made it, and the evidence behind it.
 
 | Decision | Phase | Reasoning |
 | --- | --- | --- |
-| Replace the synthetic dataset with IHDS-II | Migration | Bonus extensions showed the synthetic columns were generated independently — rent was a fixed 0.30/0.20/0.15 lookup on city tier, occupation was noise, discretionary spending a flat 7% at every age. Its near-perfect scores measured the generator, not households. |
 | Normative 20% target | Phase 0 | No real survey collects a self-declared savings goal. Threshold made configurable, and sensitivity published so no reader takes it on trust. |
 | Composition shares, not expense-to-income ratios | Phases 1–2 | Ratios reconstruct the target with **99.75%** agreement — textbook leakage. Shares sum to exactly 1 and cannot recover consumption-vs-income. |
 | Macro-F1, not accuracy | Phase 3 | The majority baseline scores 0.68 accuracy while never identifying a single on-track household. |
@@ -82,16 +80,16 @@ Every material decision, the phase that made it, and the evidence behind it.
 | XGBoost over logistic regression | Phase 4 | Macro-F1 0.837 vs 0.819. Phase 5 explains why: **41.9% of the model's behaviour is interactions**, which a linear model cannot represent. |
 | Optimise for recall on the at-risk class | Phase 4 | A missed at-risk household is a silent failure; an unnecessary nudge is cheap. Reaching 95% recall costs only ~8 points of precision. |
 | SHAP on trees, not coefficients | Phases 2, 5 | The 11 shares sum to 1, so they are exactly singular (VIF = ∞) and no coefficient is identified. |
-| Peer benchmarking for "recoverable" | Phase 7 | IHDS has no `Potential_Savings` column; comparing within income deciles avoids assuming which spending is discretionary. |
+| Peer benchmarking for "recoverable" | Phase 7 | The survey does not say which spending was avoidable; comparing within income deciles avoids having to assume it. |
 
 ### Four times the evidence overturned our approach
 
 Recording these matters more than recording the successes, because each was a plausible choice that measurement rejected.
 
 1. **The CLR transform was proposed, implemented, and rejected** (Phase 2). Compositional data theory says to log-ratio transform simplex data. It scored 0.9117 against 0.9212 for raw shares, and its components are singular by construction (VIF 3×10⁵). The theory was right about the problem and wrong about which transform.
-2. **Expense-to-income ratios generalise *worst*** (Phase 2). The original project's central feature-engineering claim was that ratios transfer better across income levels. Tested on a neutral target, they came last (0.589 vs 0.625 for raw rupees). The original claim held only because the generator made expenses a fixed fraction of income.
+2. **Expense-to-income ratios generalise *worst*** (Phase 2). Dividing spending by income is the intuitive way to make households comparable across income levels. Tested on a neutral target, it came last (0.589 against 0.625 for raw rupees) — income is the under-reported side of this survey, and so the worst available divisor.
 3. **A high grocery share predicts being *on track*** (Phase 5). We captioned the dependence plot with the opposite, from the obvious Engel's-law reading. The plot contradicted it. Reading this off Phase 1's unconditional correlation would have produced a backwards recommendation.
-4. **The spending personas are not an income split** (Phase 6). Predicted from Phase 5's attribution split; the adjusted Rand index against income tertiles is 0.006. Income was *suppressing* the persona effect — controlling for it nearly doubled the spread (0.167 vs 0.092).
+4. **The spending personas are not an income split** (Phase 6). Phase 5 found income carries 38.4% of attribution against spending's 26.7%, which suggested the personas would largely re-encode income. The adjusted Rand index against income tertiles is 0.006. Income was *suppressing* the persona effect — controlling for it nearly doubled the spread (0.167 vs 0.092).
 
 A fifth, methodological: Phase 6's notebook initially **hardcoded the worst-scoring representation** instead of selecting from the sweep it had just computed. Caught by reading the output rather than skimming it.
 
@@ -123,6 +121,6 @@ Spending signature, goal attainment by persona, and income distribution. Include
 - **2011–12 vintage.** IHDS-3 fieldwork is complete but public microdata was not released as of this work.
 - **Household grain.** No per-individual claims are supported.
 - **Survey weights are carried but not applied.** `WT` is in the dataset; model fitting is unweighted. Any nationally-framed figure must apply it.
-- **`Loan_Repayment` has no counterpart.** IHDS records debt as a stock, not a repayment flow — the strongest feature in the synthetic analysis has no direct migration.
+- **Debt is a stock, not a flow.** IHDS records outstanding debt and interest rates but no repayment instalment, so `Debt_To_Income_W` stands in for a cash-flow burden it cannot directly measure.
 - **The at-risk class is the majority (68%)**, so lift-based business cases are structurally weak here regardless of model quality.
 - **Personas are partly a zero-replacement artifact** (adjusted Rand index 0.858 against the raw zero-pattern), not discovered behavioural archetypes.

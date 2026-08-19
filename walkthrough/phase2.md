@@ -4,7 +4,6 @@
 **Notebook:** [`notebooks/02_feature_engineering.ipynb`](../notebooks/02_feature_engineering.ipynb)
 **Builds on:** [Phase 1 (IHDS-II)](phase1.md), [Migration](dataset_construction.md)
 **Output:** `dataset/features.csv` — 41,518 households × 28 features
-**Replaces:** [`phase2.md`](phase2.md)
 
 Phase 1 left four decisions open. This phase settles each one **empirically** rather than by convention, and two of the four go against the textbook answer — including one of my own proposals.
 
@@ -14,7 +13,7 @@ Phase 1 left four decisions open. This phase settles each one **empirically** ra
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Do expense-to-income ratios generalise better across income levels than raw expense values? | **No — they generalise worst.** Fitting on one half of the income distribution and scoring on the other: raw rupees 0.6245, composition shares 0.6175, expense/income ratios **0.5893**. The original Phase 2's central claim was an artifact of the synthetic generator, and does not survive contact with real data. |
+| 1 | Do expense-to-income ratios generalise better across income levels than raw expense values? | **No — they generalise worst.** Fitting on one half of the income distribution and scoring on the other: raw rupees 0.6245, composition shares 0.6175, expense/income ratios **0.5893**. The intuition that dividing by income aids transfer does not hold on this data. |
 | 2 | How should `Occupation` and the other categoricals be encoded? | One-hot, with an explicit `Unknown` level. All four are low-cardinality (4–8 levels), so one-hot costs little and keeps every coefficient interpretable. Missingness is **not** informative (`Caste_Group` missing: Goal_Met 0.3176 vs 0.3193 present), so the `Unknown` level is a transparency choice rather than a signal-preserving one. |
 | 3 | Which features require scaling, and does that depend on the downstream model? | Barely matters here: ROC-AUC is 0.9212 / 0.9212 / 0.9211 for RobustScaler / StandardScaler / none under logistic regression, and 0.9162 / 0.9160 / 0.9160 under the forest — despite a **658×** spread in feature standard deviations. Scaling is still specified for the linear models because it makes coefficients comparable and helps convergence, not because it moves the score. |
 | 4 | Are any features redundant or highly collinear? | **Yes, and structurally so.** The 11 shares have **VIF = ∞** because they sum to 1 — they are exactly singular as a set. Beyond that: `Household_Size` × `Dependents` r = 0.714 (VIF 8.98 / 5.23), and each `*_Share` × `Spends_On_*` pair r ≈ 0.45–0.67 by construction. |
@@ -47,7 +46,7 @@ Phase 1 found five categories zero for more than 30% of households. A single sha
 
 The two large effects point in opposite directions and both are interpretable. Paying insurance premiums at all is a marker of financial slack — households already saving are the ones who buy insurance. Paying school fees at all costs **8.3 percentage points** of goal attainment: it is a large, non-negotiable claim on income that falls on households with dependents. That is a genuine finding about dependent burden, and it is the sort of thing a single continuous share would have blurred, because the difference between ₹0 and ₹1 of school fees is categorical, not marginal.
 
-`Spends_On_Rent` is essentially flat (−0.005) — paying rent at all does not predict the outcome, which is the first real-data echo of the synthetic dataset's rent finding collapsing.
+`Spends_On_Rent` is essentially flat (−0.005) — paying rent at all does not predict the outcome, which is unsurprising given Phase 1's finding that 90.4% of households record no rent.
 
 ### Decision 3 — `Debt_To_Income`: winsorised at the 99th percentile
 
@@ -98,9 +97,9 @@ The result satisfies the defining property of a CLR — rows sum to zero, max |r
 
 ---
 
-## Q1 in detail — the finding that overturns the original Phase 2
+## Q1 in detail — why the ratio intuition fails here
 
-The original Phase 2 asked whether expense-to-income ratios generalise better than raw values, and answered yes. That comparison **cannot be run on this dataset against `Goal_Met`**: Phase 1 showed raw rupee categories reconstruct the target with 99.75% agreement, so the leaky representation would win by construction and the result would be meaningless.
+The question of whether expense-to-income ratios generalise better than raw values **cannot be tested against `Goal_Met`**: Phase 1 showed raw rupee categories reconstruct the target with 99.75% agreement, so the leaky representation would win by construction and the result would be meaningless.
 
 The comparison is instead run against **`Has_Bank_Savings`** — a survey-reported behaviour that is not an accounting function of the expense columns, so all three representations face it on equal terms. The real question is generalisation *across income levels*, so the test fits on one half of the income distribution and scores on the other:
 
@@ -112,7 +111,7 @@ The comparison is instead run against **`Has_Bank_Savings`** — a survey-report
 
 **Expense-to-income ratios transfer worst.** Raw rupees and shares are within 0.007 of each other; the ratio form loses 3.5 points.
 
-**Why the original conclusion reversed.** In the synthetic data every expense was a fixed percentage of income, so raw rupee columns were near-perfect restatements of income (r = 0.79–0.99) and dividing by income was pure gain — it removed a redundancy that was crowding out everything else. Phase 1 measured that correlation at **0.09–0.43** on real data. The redundancy the ratio was designed to remove is not there, so dividing by income now mostly injects the noise in a poorly-measured denominator (recall from Phase 1 that income is the *under-reported* side of this survey).
+**Why the intuition fails.** Dividing by income is worthwhile when the raw columns are largely restatements of income — the division removes a redundancy that would otherwise crowd out everything else. Phase 1 measured that correlation at only **0.09–0.43** here, so there is little redundancy to remove. What the division does instead is inject the noise in a poorly-measured denominator: recall from Phase 1 that income is the *under-reported* side of this survey, so it is the worst available choice of divisor.
 
 **This does not undo the migration's design.** Composition shares are still the right representation, but the justification has changed completely. They are used because they are **not reconstructable from the target** (Phase 1, Test C), not because they generalise better than raw values — which they marginally do not. Raw rupees generalise slightly better and are unusable for leakage reasons. That trade is now explicit rather than assumed.
 

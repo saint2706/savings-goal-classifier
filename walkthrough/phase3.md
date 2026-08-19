@@ -4,9 +4,8 @@
 **Notebook:** [`notebooks/03_baseline.ipynb`](../notebooks/03_baseline.ipynb)
 **Builds on:** [Phase 2 (IHDS-II)](phase2.md)
 **Artifacts:** `results/baseline.csv`, `results/baseline.png`
-**Replaces:** [`phase3.md`](phase3.md)
 
-A baseline exists to answer one question before any modelling effort is justified: **how much of this problem is solved by doing almost nothing?** On the synthetic dataset that answer was "essentially all of it" — the majority class was 99.4% and accuracy was a useless metric from the first cell. On real data the answer is more interesting, and it sets a much higher bar for Phase 4.
+A baseline exists to answer one question before any modelling effort is justified: **how much of this problem is solved by doing almost nothing?** The answer here sets a far higher bar for Phase 4 than the majority class alone would suggest — a single threshold on income recovers most of the achievable performance.
 
 ---
 
@@ -36,8 +35,6 @@ Loads `dataset/features.csv` from Phase 2 rather than rebuilding features from t
 **Why three dummies rather than one:** they fail differently, and quoting only one flatters a real model on whichever metric that dummy happens to be weak on. The majority classifier scores a respectable-looking 0.68 accuracy while being completely useless — it never identifies a single on-track household. The stratified dummy has *worse* accuracy (0.56) but much better macro-F1 (0.49), because it at least predicts both classes. A model has to beat the harder of the two on each metric to have learned anything.
 
 **The reason accuracy is retired as the headline metric from here on:** 0.68 accuracy is obtainable with a constant. The gap between 0.4050 and 0.4948 macro-F1 between two *equally worthless* predictors shows how much room there is to look good on one number while doing nothing.
-
-**Note on how this differs from the synthetic project.** There, the majority baseline scored 0.9944 accuracy / 0.4986 macro-F1, and that near-perfect accuracy was the reason every subsequent phase had to argue carefully about metrics. Here the majority baseline is beatable on accuracy too, so the metric argument is less strained — but the conclusion is the same, for a different reason.
 
 ### Cell 4 (code) — The single-rule baseline (Q1, part 2)
 

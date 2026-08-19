@@ -1,8 +1,7 @@
 """Build an analysis-ready household dataset from IHDS-II (ICPSR 36151, DS0002).
 
-Replaces the synthetic Kaggle dataset with real survey data. See
-``walkthrough/dataset_construction.md`` for the reasoning behind every mapping and
-threshold in this file.
+See ``walkthrough/dataset_construction.md`` for the reasoning behind every
+mapping and threshold in this file.
 
 Usage:
     python src/build_dataset.py --tsv path/to/36151-0002-Data.tsv \
@@ -179,7 +178,7 @@ def build(tsv: Path, threshold: float) -> pd.DataFrame:
     # ---- target -------------------------------------------------------------
     # Normative benchmark: a household is "on track" if it retains at least
     # `threshold` of its income after all recorded consumption. Unlike the
-    # synthetic dataset there is no self-declared savings goal, so the goal is
+    # survey there is no self-declared savings goal, so the goal is
     # imposed externally and is identical for every household.
     df["Savings"] = df["INCOME"] - df["COTOTAL"]
     df["Savings_Rate"] = df["Savings"] / df["INCOME"]

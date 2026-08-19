@@ -4,7 +4,6 @@
 **Notebook:** [`notebooks/06_clustering_personas.ipynb`](../notebooks/06_clustering_personas.ipynb)
 **Builds on:** [Phase 2 (IHDS-II)](phase2.md), [Phase 5 (IHDS-II)](phase5.md)
 **Artifacts:** `results/persona_profiles.csv`, `results/personas.png`, `results/cluster_selection.png`
-**Replaces:** [`phase6.md`](phase6.md)
 
 Phase 2 rejected the CLR transform for classification but left the log-ratio question open for clustering, which is the step that genuinely needs a metric on the simplex. This phase builds an **ILR** basis (full-rank, unlike CLR), uses it, and then discovers that the clean-looking clusters it produces are keyed on something other than what "spending persona" implies.
 
@@ -62,7 +61,7 @@ The third is the one that matters for this phase: it is the formal statement tha
 | 6 | 0.2358 | 0.1857 | 0.2321 |
 | 8 | 0.2385 | 0.2026 | 0.2516 |
 
-**The ILR transform is vindicated on the metric it was proposed for.** Silhouette 0.4115 versus 0.2516 for raw shares is a large margin, and it is the first clustering in either track of this project to clear ~0.25. The synthetic Phase 6 never got above 0.1 at any k.
+**The ILR transform is vindicated on the metric it was proposed for.** Silhouette 0.4115 versus 0.2516 for raw shares is a large margin, and it is the only representation tested here that clears the ~0.25 mark conventionally taken to indicate reasonable structure.
 
 **A design error worth recording.** The first version of this notebook **hardcoded** `BEST_REP = "ILR + participation indicators"` — the representation that scored *worst* (0.2054). The sweep existed to make that choice and was then overridden by an assumption. The notebook now selects `argmax(silhouette)` from the sweep itself. This is exactly the failure mode a selection step is supposed to prevent, and it was caught only because the sweep's output was read rather than skimmed.
 
@@ -158,15 +157,4 @@ Three panels: the spending-signature heatmap (where the two exact zeros are visi
 | Phase | Consequence |
 | --- | --- |
 | **7 — Business translation** | The personas are **descriptive, not actionable** — they are defined by category absence, some of which is measurement (no health event) rather than choice. Report the within-income spread (0.167), never the unconditional 0.092, and never Cramér's V alone. |
-| **8 — Reporting** | `results/personas.png` replaces the synthetic persona figure. The headline is that spending structure matters **more** than it first appears, once income is controlled — the opposite of the naive read. |
-
-## Comparison with the synthetic Phase 6
-
-| | Synthetic | IHDS-II |
-| --- | --- | --- |
-| Best silhouette | < 0.1 at every k | 0.4115 (k = 3, ILR) |
-| What drove the clusters | `Education_Ratio`, `Rent_Ratio` — proxies for `Dependents` and `City_Tier` | Zero-pattern of transport and healthcare spend |
-| Relation to `Goal_Met` | **All 112** at-risk cases in one persona (χ² = 360.8) | Cramér's V 0.076 raw; within-income spread 0.167 |
-| Honest verdict | A demographic split already present in the raw data | A **participation** pattern, partly a zero-replacement artifact, but carrying real suppressed signal |
-
-Both phases end at the same methodological place from opposite directions: the clusters are real but are not the rich multivariate spending archetypes the phase name implies. In the synthetic data they re-encoded demographics that were baked into the generator; here they re-encode which categories the survey recorded as zero.
+| **8 — Reporting** | `results/personas.png` is the persona figure. The headline is that spending structure matters **more** than it first appears, once income is controlled — the opposite of the naive read of Cramér's V. |

@@ -4,9 +4,8 @@
 **Notebook:** [`notebooks/04_model_comparison.ipynb`](../notebooks/04_model_comparison.ipynb)
 **Builds on:** [Phase 3 (IHDS-II)](phase3.md)
 **Artifacts:** `results/model_comparison.csv`, `results/model_comparison.png`
-**Replaces:** [`phase4.md`](phase4.md) — which is void on real data, for the reason below
 
-The original Phase 4 was built entirely around a 178:1 class imbalance with only 112 minority cases. Every decision it made followed from that: `class_weight="balanced"` on everything, model selection on `recall_0`, and the linear SVM winning because it was one of only two models achieving perfect minority recall. At **2.13:1 with 13,256 minority cases**, none of that reasoning applies and the comparison has to be re-made from scratch.
+At **2.13:1 with 13,256 minority cases** (Phase 1), this is an ordinary near-balanced classification problem. Class weighting is therefore optional rather than essential, and macro-F1 and ROC-AUC are straightforwardly usable without the contortions a severe imbalance would force.
 
 ---
 
@@ -27,7 +26,7 @@ The original Phase 4 was built entirely around a 178:1 class imbalance with only
 
 The 20% test split is made in the **first cell**, before any model is defined, and is not referenced again until the final cell.
 
-**Why up front rather than at the end:** it makes accidental leakage structurally difficult. Every intermediate decision in this notebook — model choice, hyperparameter search, threshold tuning — reads `X_train` only. If the split happened later, any of those steps could have quietly seen the test data. The original Phase 4 made the same choice for the same reason, and it is the one thing from it that transfers unchanged.
+**Why up front rather than at the end:** it makes accidental leakage structurally difficult. Every intermediate decision in this notebook — model choice, hyperparameter search, threshold tuning — reads `X_train` only. If the split happened later, any of those steps could have quietly seen the test data.
 
 ### Cell 3 (code) — The seven-family comparison (Q1, Q2)
 
@@ -91,7 +90,7 @@ Out-of-fold, XGBoost at the default threshold:
 | **not on track** | 0.885 | 0.916 | 0.900 | 22,609 |
 | on track | 0.807 | 0.746 | 0.775 | 10,605 |
 
-**The at-risk class is the easier one**, because it is the majority at 68%. This inverts the synthetic project entirely, where the at-risk class was 0.56% and catching it was the whole difficulty.
+**The at-risk class is the easier one**, because it is the majority at 68% — the opposite of the usual situation, where the class you want to act on is the rare one.
 
 Tuning the threshold on the at-risk score:
 
@@ -104,7 +103,7 @@ Tuning the threshold on the at-risk score:
 
 **The recommendation: optimise for recall on the at-risk class.** The asymmetry is in the costs. A false positive is one unnecessary low-cost nudge to a household that was already saving — mildly wasteful. A false negative is a household heading for a shortfall that the outreach never reaches, which is the failure the project exists to prevent (Phase 0).
 
-**And the trade is unusually cheap here.** Moving from 80% to 95% recall costs 8.5 points of precision (0.941 → 0.856). Even at 95% recall, roughly six in seven flagged households are genuinely at risk. Contrast the synthetic project, where achieving perfect minority recall cost so much precision that roughly one in eight flags was real.
+**And the trade is unusually cheap here.** Moving from 80% to 95% recall costs 8.5 points of precision (0.941 → 0.856). Even at 95% recall, roughly six in seven flagged households are genuinely at risk — a direct consequence of the at-risk class being the majority.
 
 **A caveat that must travel with any of these numbers:** Phase 1 established that 55.9% of IHDS households report consumption exceeding income, so `Goal_Met` is biased downward. These precision/recall figures are measured against a target that under-counts saving. They are sound for *ranking* households and for choosing an operating threshold; they should not be read as "89% of the households we flag are genuinely in financial distress."
 
@@ -134,4 +133,3 @@ Tuning the threshold on the at-risk score:
 | **5 — Explainability** | Use SHAP on the **XGBoost** model. Do **not** read logistic-regression coefficients on the shares — Phase 2 showed VIF = ∞, and Cell 6 confirmed the fit is only identified by the L2 penalty. Expect `Log_Income` and `Groceries_Share` to dominate; anything else on top contradicts Phase 3. |
 | **6 — Clustering** | Unaffected by model choice; still needs the ILR-vs-CLR decision from Phase 2. |
 | **7 — Business translation** | Operate at the **95% at-risk recall** threshold (0.368): precision 0.856. Report the model's margin over the single income rule (+0.095 macro-F1), not over the majority baseline. |
-| **8 — Reporting** | The winning model, its metric, and the imbalance narrative all differ from `phase4.md`. That document describes the synthetic track and should not be cited for IHDS results. |
