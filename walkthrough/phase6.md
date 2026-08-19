@@ -1,8 +1,8 @@
-# Phase 6 (IHDS-II) — Unsupervised Extension
+# Phase 6 — Unsupervised Extension
 
 **Source:** [README § Phase 6 — Unsupervised Extension](../README.md#phase-6--unsupervised-extension)
 **Notebook:** [`notebooks/06_clustering_personas.ipynb`](../notebooks/06_clustering_personas.ipynb)
-**Builds on:** [Phase 2 (IHDS-II)](phase2.md), [Phase 5 (IHDS-II)](phase5.md)
+**Builds on:** [Phase 2](phase2.md), [Phase 5](phase5.md)
 **Artifacts:** `results/persona_profiles.csv`, `results/personas.png`, `results/cluster_selection.png`
 
 Phase 2 rejected the CLR transform for classification but left the log-ratio question open for clustering, which is the step that genuinely needs a metric on the simplex. This phase builds an **ILR** basis (full-rank, unlike CLR), uses it, and then discovers that the clean-looking clusters it produces are keyed on something other than what "spending persona" implies.

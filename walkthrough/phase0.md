@@ -1,4 +1,4 @@
-# Phase 0 (IHDS-II) — Framing
+# Phase 0 — Framing
 
 **Source:** [README § Phase 0 — Framing](../README.md#phase-0--framing)
 **Notebook:** none — Phase 0 is a framing exercise, answered in prose.

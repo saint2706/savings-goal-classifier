@@ -1,7 +1,7 @@
-# Phase 8 (IHDS-II) — Reporting
+# Phase 8 — Reporting
 
 **Source:** [README § Phase 8 — Reporting](../README.md#phase-8--reporting)
-**Builds on:** Phases 0–7 (IHDS-II)
+**Builds on:** Phases 0–7
 **No notebook.** Phase 8 runs no new analysis — every figure it cites was computed and persisted by an earlier phase. Its job is to assemble them into something a non-technical stakeholder would read, and to make sure the *reasoning* survives the compression.
 
 ---

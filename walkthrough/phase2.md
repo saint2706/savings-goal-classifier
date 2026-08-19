@@ -1,8 +1,8 @@
-# Phase 2 (IHDS-II) — Feature Engineering
+# Phase 2 — Feature Engineering
 
 **Source:** [README § Phase 2 — Feature Engineering](../README.md#phase-2--feature-engineering)
 **Notebook:** [`notebooks/02_feature_engineering.ipynb`](../notebooks/02_feature_engineering.ipynb)
-**Builds on:** [Phase 1 (IHDS-II)](phase1.md), [Migration](dataset_construction.md)
+**Builds on:** [Phase 1](phase1.md), [Dataset construction](dataset_construction.md)
 **Output:** `dataset/features.csv` — 41,518 households × 28 features
 
 Phase 1 left four decisions open. This phase settles each one **empirically** rather than by convention, and two of the four go against the textbook answer — including one of my own proposals.
@@ -113,7 +113,7 @@ The comparison is instead run against **`Has_Bank_Savings`** — a survey-report
 
 **Why the intuition fails.** Dividing by income is worthwhile when the raw columns are largely restatements of income — the division removes a redundancy that would otherwise crowd out everything else. Phase 1 measured that correlation at only **0.09–0.43** here, so there is little redundancy to remove. What the division does instead is inject the noise in a poorly-measured denominator: recall from Phase 1 that income is the *under-reported* side of this survey, so it is the worst available choice of divisor.
 
-**This does not undo the migration's design.** Composition shares are still the right representation, but the justification has changed completely. They are used because they are **not reconstructable from the target** (Phase 1, Test C), not because they generalise better than raw values — which they marginally do not. Raw rupees generalise slightly better and are unusable for leakage reasons. That trade is now explicit rather than assumed.
+**This does not undo the feature-set design.** Composition shares remain the right representation, but for a specific reason: they are **not reconstructable from the target** (Phase 1, Test C), not because they generalise better than raw values — which they marginally do not. Raw rupees generalise slightly better and are unusable for leakage reasons. That trade is now explicit rather than assumed.
 
 ---
 
@@ -156,7 +156,7 @@ Log_Income                1.68
 | Logistic Regression | **0.9212** | **0.8203** |
 | Random Forest | 0.9160 | 0.8162 |
 
-Notably the linear model is now **ahead** of the forest on both metrics — the opposite of the pre-engineering baseline in the migration document (logreg 0.9187 / rf 0.9179 unengineered). The participation indicators are the likely reason: they hand the linear model the threshold effects it cannot otherwise express, which is exactly what a tree would have had to spend splits discovering.
+Notably the linear model is **ahead** of the forest on both metrics, which is unusual on tabular data of this size. The participation indicators are the likely reason: they hand the linear model the threshold effects it cannot otherwise express, which is exactly what a tree would have had to spend splits discovering.
 
 ---
 

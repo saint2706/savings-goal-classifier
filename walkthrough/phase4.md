@@ -1,8 +1,8 @@
-# Phase 4 (IHDS-II) — Model Comparison
+# Phase 4 — Model Comparison
 
 **Source:** [README § Phase 4 — Model Comparison](../README.md#phase-4--model-comparison)
 **Notebook:** [`notebooks/04_model_comparison.ipynb`](../notebooks/04_model_comparison.ipynb)
-**Builds on:** [Phase 3 (IHDS-II)](phase3.md)
+**Builds on:** [Phase 3](phase3.md)
 **Artifacts:** `results/model_comparison.csv`, `results/model_comparison.png`
 
 At **2.13:1 with 13,256 minority cases** (Phase 1), this is an ordinary near-balanced classification problem. Class weighting is therefore optional rather than essential, and macro-F1 and ROC-AUC are straightforwardly usable without the contortions a severe imbalance would force.

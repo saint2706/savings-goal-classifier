@@ -1,8 +1,8 @@
-# Phase 5 (IHDS-II) — Explainability
+# Phase 5 — Explainability
 
 **Source:** [README § Phase 5 — Explainability](../README.md#phase-5--explainability)
 **Notebook:** [`notebooks/05_explainability.ipynb`](../notebooks/05_explainability.ipynb)
-**Builds on:** [Phase 4 (IHDS-II)](phase4.md), [Phase 2 (IHDS-II)](phase2.md)
+**Builds on:** [Phase 4](phase4.md), [Phase 2](phase2.md)
 **Artifacts:** `results/shap_importance.csv`, `results/shap_summary.png`, `results/shap_dependence.png`
 
 Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to 1, so they are **exactly singular** (VIF = ∞) and no coefficient on them is identified. Phase 4 confirmed the logistic fit is only unique because of its L2 penalty. This phase deals with that first, then explains the model.

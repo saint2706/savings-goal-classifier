@@ -1,8 +1,8 @@
-# Phase 7 (IHDS-II) — Business Translation
+# Phase 7 — Business Translation
 
 **Source:** [README § Phase 7 — Business Translation](../README.md#phase-7--business-translation)
 **Notebook:** [`notebooks/07_business_translation.ipynb`](../notebooks/07_business_translation.ipynb)
-**Builds on:** Phases 0–6 (IHDS-II)
+**Builds on:** Phases 0–6
 **Artifacts:** `results/business_recommendations.csv`, `results/business_translation.png`
 
 This is where the project has to say what it would actually recommend. The recommendations that survive contact with the evidence are more modest than a 0.93 ROC-AUC suggests: the model's margin over a plain income rule is small, and for most at-risk households the shortfall is not something a spending nudge can fix.

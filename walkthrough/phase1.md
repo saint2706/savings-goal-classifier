@@ -1,4 +1,4 @@
-# Phase 1 (IHDS-II) — Data Understanding
+# Phase 1 — Data Understanding
 
 **Source:** [README § Phase 1 — Data Understanding](../README.md#phase-1--data-understanding)
 **Notebook:** [`notebooks/01_eda_and_leakage_check.ipynb`](../notebooks/01_eda_and_leakage_check.ipynb)
@@ -29,7 +29,7 @@ The notebook carries only section headers and code; the reasoning lives here.
 
 Loads `dataset/households.csv` and declares four column groups up front: the 11 expense categories, their `_Share` counterparts, the behavioural `Has_*` columns, and `LEAKAGE_COLS`.
 
-**Why the leakage list is a named constant in the first cell rather than derived later:** the original Phase 1 discovered its leakage columns partway through and excluded them afterwards. Here the exclusion set is known before any analysis runs — the migration document already proved which representations reconstruct the target — so declaring it first makes it impossible for an intermediate cell to accidentally treat a leakage column as a feature. Cell 13 then *re-verifies* the list rather than establishing it.
+**Why the leakage list is a named constant in the first cell rather than derived later:** [dataset construction](dataset_construction.md) already established which representations reconstruct the target, so the exclusion set is known before any analysis runs. Declaring it up front makes it impossible for an intermediate cell to accidentally treat a leakage column as a feature. Cell 13 then *re-verifies* the list rather than establishing it.
 
 ### Cell 3 (code) — Column inventory (Q1)
 
@@ -104,7 +104,7 @@ Four of the eleven features being majority-zero also means these are **semi-cont
 
 Household spending is only loosely tied to income here (strongest: `Groceries` at 0.43; weakest: `Rent` at 0.09), so the raw columns carry substantial information that income does not.
 
-**Why this changes the justification for Phase 2's central decision:** the original Phase 2 converted expenses to ratios primarily to *remove redundancy* — the raw columns were so collinear with income that they carried little independent signal. That argument no longer applies; the raw columns here are genuinely informative and mutually distinct. Ratios and shares are still the right representation, but now for a different reason: comparability across a 100× income range, and (for shares specifically) leakage avoidance. Phase 2's write-up should state the new justification rather than inherit the old one.
+**Why this constrains Phase 2's central decision:** converting expenses to ratios is often justified as *removing redundancy* — when raw columns are so collinear with income that they carry little independent signal. That argument does not apply here; the raw columns are genuinely informative and mutually distinct. Ratios and shares remain the right representation, but the justification has to be comparability across a 100× income range and, for shares specifically, leakage avoidance.
 
 **The share correlations recover a real economic law:**
 

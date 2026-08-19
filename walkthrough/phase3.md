@@ -1,8 +1,8 @@
-# Phase 3 (IHDS-II) — Baseline
+# Phase 3 — Baseline
 
 **Source:** [README § Phase 3 — Baseline](../README.md#phase-3--baseline)
 **Notebook:** [`notebooks/03_baseline.ipynb`](../notebooks/03_baseline.ipynb)
-**Builds on:** [Phase 2 (IHDS-II)](phase2.md)
+**Builds on:** [Phase 2](phase2.md)
 **Artifacts:** `results/baseline.csv`, `results/baseline.png`
 
 A baseline exists to answer one question before any modelling effort is justified: **how much of this problem is solved by doing almost nothing?** The answer here sets a far higher bar for Phase 4 than the majority class alone would suggest — a single threshold on income recovers most of the achievable performance.
