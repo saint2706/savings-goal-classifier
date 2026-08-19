@@ -1,166 +1,137 @@
-# Phase 4 — Model Comparison
+# Phase 4 (IHDS-II) — Model Comparison
 
 **Source:** [README § Phase 4 — Model Comparison](../README.md#phase-4--model-comparison)
 **Notebook:** [`notebooks/04_model_comparison.ipynb`](../notebooks/04_model_comparison.ipynb)
-**Builds on:** [Phase 3 — Baseline](phase3.md)
+**Builds on:** [Phase 3 (IHDS-II)](phase3.md)
+**Artifacts:** `results/model_comparison.csv`, `results/model_comparison.png`
+**Replaces:** [`phase4.md`](phase4.md) — which is void on real data, for the reason below
 
-Phase 3 established two things this notebook takes as given: **accuracy is not a usable metric** for this project's ~99.4%/0.6% class imbalance, so every model here is judged on macro-F1 instead; and a **plain, imbalance-unaware classifier cannot beat the do-nothing baseline** (~0.499 macro-F1). Phase 4's job is to find out whether _any_ model, once given proper imbalance handling and real hyperparameter tuning, can clear that floor — and, just as importantly, which of several model families does it best under the actual cost trade-off the business decision implies.
-
-**A methodological point that shapes this notebook's whole structure:** with six candidate models, comparing all of them on `X_test` and reporting whichever scores best is itself a form of test-set leakage — it lets the test set influence _which model gets reported_, biasing that model's own final score upward. This notebook instead selects the winning model using **cross-validated, out-of-fold predictions only** (`cross_val_predict`), and touches `X_test` exactly once, at the very end, for a single evaluation of the model already chosen.
+The original Phase 4 was built entirely around a 178:1 class imbalance with only 112 minority cases. Every decision it made followed from that: `class_weight="balanced"` on everything, model selection on `recall_0`, and the linear SVM winning because it was one of only two models achieving perfect minority recall. At **2.13:1 with 13,256 minority cases**, none of that reasoning applies and the comparison has to be re-made from scratch.
 
 ---
 
 ## Research questions & answers
 
-| #   | Question                                                                    | Answer                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Which 5–7 model families are appropriate given the data shape?              | Logistic Regression, Decision Tree, Random Forest, XGBoost, SVM (linear kernel), and Neural Net (MLP) — six families spanning linear, tree/ensemble, and non-linear model types, each paired with an imbalance-handling mechanism appropriate to that family.                                                                                                                                                                                  |
-| 2   | What validation strategy fits the class balance found in Phase 1?           | Stratified 5-fold cross-validation (`StratifiedKFold`), used for hyperparameter tuning, for selecting the winning model, and for threshold tuning — `X_test` is touched exactly once, at the end, for the single already-selected model.                                                                                                                                                                                                       |
-| 3   | What hyperparameter search method is used, and what moves performance most? | `GridSearchCV` for the two single-hyperparameter models (Logistic Regression, SVM); `RandomizedSearchCV` (n*iter 8–15) for the four multi-hyperparameter models. Performance was driven far more by \_which imbalance-handling mechanism* each model family used than by any individual hyperparameter — linear models' `class_weight` reliably reached `recall_0=1.0` under cross-validation; tree ensembles and the oversampled MLP did not. |
-| 4   | Is precision or recall more important, given the business framing?          | **Recall on the minority (`Goal_Met = 0`, at-risk) class** — a false negative means an at-risk customer is never flagged for outreach at all, which is costlier than the low-friction cost of an unnecessary nudge (a false positive).                                                                                                                                                                                                         |
-
-The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each design decision was made.
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | Which model families are appropriate given the data? | Seven: majority baseline, logistic regression, linear SVM, decision tree, random forest, histogram gradient boosting, and XGBoost. At n = 41,518 with 28 mixed features, kernel SVMs are impractical (O(n²)) and were excluded on cost, not principle. **XGBoost wins** at CV macro-F1 **0.8371** / ROC-AUC **0.9306**. |
+| 2 | What validation strategy fits the class balance found in Phase 1? | 5-fold **stratified** k-fold on an 80% training split, with a 20% test set (8,304 households) held out and touched exactly once. Stratification still matters at 2.13:1, but as insurance rather than necessity — fold-to-fold macro-F1 sd is 0.0018–0.0052, so the estimates are stable. |
+| 3 | What hyperparameter search method is used, and what parameters move performance most? | 15-iteration randomised search over 5 XGBoost parameters, plus a 5-point sweep on logistic regression's `C`. **The search is worth +0.0006 macro-F1** (0.8371 → 0.8377) — statistically nothing. `learning_rate` matters most (score sd 0.0040 across levels); `max_depth` matters least (0.0003). |
+| 4 | Is precision or recall more important given the business framing? | **Recall on the at-risk class**, because the intervention is a low-cost nudge and a missed at-risk household is a customer who silently fails their goal. The good news is the trade-off is cheap here: at the default threshold the at-risk class already gets precision 0.887 / recall 0.913, and pushing recall to **95%** costs only ~3 points of precision (0.856). |
 
 ---
 
 ## Notebook walkthrough
 
-The notebook carries only section headers and code; the reasoning behind each step lives here. Its core discipline, up front: comparing several already-fitted models against each other using their test-set scores is a subtle leakage risk (the winner is partly chosen _because_ it did well on those specific 4,000 rows), so this notebook selects the winner from cross-validated, out-of-fold predictions instead, reserving `X_test` for exactly one evaluation at the end.
+### Cell 1 (code) — Load, and split off the test set immediately
 
-### Cell 0 (markdown) — Title
+The 20% test split is made in the **first cell**, before any model is defined, and is not referenced again until the final cell.
 
-### Cell 1 (code) — Imports and rebuilding Phase 2/3's feature matrix and split
+**Why up front rather than at the end:** it makes accidental leakage structurally difficult. Every intermediate decision in this notebook — model choice, hyperparameter search, threshold tuning — reads `X_train` only. If the split happened later, any of those steps could have quietly seen the test data. The original Phase 4 made the same choice for the same reason, and it is the one thing from it that transfers unchanged.
 
-Rebuilds `engineered` and reproduces Phase 3's exact 80/20 stratified split (`random_state=42`). `X_test`/`y_test` are set aside here and not referenced again until the notebook's final evaluation section.
+### Cell 3 (code) — The seven-family comparison (Q1, Q2)
 
-### Answer to Question 1: model family selection
+| Model | CV accuracy | **CV macro-F1** | CV precision | CV recall | F1 sd | CV ROC-AUC |
+| --- | --- | --- | --- | --- | --- | --- |
+| **XGBoost** | 0.8614 | **0.8371** | 0.8064 | 0.7446 | 0.0018 | **0.9306** |
+| HistGradientBoosting | 0.8606 | 0.8360 | 0.8065 | 0.7412 | 0.0021 | 0.9306 |
+| Random Forest | 0.8512 | 0.8249 | 0.7914 | 0.7253 | 0.0032 | 0.9170 |
+| Logistic Regression | 0.8343 | 0.8186 | 0.6984 | **0.8466** | 0.0037 | 0.9213 |
+| Linear SVM | 0.8332 | 0.8177 | 0.6961 | 0.8479 | 0.0039 | — |
+| Decision Tree | 0.8067 | 0.7889 | 0.6614 | 0.8091 | 0.0052 | 0.8847 |
+| Majority baseline | 0.6807 | 0.4050 | 0.0000 | 0.0000 | 0.0000 | 0.5000 |
 
-The data shape after Phase 2's encoding — n = 20,000, 21 numeric features (3 continuous, 11 expense ratios, 7 one-hot categoricals), and the severe ~99.4%/0.6% imbalance — rules out anything that doesn't scale to 20,000 rows or can't be given an explicit imbalance-handling mechanism. Six families are chosen:
+**Why macro-F1 is the ranking metric and accuracy is not:** the majority baseline scores 0.6807 accuracy while never predicting the positive class. Macro-F1 weights both classes equally and so cannot be gamed by ignoring one.
 
-| Model               | Why included                                                                                                                                                                                     | Imbalance handling         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
-| Logistic Regression | Re-runs Phase 3's baseline model with imbalance handling added                                                                                                                                   | `class_weight="balanced"`  |
-| Decision Tree       | Non-linear splits/interactions a linear model can't capture; directly explainable structure                                                                                                      | `class_weight="balanced"`  |
-| Random Forest       | Ensemble of trees, usually reduces a single tree's variance                                                                                                                                      | `class_weight="balanced"`  |
-| XGBoost             | Typically the strongest tabular-data performer; named explicitly in the README's results table                                                                                                   | `scale_pos_weight` (tuned) |
-| SVM (linear kernel) | Named in the README; **linear kernel is deliberate** — n=20,000 makes an RBF kernel's O(n²)–O(n³) training cost impractical, and Phase 3 already found a linear boundary captures the key signal | `class_weight="balanced"`  |
-| Neural Net (MLP)    | Non-linear model with a genuinely different imbalance mechanism, since `MLPClassifier` has no `class_weight` parameter                                                                           | Random oversampling        |
+**Why the linear models look worse than they are.** Logistic regression and the linear SVM have the *highest recall* in the table (0.847, 0.848) and the lowest precision (0.698, 0.696). That is `class_weight="balanced"` doing exactly what it is asked: reweighting the loss to favour the minority class, which shifts the decision boundary toward predicting "on track" more often. The boosted models were fitted **without** class weighting, because at 2.13:1 they do not need it, and they land on a more even precision/recall split. The comparison is therefore between differently-calibrated models, and the fair reading is the ROC-AUC column — which is threshold-free. There, logistic regression (0.9213) sits much closer to XGBoost (0.9306) than macro-F1 suggests.
 
-### Answer to Question 2: validation strategy
+**The honest margin.** Against the **single income threshold** from Phase 3 (macro-F1 0.7425), XGBoost is worth **+0.095**. Against the majority baseline it is worth +0.432, but that comparison flatters the model and Phase 3 exists to prevent it being quoted.
 
-**`StratifiedKFold(n_splits=5)`**, used for three distinct jobs, all without touching `X_test`: (1) scoring every hyperparameter combination in each model's search below, (2) selecting which model family wins via `cross_val_predict`, and (3) tuning the winning model's decision threshold. With only ~90 minority-class rows in the training set, a single split (even a stratified one) means every reported number rests on how a handful of minority rows happened to land — cross-validation pools the result across 5 folds instead. Stratification specifically matters because a non-stratified fold could land with zero or very few `Goal_Met = 0` rows by chance.
+**Why the two boosting implementations are treated as tied:** 0.8371 vs 0.8360 is a gap of 0.0011 against a fold-to-fold sd of 0.0018–0.0021 — well inside noise, and their ROC-AUCs are identical to four decimals. XGBoost is selected because it scored marginally higher, not because it is meaningfully better; `HistGradientBoosting` would be a defensible swap and has the advantage of being a scikit-learn built-in with no extra dependency.
 
-### Cell 2 (markdown) — "Shared evaluation helper and cross-validator"
+**Excluded families and why:** RBF-kernel SVM scales roughly quadratically in n and is impractical at 41,518 rows. A neural net (MLP) was excluded because Phase 3 showed steep diminishing returns — the marginal gain over the boosted trees would not justify the tuning surface. Both exclusions are cost decisions, and neither is likely to change the ranking.
 
-### Cell 3 (code) — Shared evaluation helper and cross-validator
+### Cell 5 (code) — Hyperparameter search (Q3)
 
-```python
-def evaluate(name, y_true, y_pred): ...
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-best_models = {}
-```
+15-iteration randomised search over `max_depth`, `learning_rate`, `n_estimators`, `subsample`, `min_child_weight`, scored on macro-F1.
 
-Defines the reused `evaluate()` helper and the shared cross-validator every search and comparison in this notebook uses. `best_models` collects each tuned pipeline for the cross-validated comparison section that follows all six searches — notably, **no test-set evaluation happens here or in any of the six model-fitting cells that follow**; each cell prints only its search's best hyperparameters and aggregate CV macro-F1 (`best_score_`).
+**Best parameters:** `learning_rate=0.15`, `n_estimators=200`, `max_depth=4`, `min_child_weight=5`, `subsample=0.9`
+**Best score: 0.8377** — against **0.8371** for the untuned defaults.
 
-### Cells 4–15 — Fitting and searching all six models
+**The search bought +0.0006 macro-F1, which is a third of one fold's standard deviation.** This is the phase's most useful negative result, and it confirms the prediction Phase 3 made from the feature-progression curve: the problem's difficulty lives in the data, not in the model configuration. A larger search would have been compute spent to move a number that does not move.
 
-Each model gets a one-line markdown header naming its search method and a code cell (pipeline + grid + search), printing only `best_params_` and `best_score_` — no per-model test-set touch. In fitting order: **Logistic Regression** (`GridSearchCV`, `C`, CV macro-F1 ~0.896), **Decision Tree** (`RandomizedSearchCV`, ~0.803), **Random Forest** (`RandomizedSearchCV`, ~0.843), **XGBoost** (`RandomizedSearchCV`, including `scale_pos_weight` as a searched value, ~0.820), **SVM/LinearSVC** (`GridSearchCV`, ~0.923 — the best aggregate CV score), **Neural Net/MLP** (`RandomizedSearchCV`, inside a pipeline with `RandomOverSampler`, ~0.861).
+**Which parameters matter, by sd of mean score across each level:**
 
-**The XGBoost cell's finding deserves its own note:** because `Goal_Met = 1` (met) is the _majority_ class here, the textbook `scale_pos_weight` formula (`count(negative) / count(positive)`) comes out _less than 1_, deliberately down-weighting the abundant class. The search's own `cv_results_` show **`scale_pos_weight=1` (no correction) scoring highest** — pushing toward the textbook value traded away more precision than it gained in recall.
+| Parameter | Sensitivity |
+| --- | --- |
+| `learning_rate` | 0.00397 |
+| `subsample` | 0.00090 |
+| `n_estimators` | 0.00082 |
+| `min_child_weight` | 0.00054 |
+| `max_depth` | 0.00033 |
 
-### Cell 16 (markdown) — "Selecting the winner from cross-validated predictions"
+`learning_rate` dominates by 4×, which is the standard result for gradient boosting — it is the one parameter that trades directly against `n_estimators` and controls how much the ensemble can overfit. That **`max_depth` matters least** is more telling: the model does not need deep interactions, which is consistent with Phase 3's finding that two features (income and grocery share) already reach AUC 0.876 of the final 0.931.
 
-### Cells 17–18 (code) — Selecting the winning model from cross-validated predictions
+**Note that the tuned model chose `max_depth=4`, shallower than the default 6.** Combined with the flat sensitivity, this says the signal is close to additive.
 
-```python
-majority_pred_cv = np.full(shape=y_train.shape, fill_value=y_train.mode()[0])
-cv_rows = [evaluate("Majority baseline", y_train, majority_pred_cv)]
+### Cell 6 (code) — Logistic regression's regularisation sweep
 
-for name, model in best_models.items():
-    oof_pred = cross_val_predict(model, X_train, y_train, cv=cv, n_jobs=-1)
-    cv_rows.append(evaluate(name, y_train, oof_pred))
+`C` from 0.01 to 100: macro-F1 moves from 0.8159 to **0.8190** — a range of 0.003 across four orders of magnitude, monotonically increasing.
 
-cv_comparison = pd.DataFrame(cv_rows).set_index("model")
-```
+**Why this is worth reporting rather than skipping:** Phase 2 found the 11 shares are **exactly singular** (VIF = ∞, they sum to 1), which means the model is only identifiable because of the L2 penalty. If the fit were badly conditioned, performance would be sharply sensitive to `C`. It is not — and that the best `C` is the *weakest* regularisation tested (100.0) says the penalty is doing structural work (making the solution unique) rather than being needed to control variance. The singularity is real but benign for prediction, exactly as Phase 2 predicted. **It remains fatal for coefficient interpretation**, which is Phase 5's problem.
 
-**What it does:** `cross_val_predict` clones and refits each already-tuned pipeline fresh within each of the 5 folds, producing one out-of-fold prediction per training row. The majority baseline is computed directly (a constant-prediction rule needs no fitting, so it's identical either way).
+### Cell 8 (code) — Precision vs recall for the business decision (Q4)
 
-**Why this table, not a test-set table:** every number in it comes from predictions on rows each model never saw during that fold's fit — the same guarantee `X_test` would offer, but obtained 5 times over and pooled, without spending the one held-out set this project has.
+**The framing correction this cell makes:** the positive class is `Goal_Met = 1` ("on track"), but the class the business acts on is `Goal_Met = 0` — the at-risk households a savings nudge would target. Every precision/recall figure in the comparison table is for the *wrong class* for decision-making purposes, so the at-risk view is computed explicitly.
 
-**Resulting per-class picture (the numbers Question 3 and 4 are built on):**
+Out-of-fold, XGBoost at the default threshold:
 
-| Model               | CV macro-F1 | CV recall₀ | CV precision₀ |
-| ------------------- | ----------- | ---------- | ------------- |
-| SVM (Linear)        | 0.922       | **1.000**  | 0.732         |
-| Logistic Regression | 0.894       | **1.000**  | 0.652         |
-| Neural Net (MLP)    | 0.858       | 0.933      | 0.583         |
-| Random Forest       | 0.844       | 0.689      | 0.689         |
-| XGBoost             | 0.826       | 0.511      | 0.902         |
-| Decision Tree       | 0.803       | 0.733      | 0.520         |
-| Majority baseline   | 0.499       | 0.000      | 0.000         |
+| Class | Precision | Recall | F1 | Support |
+| --- | --- | --- | --- | --- |
+| **not on track** | 0.885 | 0.916 | 0.900 | 22,609 |
+| on track | 0.807 | 0.746 | 0.775 | 10,605 |
 
-The second chart (Cell 18) plots accuracy vs. macro-F1 for all seven rows and precision/recall on the minority class specifically — the one that makes the tree-ensemble/MLP shortfall visible at a glance, since only Logistic Regression and SVM's `recall_0` bars reach 1.0.
+**The at-risk class is the easier one**, because it is the majority at 68%. This inverts the synthetic project entirely, where the at-risk class was 0.56% and catching it was the whole difficulty.
 
-### Answer to Question 3
+Tuning the threshold on the at-risk score:
 
-`GridSearchCV` for the single-hyperparameter models, `RandomizedSearchCV` otherwise. What moved performance most wasn't any individual hyperparameter — it was **which imbalance-handling mechanism each model family used**: `class_weight="balanced"` on linear models reliably reached `recall_0=1.0` across every fold (few enough degrees of freedom that reweighting the loss function alone moves the boundary); on tree models it only partially worked (recall₀ 0.73/0.69 — reweighting the split criterion doesn't manufacture more minority examples to split on); XGBoost's own search left `scale_pos_weight` unweighted, leaving recall₀ at 0.51; and oversampling on the MLP came close but fell short of perfect recall (0.93) — direct exposure to duplicated examples helps, but not as reliably as a boundary simple enough for weighting alone to move.
+| Target | Precision | Recall | Threshold |
+| --- | --- | --- | --- |
+| Max F1 | 0.873 | 0.933 | 0.440 |
+| Recall 80% | 0.941 | 0.800 | 0.757 |
+| Recall 90% | 0.896 | 0.900 | 0.554 |
+| **Recall 95%** | **0.856** | 0.950 | 0.368 |
 
-### Question 4: business framing and model selection
+**The recommendation: optimise for recall on the at-risk class.** The asymmetry is in the costs. A false positive is one unnecessary low-cost nudge to a household that was already saving — mildly wasteful. A false negative is a household heading for a shortfall that the outreach never reaches, which is the failure the project exists to prevent (Phase 0).
 
-Phase 0's framing makes the cost asymmetry concrete: a **false negative** (predicting on-track for someone at-risk) means that person is never flagged for outreach at all — the project's entire purpose is lost for them; a **false positive** just means an unnecessary, low-cost nudge. **Recall on `Goal_Met = 0` matters more than precision on it.**
+**And the trade is unusually cheap here.** Moving from 80% to 95% recall costs 8.5 points of precision (0.941 → 0.856). Even at 95% recall, roughly six in seven flagged households are genuinely at risk. Contrast the synthetic project, where achieving perfect minority recall cost so much precision that roughly one in eight flags was real.
 
-Applying that to the cross-validated table above: exactly **two** models reach `recall_0 = 1.0` — **Logistic Regression** and **SVM (Linear)**. Between them, SVM (Linear) has the higher `precision_0` (0.732 vs. 0.652) and higher macro-F1 (0.922 vs. 0.894), so **SVM (Linear), `C=10`, is selected as Phase 4's winning model**.
+**A caveat that must travel with any of these numbers:** Phase 1 established that 55.9% of IHDS households report consumption exceeding income, so `Goal_Met` is biased downward. These precision/recall figures are measured against a target that under-counts saving. They are sound for *ranking* households and for choosing an operating threshold; they should not be read as "89% of the households we flag are genuinely in financial distress."
 
-**A cautionary note that directly demonstrates why the CV-based selection matters:** the Neural Net also reaches `recall_0 = 1.0` when evaluated on `X_test` directly — which would make it look like a third contender (or even the winner) under a naive test-set comparison. But its _cross-validated_ `recall_0` is only 0.93 — its apparently perfect test-set recall is plausibly an artifact of which 22 minority rows happen to sit in this particular test split, not a reliable model property. This is the exact failure mode that motivates structuring the notebook around cross-validated selection rather than test-set comparison.
+### Cell 10 (code) — The single held-out evaluation
 
-### Cell 19 (markdown) — "Threshold tuning — cross-validated predictions only"
+**XGBoost, 8,304 households, evaluated once:**
 
-### Cell 20 (code) — Threshold tuning, using cross-validated predictions only
+| Class | Precision | Recall | F1 | Support |
+| --- | --- | --- | --- | --- |
+| not on track | 0.887 | 0.913 | 0.900 | 5,653 |
+| on track | 0.802 | 0.751 | 0.776 | 2,651 |
+| **macro avg** | 0.845 | 0.832 | **0.838** | 8,304 |
 
-```python
-oof_scores = cross_val_predict(svm_best, X_train, y_train, cv=cv, method="decision_function", n_jobs=-1)
-for threshold in np.arange(-3.0, 3.01, 0.1):
-    pred_t = (oof_scores >= threshold).astype(int)
-    ...
-```
+| | pred not on track | pred on track |
+| --- | --- | --- |
+| **not on track** | 5,163 | 490 |
+| **on track** | 660 | 1,991 |
 
-**What it does:** Gets out-of-fold decision-function scores for the tuned SVM via `cross_val_predict` (still no test-set involvement), sweeps a threshold, and picks the one with the best `precision_0` among all thresholds keeping `recall_0 = 1.0` — entirely from `X_train`.
-
-**Result:** the CV-selected threshold is **t ≈ -0.4** — raising `precision_0` from ~0.73 (default `t=0`) to **~0.93** in cross-validation, at no cost to `recall_0`.
-
-### Cell 21 (markdown) — "Final, single evaluation on the held-out test set"
-
-### Cell 22 (code) — Final, single evaluation on the held-out test set
-
-```python
-test_scores = svm_best.decision_function(X_test)
-for threshold, label in [(0.0, "default"), (chosen_threshold, "CV-selected")]:
-    pred_t = (test_scores >= threshold).astype(int)
-    ...
-```
-
-**What it does:** This is the **only place in the entire notebook where `y_test` is compared against predictions** — a single, honest look at held-out performance for the one model and threshold already chosen using `X_train` alone.
-
-**Result:** at the CV-selected threshold, **accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`** (catches all 22 true at-risk individuals in the test set), and **`precision_0 ≈ 0.88`** — better than even the CV estimate (~0.93 was the _out-of-fold_ estimate; the held-out test result of 0.88 is a plausible, unremarkable generalization gap, not a red flag).
-
-### Cell 23 (markdown) — "Persisting results"
-
-### Cell 24 (code) — Persisting results
-
-Saves `results/model_comparison.csv` (the cross-validated comparison table — the one actually used to select the winner), `results/final_test_evaluation.csv` (the single test-set evaluation), and `results/model_comparison.png`.
-
-**Winning model:** **SVM (Linear)** — `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` — final single test evaluation: accuracy ≈ 0.999, macro-F1 ≈ 0.968, `recall_0 = 1.0`, `precision_0 ≈ 0.88`. Because the winner is linear, Phase 5 can use SHAP's exact `LinearExplainer` rather than a sampled approximation.
+**Test macro-F1 is 0.838 against a cross-validated 0.838 — identical to three decimals.** No overfitting, and no optimism in the CV estimate. That is the expected outcome given the untuned and tuned models differed by 0.0006, but it is worth confirming rather than assuming: a model whose hyperparameters were selected on the same folds used to report its score would normally be slightly optimistic, and here the effect is unmeasurable because the search found nothing to overfit to.
 
 ---
 
-## What Phase 4 sets up for later phases
+## What this changes for later phases
 
-| Finding                                                                                                  | Where it gets used                                                                                                                                                              |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SVM (Linear), `C=10`, `class_weight="balanced"`, threshold `t≈-0.4` — macro-F1 ≈ 0.968, `recall_0 = 1.0` | The exact model and threshold Phase 5 retrains and explains                                                                                                                     |
-| Model selection must use cross-validated, not test-set, comparison                                       | The reason Phase 5's explanation is of a linear model — a direct consequence of the CV-based selection surfacing a different winner than a naive test-set comparison would have |
-| The winning model is linear                                                                              | Enables Phase 5 to use SHAP's exact `LinearExplainer` (no sampling/approximation needed) instead of a permutation-based explainer                                               |
-| Recall on `Goal_Met = 0` is the metric the business actually needs optimized                             | Frames Phase 5's explainability work around _why the model catches at-risk customers_, not just around accuracy                                                                 |
-| Threshold `t≈-0.4` (found via CV) improves precision at no recall cost                                   | A candidate operational recommendation for Phase 7 — Business Translation                                                                                                       |
-
-**Next:** Phase 5 — Explainability (`05_explainability.ipynb`), which uses SHAP to explain the winning model's predictions — both globally (which features matter most) and for individual predictions, in language a non-technical stakeholder can act on.
+| Phase | Consequence |
+| --- | --- |
+| **5 — Explainability** | Use SHAP on the **XGBoost** model. Do **not** read logistic-regression coefficients on the shares — Phase 2 showed VIF = ∞, and Cell 6 confirmed the fit is only identified by the L2 penalty. Expect `Log_Income` and `Groceries_Share` to dominate; anything else on top contradicts Phase 3. |
+| **6 — Clustering** | Unaffected by model choice; still needs the ILR-vs-CLR decision from Phase 2. |
+| **7 — Business translation** | Operate at the **95% at-risk recall** threshold (0.368): precision 0.856. Report the model's margin over the single income rule (+0.095 macro-F1), not over the majority baseline. |
+| **8 — Reporting** | The winning model, its metric, and the imbalance narrative all differ from `phase4.md`. That document describes the synthetic track and should not be cited for IHDS results. |

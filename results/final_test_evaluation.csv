@@ -1,3 +1,0 @@
-model,accuracy,precision_0,recall_0,f1_0,precision_1,recall_1,f1_1,f1_macro
-SVM (Linear) — default threshold,0.998,0.7333,1.0,0.8462,1.0,0.998,0.999,0.9226
-SVM (Linear) — CV-selected threshold,0.9992,0.88,1.0,0.9362,1.0,0.9992,0.9996,0.9679

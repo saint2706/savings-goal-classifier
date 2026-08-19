@@ -1,89 +1,128 @@
-# Phase 8 — Reporting
+# Phase 8 (IHDS-II) — Reporting
 
 **Source:** [README § Phase 8 — Reporting](../README.md#phase-8--reporting)
-**Builds on:** Phases 0–7 (all)
-**No notebook.** Phase 8 doesn't run any new analysis — every number and finding it uses was already computed and persisted by an earlier phase (`results/*.csv`, `results/*.png`). Its job is to assemble those findings into the write-up a non-technical stakeholder would actually read, and to make sure the *reasoning* behind each modeling decision — not just its final metric — survives into that write-up. Because there's no code to walk through cell by cell, this document doubles as that final write-up.
+**Builds on:** Phases 0–7 (IHDS-II)
+**No notebook.** Phase 8 runs no new analysis — every figure it cites was computed and persisted by an earlier phase. Its job is to assemble them into something a non-technical stakeholder would read, and to make sure the *reasoning* survives the compression.
+**Replaces:** [`phase8.md`](phase8.md)
 
 ---
 
 ## Research questions & answers
 
-| #   | Question                                                                                                    | Answer                                                                                                                                                                                                                                                                                                    |
-| --- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Does the final write-up explain reasoning (e.g., why leakage columns were excluded, why a given metric was chosen) rather than just reporting numbers? | Yes — see [Why each decision was made](#why-each-decision-was-made-the-reasoning-trail) below, which traces every material modeling decision back to the phase that made it and the specific reason, not just the resulting score.                                                                     |
-| 2   | Which 3–4 visualizations communicate the findings fastest to a non-technical reader?                          | Three: `results/persona_clusters.png` (where risk concentrates), `results/shap_summary.png` (what drives it), and `results/model_comparison.png` (why the recommended classifier can be trusted to catch it). See [Visual appendix](#visual-appendix--the-stakeholder-deck) for why these three and not others. |
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | Does the write-up explain reasoning rather than just reporting numbers? | Yes — see [Why each decision was made](#why-each-decision-was-made) below, which traces every material choice to the phase that made it and the evidence that forced it, including four cases where the evidence overturned the approach we started with. |
+| 2 | Which 3–4 visualisations communicate the findings fastest? | Four: `phase1_eda.png` (what the data is really like), `shap_summary.png` (what drives the outcome), `business_translation.png` (what the model is worth), and `personas.png` (who the segments are). Rationale in [Visual appendix](#visual-appendix). |
 
 ---
 
-## The final stakeholder write-up
+## The stakeholder write-up
 
-*Written for the audience Phase 0 defined this project around — a fintech/savings-product marketing team deciding which customers to target, with no assumed ML background.*
+*Written for the audience Phase 0 defined: a savings-product or financial-inclusion team deciding which households to prioritise, with no assumed ML background.*
 
 ### Executive summary
 
-Out of 20,000 customers, **112 (0.56%) are not on track to hit their own stated savings goal**. Every one of them lives in a **Tier-1 city**, and the single biggest reason is loan-repayment burden eating an unusually large share of their income — not low income itself. A tuned classifier can flag all 112 with no misses, at the cost of roughly one unnecessary low-cost nudge for every eight real flags. For the vast majority of these customers, the shortfall is recoverable, not structural: 99.1% of them already have more addressable savings potential (mostly in groceries) than they need to close their gap. Recommended action: target Tier-1 customers the model flags with a savings nudge that leads with grocery spending, framed as a small, achievable ask.
+Across **41,518 Indian households** surveyed in 2011–12, **68% retain less than 20% of their annual income** after recorded consumption. A model can rank households by that risk with good accuracy (ROC-AUC 0.93, macro-F1 0.84) and unusually reliable probabilities.
+
+But three findings should temper any campaign built on it:
+
+1. **Income does most of the work.** A single threshold — earning more than ₹121,685/year — already recovers most of the model's performance. The full model adds real but modest value on top.
+2. **The model barely beats "contact the poorest first."** At a 25% contact budget it reaches 36.6% of at-risk households against 35.0% for a simple income rule. Its genuine advantage is precision: 99.6% of those contacted are truly at risk, against 68.3% at random.
+3. **For most at-risk households the shortfall is structural, not behavioural.** Only **28.5%** could reach the benchmark even by matching the spending of on-track households at the same income. A budgeting nudge cannot fix the other 71.5%.
+
+**Recommended action:** use the model to prioritise outreach *within* income bands rather than as a discovery tool; size the campaign as prioritisation rather than needle-finding; and pair any savings product with income-side support, because for seven in ten at-risk households more income — not less spending — is what closes the gap.
 
 ### The business question
 
-A savings-product marketing team can't manually review 20,000 customers to decide who needs an outreach nudge. This project builds a classifier that does that triage automatically — flagging customers who look unlikely to hit their own savings goal, so outreach effort goes where it's needed instead of being spread evenly or left to guesswork (Phase 0).
+A savings-product or financial-inclusion team cannot review 41,518 households by hand to decide who needs support. This project builds a classifier that triages them, flagging households unlikely to retain an adequate share of income so outreach goes where it is most needed (Phase 0).
+
+**One framing caveat that matters.** The original version of this project asked whether someone was on track for *their own stated savings goal*. No real household survey collects that, so the target here is **normative**: a household is "on track" if it retains at least 20% of annual income. That is a different question — closer to measuring savings *capacity* than goal alignment — and no claim in this report should be read as being about goals people set for themselves.
 
 ### What we found
 
-**1. Who's at risk.** Every one of the 112 at-risk customers lives in a Tier-1 city — none in Tier-2 or Tier-3. Occupation and age show no comparable pattern; number of dependents is only mildly elevated. Three independent methods agree on this: the classifier's own explanations (Phase 5), an unsupervised clustering that never saw the label (Phase 6), and a direct breakdown of the at-risk group (Phase 7).
+**1. Who is at risk.** At-risk rates fall steadily with income, from **97.8%** in the poorest decile to **16.9%** in the richest. Geography follows the same gradient: least-developed villages 73.3%, metro urban 57.9%. Occupation matters too — households with no regular worker (75.0%) or in agricultural labour (74.9%) versus salaried households (55.9%).
 
-**2. What drives it.** The single strongest signal is how much of a customer's income goes to loan repayments — more than twice as influential as the next factor. Education spending (a proxy for having dependents) and living in a Tier-1 city follow. Raw income, age, and number of dependents on their own matter far less than *how* a customer's income is being spent (Phase 5).
+**This reverses the earlier synthetic-data version of this project**, which found that *all* at-risk individuals lived in Tier-1 cities and recommended targeting them. Metro households are the least likely to be at risk here, and the geographic pattern is largely income wearing a geographic label — Phase 5 found income's effect is near-identical across area types.
+
+**2. What drives it.** Income is the dominant factor: 38.4% of the model's total explanation, more than four times the next feature. Spending mix matters too (26.7%), but second.
+
+Within spending, one finding is counter-intuitive and important: **households spending a larger share of their budget on food are *more* likely to be on track**, once income is accounted for. That is the opposite of the obvious reading. A food-dominated budget signals the *absence* of large irregular outlays — health shocks, durables, school fees — and those are what push consumption above income. Consistent with this, at-risk households spend **8.8 percentage points less** of their budget on groceries than on-track households at the same income.
 
 **3. What to do about it.**
 
 | Recommendation | Why |
 | --- | --- |
-| Target outreach by city tier, not occupation or age | 100% of at-risk customers (112/112) live in Tier-1 cities |
-| Lead nudge campaigns with grocery-spend reduction | Groceries is the largest source of unrealized savings — ₹18.2M/month across the population, about double the next category |
-| Frame the ask as small and achievable, not remedial | For 99.1% of at-risk customers, addressable savings already exceed their shortfall — this is a recoverable gap, not a structural one |
-| Deploy the recommended classifier at its tuned threshold for flagging | Catches all known at-risk customers, at the cost of roughly 1-in-8 unnecessary (but low-cost) nudges |
-| Don't build a separate persona-based targeting layer | The clustering found personas driven by the same city-tier/dependents signal the classifier already uses — it wouldn't add new targeting power |
+| Prioritise by income first; use the model to re-rank within income bands | The model adds only +1.5 points of at-risk capture over a simple income rule at a 25% budget |
+| Size the campaign as prioritisation, not needle-finding | At-risk households are 68% of the population; lift over random is 1.46× |
+| Treat the shortfall as structural for most households | Only 28.5% could close the gap by matching peer spending in every category |
+| If a behavioural lever exists it is Miscellaneous — not groceries | Groceries runs the wrong way; healthcare and education are the largest excesses but are not optional |
+| Report relative priority only, never a prevalence figure | 32.3% of the at-risk group report spending more than twice their income |
 
-(Full evidence for each: [`results/business_recommendations.csv`](../results/business_recommendations.csv), [Phase 7](phase7.md).)
+### What a stakeholder must be told before acting
 
-**4. How much to trust this.** Before acting on it, a stakeholder should know: the at-risk group used to validate the model is small (112 customers), so "catches every case" is strong evidence, not a lifetime guarantee; about 1 in 8 flagged customers won't actually be at risk; the model can't detect risk factors that only show up as a *combination* of features, only ones visible on their own; and the dataset may be partly synthetic, so absolute figures should be checked against real customer data before this goes into production (Phase 7).
-
-### Why each decision was made (the reasoning trail)
-
-A number on its own doesn't tell a stakeholder whether to trust it. Each row below is a decision earlier phases made *on purpose*, and why — the same reasoning a reviewer or a skeptical stakeholder would ask for.
-
-| Decision | Reasoning | Phase |
-| --- | --- | --- |
-| `Disposable_Income`, `Desired_Savings`, `Desired_Savings_Percentage` excluded from model inputs | These columns define the target itself; feeding them to the model would let it reconstruct the label instead of predicting it — perfect-looking accuracy with no real predictive value | 1 |
-| Framed as binary classification, not regression | The business decision is a yes/no targeting call, and the target is binary by construction; forecasting a continuous shortfall and re-thresholding it would throw away *why* that threshold matters | 0 |
-| Models judged on macro-F1, not accuracy | With 99.4% of customers on-track, a model that never once flags anyone still scores 99.4% accuracy — accuracy can't tell a useful model from a useless one here | 3 |
-| Winning model chosen from cross-validated predictions, never from test-set scores until the very end | Picking a "winner" by whoever scores best on the test set lets that one score influence the pick itself, inflating the reported result — cross-validation avoids that by scoring every candidate on data it never trained on | 4 |
-| SVM (linear) selected over tree ensembles and XGBoost, despite those having higher raw accuracy | This project's real cost is a missed at-risk customer, not a false alarm; only the linear SVM and logistic regression caught every at-risk customer under cross-validation, and the SVM did so with better precision | 4 |
-| Decision threshold tuned using training data only, then tested once | Tuning against the test set would mean the "final" number was itself chosen to look good on that specific data — the threshold was picked blind to the test set, then evaluated on it exactly once | 4 |
-| Explanations computed with SHAP's exact method, not an approximation | Because the winning model is linear, an exact per-customer explanation is available at no extra cost — no need to settle for a sampled approximation | 5 |
-| Clustering run as a cross-check, not as a second targeting system | An unsupervised method that never sees the label agreeing with the classifier's own explanation is stronger evidence than either alone; it turned out to rely on the same two signals the classifier already uses, so it doesn't add new targeting power | 6 |
-| Reliability caveats reported alongside the strong metrics, not left out | A stakeholder acting on a "flagged" list needs to know what a flag does and doesn't guarantee before using it operationally | 7 |
-
-### Visual appendix — the stakeholder deck
-
-Three charts, already produced and saved by earlier phases, in the order they'd be shown to a non-technical audience:
-
-1. **[`results/persona_clusters.png`](../results/persona_clusters.png) — "Where does risk concentrate?"** A bar chart of at-risk rate by customer segment. Shown first because it answers the most concrete question a marketing stakeholder has — *who do I target* — without requiring any explanation of how the model works. (Phase 6)
-2. **[`results/shap_summary.png`](../results/shap_summary.png) — "What's driving it?"** A ranked bar chart of which factors matter most to the model's decisions. Shown second, once the audience already trusts the "who," to explain *why* — loan-repayment burden dominates, ahead of city tier and grocery spend. (Phase 5)
-3. **[`results/model_comparison.png`](../results/model_comparison.png) — "Can we trust the flags?"** A side-by-side comparison of every model tried, with the recommended one's near-perfect catch rate on at-risk customers highlighted. Shown last, as the reliability case for actually deploying the recommendation. (Phase 4)
-
-Two other candidates were considered and left out: a raw model-accuracy chart (misleading on its own at 99%+ accuracy for every model, including the useless do-nothing baseline — the exact trap Phase 3 identified) and a full SHAP waterfall plot for an individual customer (informative but requires more model literacy than a three-chart, three-minute deck allows). The five recommendations table above stands in for a fourth visual — it's a table rather than a chart because the ranking and evidence pairing are the point, not a distribution.
-
-### Limitations carried into this report
-
-- The dataset's figures may be partly synthetic (Phases 1, 2, 5) — validate absolute numbers against real customer data before deploying operationally.
-- `Goal_Met` measures whether a customer meets *their own stated* goal, not an external measure of financial health.
-- The spending personas (Phase 6) are a demographic/geographic split already present in `Dependents` and `City_Tier`, not a newly discovered behavioral archetype.
-- The recommended model is linear and cannot represent any feature-interaction effect; its perfect recall rests on only 112 at-risk examples.
-
-(Full detail: [README § Limitations](../README.md#9-limitations).)
+- **The model is weakest exactly where the decision is hardest.** Accuracy is 0.98 in the poorest decile and 0.89 in the richest — but **0.78–0.80 in deciles 5–7**, where at-risk rates run 70% down to 49% and targeting is genuinely contested. The headline 0.86 overstates usefulness at the point of decision.
+- **About a third of the "at-risk" group is a measurement artifact.** 22.0% of households report spending more than twice their income; all are classified at-risk and they are 32.3% of that group. Indian household surveys under-report income relative to item-by-item consumption. The *ranking* remains useful; the *count* is not a population estimate.
+- **The 20% benchmark is a convention we chose**, not a measurement. Moving it to 10% or 30% shifts the at-risk share from 68.1% to 61.7% or 74.7%. Findings here hold across that range; levels do not.
+- **The data is from 2011–12.** Sound for methodology, not current for market sizing.
+- **Probabilities can be trusted.** Calibration error is at most 0.036 across the range — a predicted 70% really means about 70%, so scores support expected-value arithmetic, not just ranking.
 
 ---
 
-## Where this report fits
+## Why each decision was made
 
-This document is the plain-language deliverable Phase 8 asks for; the IEEE-format academic report (rigor, related work, evaluation rubric alignment against the instructor's template in [`project/main.tex`](../project/main.tex)) is maintained separately at [`project/report.tex`](../project/report.tex), and cites the same reasoning trail and visual appendix above rather than re-deriving them — though its three figures are their own polished, report-specific regenerations (`project/figures/`) rather than the `results/` PNGs linked above. There is no Phase 9 — this is the terminal phase of the pipeline described in [README § Methodology](../README.md#5-methodology--pipeline).
+Every material decision, the phase that made it, and the evidence behind it.
+
+| Decision | Phase | Reasoning |
+| --- | --- | --- |
+| Replace the synthetic dataset with IHDS-II | Migration | Bonus extensions showed the synthetic columns were generated independently — rent was a fixed 0.30/0.20/0.15 lookup on city tier, occupation was noise, discretionary spending a flat 7% at every age. Its near-perfect scores measured the generator, not households. |
+| Normative 20% target | Phase 0 | No real survey collects a self-declared savings goal. Threshold made configurable, and sensitivity published so no reader takes it on trust. |
+| Composition shares, not expense-to-income ratios | Phases 1–2 | Ratios reconstruct the target with **99.75%** agreement — textbook leakage. Shares sum to exactly 1 and cannot recover consumption-vs-income. |
+| Macro-F1, not accuracy | Phase 3 | The majority baseline scores 0.68 accuracy while never identifying a single on-track household. |
+| Benchmark against a single income rule | Phase 3 | Comparing only to the majority baseline flatters the model by 0.43 macro-F1; against the income rule the honest gain is 0.095. |
+| XGBoost over logistic regression | Phase 4 | Macro-F1 0.837 vs 0.819. Phase 5 explains why: **41.9% of the model's behaviour is interactions**, which a linear model cannot represent. |
+| Optimise for recall on the at-risk class | Phase 4 | A missed at-risk household is a silent failure; an unnecessary nudge is cheap. Reaching 95% recall costs only ~8 points of precision. |
+| SHAP on trees, not coefficients | Phases 2, 5 | The 11 shares sum to 1, so they are exactly singular (VIF = ∞) and no coefficient is identified. |
+| Peer benchmarking for "recoverable" | Phase 7 | IHDS has no `Potential_Savings` column; comparing within income deciles avoids assuming which spending is discretionary. |
+
+### Four times the evidence overturned our approach
+
+Recording these matters more than recording the successes, because each was a plausible choice that measurement rejected.
+
+1. **The CLR transform was proposed, implemented, and rejected** (Phase 2). Compositional data theory says to log-ratio transform simplex data. It scored 0.9117 against 0.9212 for raw shares, and its components are singular by construction (VIF 3×10⁵). The theory was right about the problem and wrong about which transform.
+2. **Expense-to-income ratios generalise *worst*** (Phase 2). The original project's central feature-engineering claim was that ratios transfer better across income levels. Tested on a neutral target, they came last (0.589 vs 0.625 for raw rupees). The original claim held only because the generator made expenses a fixed fraction of income.
+3. **A high grocery share predicts being *on track*** (Phase 5). We captioned the dependence plot with the opposite, from the obvious Engel's-law reading. The plot contradicted it. Reading this off Phase 1's unconditional correlation would have produced a backwards recommendation.
+4. **The spending personas are not an income split** (Phase 6). Predicted from Phase 5's attribution split; the adjusted Rand index against income tertiles is 0.006. Income was *suppressing* the persona effect — controlling for it nearly doubled the spread (0.167 vs 0.092).
+
+A fifth, methodological: Phase 6's notebook initially **hardcoded the worst-scoring representation** instead of selecting from the sweep it had just computed. Caught by reading the output rather than skimming it.
+
+---
+
+## Visual appendix
+
+Four charts, chosen because each answers a question a stakeholder will actually ask.
+
+**1. `results/phase1_eda.png` — "What is this data really like?"**
+Four panels: income skew, the savings-rate distribution with the 20% line marked, zero-inflation by category, and goal attainment by area type. It earns first place because it makes the two facts that constrain every later claim visible at once — the median household has a **negative** savings rate, and rent is absent for 90% of households.
+
+**2. `results/shap_summary.png` — "What drives the outcome?"**
+The SHAP summary. `Log_Income` dominates by 4.5×, which is the single most important thing for a stakeholder to internalise before believing any spending-behaviour story. Paired with `shap_dependence.png` when the counter-intuitive grocery finding needs explaining.
+
+**3. `results/business_translation.png` — "Is the model worth deploying?"**
+Three panels: the capture curve (model vs income rule vs random — the model's line sits just above the income rule's and both are near the diagonal, which is the honest picture), aggregate excess by category, and the calibration curve. This is the chart to show anyone approving budget, because it does not oversell.
+
+**4. `results/personas.png` — "Who are the segments?"**
+Spending signature, goal attainment by persona, and income distribution. Included with the caveat that the personas are defined by which categories are *absent*, so they are descriptive rather than targetable.
+
+**Deliberately excluded:** `model_comparison.png` and `cluster_selection.png`. Both are model-selection diagnostics that answer questions a technical reviewer asks and a stakeholder does not. They belong in Phases 4 and 6, not in a summary deck.
+
+---
+
+## Honest limitations
+
+- **Income under-reporting** puts 55.9% of households in an implausible consumption-exceeds-income position and makes ~32% of the at-risk group a measurement artifact. Relative rankings survive; absolute prevalence does not.
+- **2011–12 vintage.** IHDS-3 fieldwork is complete but public microdata was not released as of this work.
+- **Household grain.** No per-individual claims are supported.
+- **Survey weights are carried but not applied.** `WT` is in the dataset; model fitting is unweighted. Any nationally-framed figure must apply it.
+- **`Loan_Repayment` has no counterpart.** IHDS records debt as a stock, not a repayment flow — the strongest feature in the synthetic analysis has no direct migration.
+- **The at-risk class is the majority (68%)**, so lift-based business cases are structurally weak here regardless of model quality.
+- **Personas are partly a zero-replacement artifact** (adjusted Rand index 0.858 against the raw zero-pattern), not discovered behavioural archetypes.

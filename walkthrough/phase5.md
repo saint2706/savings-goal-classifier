@@ -1,134 +1,154 @@
-# Phase 5 — Explainability
+# Phase 5 (IHDS-II) — Explainability
 
 **Source:** [README § Phase 5 — Explainability](../README.md#phase-5--explainability)
 **Notebook:** [`notebooks/05_explainability.ipynb`](../notebooks/05_explainability.ipynb)
-**Builds on:** [Phase 4 — Model Comparison](phase4.md)
+**Builds on:** [Phase 4 (IHDS-II)](phase4.md), [Phase 2 (IHDS-II)](phase2.md)
+**Artifacts:** `results/shap_importance.csv`, `results/shap_summary.png`, `results/shap_dependence.png`
+**Replaces:** [`phase5.md`](phase5.md)
 
-Phase 4 selected **SVM (Linear)** — `LinearSVC`, `C=10`, `class_weight="balanced"`, decision threshold `t≈-0.4` (chosen via cross-validation) — as the winning model, on the grounds that it was one of only two models (alongside Logistic Regression) reaching perfect cross-validated recall on the at-risk class (`Goal_Met = 0`), with the better precision and macro-F1 of the two. A model chosen partly for a business-facing purpose is only useful if the _reasons_ behind its predictions can be explained to the people who have to act on them. Phase 5's job is to answer that directly, using SHAP.
-
-Because the winning model is **linear**, this notebook uses SHAP's exact `LinearExplainer` rather than the sampled, permutation-based approximation a non-linear model (e.g. the MLP that an earlier, less careful comparison had briefly pointed to) would require.
+Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to 1, so they are **exactly singular** (VIF = ∞) and no coefficient on them is identified. Phase 4 confirmed the logistic fit is only unique because of its L2 penalty. This phase deals with that first, then explains the model.
 
 ---
 
 ## Research questions & answers
 
-| #   | Question                                                                  | Answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| --- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Which features matter most globally for the winning model?                | `Loan_Repayment_Ratio` dominates (mean \|SHAP\| ≈ 6.21, more than 2× the next feature), followed by `Education_Ratio`, `City_Tier_Tier_1`, `Groceries_Ratio`, `City_Tier_Tier_2`, `Utilities_Ratio`, and `Rent_Ratio` — expense-ratio and city-tier features, not raw `Income`, `Age`, or `Dependents`, drive the model.                                                                                                                                                            |
-| 2   | Are there notable interaction effects (e.g., `City_Tier` × `Dependents`)? | **No — structurally impossible for this model.** Because the winning model is linear and SHAP is computed with `feature_perturbation="interventional"`, every feature's contribution is provably a function of that one feature's own value alone (verified: every feature's SHAP values correlate at \|r\| ≥ 0.9999999999 with its own raw values). No feature's contribution can depend on any other feature's value — including the README's `Dependents` × `City_Tier` example. |
-| 3   | Can individual predictions be explained in plain business language?       | Yes, and _exactly_ — SHAP decomposes each prediction into the same handful of globally important, business-tracked features, producing a concrete, actionable sentence per individual, with no approximation involved.                                                                                                                                                                                                                                                              |
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | Which features matter most globally? | `Log_Income` dominates at mean \|SHAP\| **2.617** — 4.5× the next feature and **38.4%** of all attribution. Then `Household_Size` (0.576), `Groceries_Share` (0.555), `Utilities_Share` (0.314). By group: income 38.4%, spending mix 26.7%, categoricals 13.3%, household composition 11.2%. |
+| 2 | Are there notable interaction effects? | **Yes — interactions are 41.9% of total attribution**, far from negligible. The strongest are `Groceries_Share × Log_Income` (0.166), `Household_Size × Log_Income` (0.102) and `Utilities_Share × Log_Income` (0.089). Income does not merely add to the prediction; it changes what every spending feature means. |
+| 3 | Can individual predictions be explained in plain business language? | Yes — SHAP is additive, and the notebook prints per-household explanations verified against the raw margin to 8.6×10⁻⁶. The worked examples also expose a data-quality caveat that a purely aggregate view hides. |
 
-The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell.
+---
+
+## Dealing with the identification problem first
+
+### The stability test — and why it under-detects the problem
+
+The same regularised logistic model was fitted on **5 disjoint subsamples**. If the shares were identified, coefficients would be stable across them.
+
+| Share feature | mean | sd | sd/\|mean\| | flips sign |
+| --- | --- | --- | --- | --- |
+| `Insurance_Share` | 0.006 | 0.011 | **1.808** | **yes** |
+| `Healthcare_Share` | −0.204 | 0.132 | 0.648 | **yes** |
+| `Entertainment_Share` | −0.017 | 0.010 | 0.603 | **yes** |
+| `Eating_Out_Share` | 0.035 | 0.020 | 0.555 | no |
+| `Groceries_Share` | 1.084 | 0.163 | 0.150 | no |
+
+Control group (non-compositional): `Log_Income` sd/|mean| **0.029**, `Household_Size` 0.137, `Debt_To_Income_W` 0.161.
+
+**3 of 11 shares flip sign across subsamples; 1 of 5 controls does.** `Log_Income`'s coefficient varies by 2.9% of its magnitude; `Insurance_Share`'s standard deviation is **1.8× its own mean**.
+
+**But this test is weaker evidence than it looks, and that matters.** L2 regularisation resolves a singular system by picking the *minimum-norm* solution — and it picks the same tie-break every time. So coefficients can be perfectly **reproducible** across subsamples while still not being **identified**: the regulariser, not the data, is choosing how credit is split between collinear shares. Reproducibility is not identification, and a stability test alone cannot distinguish them. The algebra (a feature that is an exact linear combination of others has no unique coefficient) is the real argument; this table only shows the symptom leaking through where the penalty binds loosest.
+
+### The reference-part fix, which does not fully work
+
+The standard remedy is to drop one part and read every remaining coefficient *relative* to it — the compositional analogue of a dummy baseline. Dropping `Groceries_Share`:
+
+| Feature | sd (all 11) | sd (reference dropped) | improvement |
+| --- | --- | --- | --- |
+| `Education_Share` | 0.043 | 0.009 | **4.9×** |
+| `Miscellaneous_Share` | 0.052 | 0.016 | 3.3× |
+| `Healthcare_Share` | 0.132 | 0.059 | 2.2× |
+| `Insurance_Share` | 0.011 | 0.007 | 1.7× |
+| `Utilities_Share` | 0.077 | 0.083 | 0.9× |
+| **`Rent_Share`** | 0.062 | **1.027** | **0.06× (17× worse)** |
+
+Median improvement: **1.22×** — modest. And `Rent_Share` becomes *dramatically* less stable, because it is zero for 90.4% of households (Phase 1); once the largest part is removed as the reference, the remaining variation in a mostly-zero column is too thin to pin its coefficient down.
+
+**Conclusion: the reference-part fix is not reliable here**, and it is reported as attempted-and-partially-failed rather than presented as the solution. **SHAP on the tree model is used instead** — it requires no matrix inversion, makes no identifiability assumption, and distributes credit by a game-theoretic rule that is well defined even under exact collinearity.
 
 ---
 
 ## Notebook walkthrough
 
-The notebook carries only section headers and code; the reasoning behind each step lives here. Phase 4's handoff: the winning model's identity, hyperparameters, and threshold, and why it being linear specifically changes the explainability approach available (exact `LinearExplainer` vs. an approximate, sampled explainer).
+### Cell 1 (code) — Fit Phase 4's winning configuration on transformed data
 
-### Cell 0 (markdown) — Title
+The `ColumnTransformer` is applied explicitly and XGBoost fitted on the resulting frame, rather than wrapping both in a `Pipeline`. **Why:** SHAP needs to attribute to the *encoded* columns (50 of them, after one-hot expansion), and a pipeline hides those names. Test accuracy 0.8615 confirms this reproduces Phase 4.
 
-### Cell 1 (code) — Rebuilding the feature matrix, cast to `float`
+### Cell 6 (code) — Global importance via native TreeSHAP
 
-Rebuilds the same engineered matrix and stratified split used in every prior phase, cast to `float` (SHAP's default tabular masker errors on the `bool` dtype `pd.get_dummies` produces for one-hot columns).
+**An implementation note worth recording.** `shap.TreeExplainer` **fails on this model**: shap 0.49 cannot parse XGBoost 3.1's `base_score` serialisation (`could not convert string to float: '[3.1929308E-1]'`). The notebook uses XGBoost's own `pred_contribs=True` instead — the same TreeSHAP algorithm, computed inside XGBoost. It is verified rather than assumed: **SHAP values plus bias reproduce the raw model margin to a maximum absolute error of 8.58×10⁻⁶**, which is the additivity property TreeSHAP guarantees.
 
-### Cell 2 (markdown) — "Retraining Phase 4's winning model"
+**Top features (mean |SHAP|):**
 
-### Cell 3 (code) — Retraining Phase 4's winning model
+| Feature | mean \|SHAP\| |
+| --- | --- |
+| `Log_Income` | **2.6170** |
+| `Household_Size` | 0.5755 |
+| `Groceries_Share` | 0.5546 |
+| `Utilities_Share` | 0.3136 |
+| `Clothing_Footwear_Share` | 0.2204 |
+| `Max_Adult_Education` | 0.2151 |
+| `Debt_To_Income_W` | 0.2036 |
 
-```python
-scaler = StandardScaler()
-X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=X_full.columns, index=X_train.index)
-X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_full.columns, index=X_test.index)
+**By group:**
 
-svm_clf = LinearSVC(class_weight="balanced", C=10, max_iter=5000, random_state=42)
-svm_clf.fit(X_train_scaled, y_train)
+| Group | Share of attribution |
+| --- | --- |
+| Income | **38.4%** |
+| Spending mix (11 shares) | 26.7% |
+| Categoricals (all levels) | 13.3% |
+| Household composition | 11.2% |
+| Participation indicators | 4.0% |
+| Debt | 3.3% |
+| Education | 3.2% |
 
-CHOSEN_THRESHOLD = -0.4
-test_scores = svm_clf.decision_function(X_test_scaled)
-pred = (test_scores >= CHOSEN_THRESHOLD).astype(int)
-```
+**This confirms Phase 3's prediction and completes the reversal of the synthetic project.** There, `Loan_Repayment_Ratio` dominated and raw income mattered far less than *how* income was spent. Here income is 38.4% of all attribution on its own, and Phase 3 showed a single income threshold already reaches macro-F1 0.7425. **Spending mix is real and worth 26.7%, but it is the second story, not the first.**
 
-**What it does:** Hardcodes Phase 4's found hyperparameters and threshold, and refits directly rather than re-running the search. Unlike Phase 4's `ImbPipeline`, the scaler and classifier are fit as two **separate** steps here — `LinearExplainer` needs direct access to the linear estimator's coefficients, which a bundled `Pipeline` object doesn't expose as conveniently.
+`Household_Size` at second place is new and was not visible in the univariate work — larger households consume more at any income, mechanically depressing the savings rate.
 
-**Sanity check:** the refit model's metrics (accuracy 0.9992, macro-F1 0.9679, `recall_0` 1.0000, `precision_0` 0.8800) match Phase 4's final test-set numbers exactly — confirming this notebook explains the actual model Phase 4 selected, not an approximation of it.
+**How to read a share's SHAP value (the compositional caveat).** Because the shares sum to 1, a household cannot raise one without lowering others. So `Groceries_Share`'s attribution is never "the effect of spending more on food"; it is **"the effect of food taking a larger portion of the budget, and everything else a correspondingly smaller one."** Every sentence about a share in Phase 7 must carry that relative framing.
 
-### Cell 4 (markdown) — "Global feature importance"
+### Cell 9 (code) — Interactions (Q2)
 
-`LinearSVC` has coefficients, which are themselves a form of feature importance — but they don't decompose an _individual_ prediction the way the per-row explanations below need, and aren't directly comparable to a SHAP value. `shap.LinearExplainer(svm_clf, X_train_scaled, feature_perturbation="interventional")` computes **exact** Shapley values for a linear model — for this setting, the SHAP value of feature _j_ on row _i_ is provably `coefficient_j × (x_ij − mean_j)`, with no approximation and no cross-feature term. Because it's exact, it runs on **all 4,000 test rows in under a second** — no background-sample-size trade-off to disclose, unlike a permutation-based explainer would need.
+Computed with `pred_interactions=True` on a 3,000-household sample (the full tensor is n × 50 × 50).
 
-### Cell 5 (code) — Building the explainer
+| Pair | mean \|interaction SHAP\| |
+| --- | --- |
+| `Groceries_Share` × `Log_Income` | **0.16632** |
+| `Household_Size` × `Log_Income` | 0.10154 |
+| `Utilities_Share` × `Log_Income` | 0.08910 |
+| `Groceries_Share` × `Utilities_Share` | 0.04021 |
+| `Max_Adult_Education` × `Log_Income` | 0.03561 |
 
-### Cell 6 (code) — Global feature importance
+Main effects total 6.509; interactions total 4.689 — **interactions are 41.9% of all attribution.**
 
-```python
-mean_abs_shap = pd.Series(np.abs(shap_values.values).mean(axis=0), index=X_full.columns).sort_values(ascending=False)
-```
+**Why this is a substantive finding, not a technical footnote.** The synthetic project's winning model was a *linear SVM*, which is provably incapable of representing any interaction — a limitation its Phase 5 had to acknowledge. Here, more than two-fifths of the model's behaviour is interaction, and **eight of the ten strongest pairs involve `Log_Income`**. Income is not simply an additive term: it changes what every spending signal means. A high grocery share means something different for a household earning ₹40,000 than for one earning ₹400,000.
 
-**Result:** `Loan_Repayment_Ratio` is by far the most important feature (mean \|SHAP\| ≈ 6.21, more than double `Education_Ratio`'s ≈ 2.66). Behind those two: `City_Tier_Tier_1`, `Groceries_Ratio`, `City_Tier_Tier_2`, `Utilities_Ratio`, and `Rent_Ratio`, all in a similar (~1.0–1.2) range. This matches Phase 3's finding that `Loan_Repayment_Ratio` was the strongest raw correlate of `Goal_Met` — the model relies on a signal a simple correlation already flagged. `Income`, `Age`, and `Dependents` are absent from the top features: spending discipline, not income level, is what the model leans on.
+This also explains why Phase 4's logistic regression trailed XGBoost on macro-F1 (0.8186 vs 0.8371) while nearly matching it on ROC-AUC (0.9213 vs 0.9306) — a linear model captures the ranking well but misses the interaction structure that sharpens the decision boundary.
 
-### Cell 7 (markdown) — "Interaction effects"
+**One caveat on the 41.9% figure:** TreeSHAP interaction values are defined relative to the fitted tree ensemble, so this measures how much *this model* relies on interactions, not how much interaction exists in the population. Phase 4 found `max_depth=4` optimal with very low sensitivity, so the model has limited capacity for deep interaction — the true figure could be higher.
 
-### Cell 8 (code) — Proving interaction effects are structurally absent
+### Cell 11 (code) — The dependence plots, and a finding that reverses the naive reading
 
-```python
-same_feature_corr = {
-    feature: np.corrcoef(shap_values.values[:, j], X_test_scaled[feature].values)[0, 1]
-    for j, feature in enumerate(X_full.columns)
-}
-worst_feature, worst_corr = min(same_feature_corr.items(), key=lambda kv: abs(kv[1]))
-```
+**Left panel — income.** The SHAP curve is monotone increasing and sigmoid-shaped, saturating below log-income ≈ 9.5 and above ≈ 13.5. Crucially, **the four area types lie on top of one another.** Income's effect does not differ by geography. Combined with Phase 1's monotone area gradient (metro 42.1% → village 26.7%), the implication is that **the area-type gradient is largely an income gradient** — metro households save more because they earn more, not because location independently changes savings behaviour.
 
-**What it does:** For every feature, correlates that feature's column of SHAP values against that same feature's own raw values across all 4,000 test rows. If any interaction existed — if `Loan_Repayment_Ratio`'s contribution depended even slightly on `City_Tier` — rows sharing a `Loan_Repayment_Ratio` value but differing in `City_Tier` would get different SHAP values, pulling this correlation measurably below 1.0.
+**Right panel — grocery share. This is where I got it wrong, and the data corrected me.**
 
-**Result:** every feature's correlation is 1.0 to at least 9 decimal places (worst case: `Occupation_Student` at 0.9999999999). Each feature's SHAP contribution is fully and exactly determined by that feature's own value alone, with zero influence from any other feature.
+The naive expectation, and the caption I first wrote, was that a high food share pushes toward "not on track" — Engel's law says food share falls as income rises, so a high food share marks a poorer household. **The plot shows the exact opposite.** SHAP for `Groceries_Share` runs from roughly −3 at a 10% food share to about +1 at 80%, crossing zero near 0.45. **Conditional on income, a higher food share predicts being ON TRACK.**
 
-### Cell 9 (code) — By-tier interaction check
+**Why, mechanically.** `Log_Income` is already in the model, so the grocery share is no longer acting as a poverty proxy — that job is done. What remains is budget *shape*: a household whose spending is dominated by food is, by the closure constraint, spending proportionally little on everything else. The categories that fall are the lumpy, non-routine ones — healthcare shocks, durables, education fees, social functions — and those are exactly what push total consumption above income and destroy the savings rate. A low food share at a given income does not signal affluence; it signals **a large non-food outlay.**
 
-```python
-tier_cols = [c for c in X_full.columns if c.startswith("City_Tier_")]
-interaction_df["max_over_min_ratio"] = interaction_df.max(axis=1) / interaction_df.min(axis=1)
-```
+This is consistent with the strongest interaction in the model (`Groceries_Share × Log_Income`, 0.166), with the colour gradient in the panel, and with the borderline worked example below, where a 66.3% grocery share contributes **+0.711 toward "on track"**.
 
-**Conclusion:** a clean, structural **no**. Because the winning model is linear and its SHAP values are provably additive (verified above), `City_Tier` cannot mathematically change how much `Dependents` — or any other feature — contributes to a prediction. A supplementary by-tier grouping confirms this empirically: `Loan_Repayment_Ratio` and `Education_Ratio`'s SHAP spread is nearly identical across tiers (ratios ~1.0–1.1); `Dependents` (the README's specific example) is similarly flat and, more importantly, tiny in absolute size (SHAP std ≈ 0.23 vs. `Loan_Repayment_Ratio`'s ≈ 6.6–6.8) — it simply isn't important in any tier. `Rent_Ratio` shows a large spread ratio (~3×) but with near-zero _within-tier_ variance — almost every individual in a given city tier has nearly the same `Rent_Ratio`, a **data characteristic** (plausibly this dataset generating `Rent` as a roughly fixed proportion of income conditional on tier, consistent with the README's Limitations note about possibly-synthetic figures), not a model-learned interaction. Capturing genuine interactions, if ever needed, would require one of Phase 4's non-linear candidates — a trade-off Phase 4 made deliberately in favor of this model's superior cross-validated recall.
+**Why this matters beyond one chart.** Phase 1's univariate correlation (`Groceries_Share` vs log income, r = −0.266) is *real* and points the other way. Reading a conditional model's behaviour off an unconditional correlation would have produced a confident, backwards business recommendation — "target households with high food shares" is close to the opposite of the truth. The two views are not in conflict; they answer different questions, and only the conditional one describes what the model does.
 
-### Cell 10 (markdown) — "Individual predictions"
+### Cell 12 (code) — Individual explanations (Q3)
 
-### Cell 11 (code) — Explaining two representative rows
+**Most confident "on track"** — P = 100.0%, correct. Income ₹1,158,000/yr, 2 people, 0 dependents: `Log_Income` +6.737, `Household_Size` +0.929, `Groceries_Share` (0.465) +0.470. Plain language: *"very high income, small household, no dependents, and an ordinary food-centred budget."*
 
-```python
-at_risk_pos = np.argsort(test_scores)[0]     # lowest decision score => most confidently at-risk
-on_track_pos = np.argsort(test_scores)[-1]   # highest decision score => most confidently on-track
-```
+**Most confident "not on track"** — P = 0.0%, correct. Income ₹2,990/yr, 7 people, 4 dependents: `Log_Income` −5.653, `Miscellaneous_Share` (0.716) −1.160, `Debt_To_Income_W` at its winsorised ceiling of 10.234 −0.972.
 
-With the actual computed numbers:
+**This example is also a data-quality exhibit.** A reported annual income of ₹2,990 — about ₹250 a month for seven people — is not credible as a true income. It is Phase 1's income under-reporting (55.9% of households report consumption exceeding income) showing up in a single record. The model is confidently right about the *label*, and the label is itself an artifact of measurement. Worth showing rather than quietly picking a tidier example: it is the clearest possible illustration of why Phase 0 restricted this project to relative prioritisation rather than absolute claims.
 
-- **At-risk example** (test row 18909, decision score ≈ −5.46, actual `Goal_Met = 0`): the single largest reason is an unusually high `Loan_Repayment_Ratio` (≈19% of income, shap ≈ −13.64 — more than double the next contributor); below-typical `Education_Ratio`, living in a **Tier-1 city**, an above-typical `Rent_Ratio`, and above-typical `Groceries_Ratio` each add further downward pressure. In plain business language: _"This customer is flagged at-risk mainly because loan repayments are consuming an unusually large share of their income, compounded by above-typical rent and grocery spending while living in a higher cost-of-living city — a savings nudge focused on debt repayment burden is the most relevant intervention."_
-- **On-track example** (test row 786, decision score ≈ +41.97, actual `Goal_Met = 1`): the two largest drivers are zero education spending and zero loan-repayment burden, together contributing more than every other feature combined; above-typical `Groceries_Ratio`, `Utilities_Ratio`, and `Insurance_Ratio` each add a smaller positive contribution. In plain language: _"This customer isn't at risk primarily because they carry no loan-repayment or education-spending burden — that comfortably outweighs their other, more typical living expenses, and no outreach is needed here."_
-
-Both examples share the property a stakeholder needs: the explanation is always in terms of features the business already tracks, and — because the model is linear — every explanation is mathematically exact, not an approximation.
-
-### Cell 12 (code) — Waterfall plots
-
-Visualizes the same two breakdowns as SHAP waterfall charts.
-
-### Cell 13 (markdown) — "Persisting results"
-
-### Cell 14 (code) — Persisting results
-
-Saves the global SHAP importance chart to `results/shap_summary.png`.
-
-Phase 4's non-linear candidates (Random Forest, XGBoost, MLP) remain available if a future iteration needs genuine interaction-capturing capability — a trade-off knowingly made in favor of the linear model's superior cross-validated recall.
+**Borderline case** — P = 50.0%, actual on track. Income ₹111,660/yr, 8 people, 2 dependents: `Household_Size` −1.033 against `Groceries_Share` (0.663) +0.711 and `Log_Income` +0.413. Plain language: *"a moderate income stretched across eight people, offset by a lean, food-dominated budget with no large discretionary outlays."* The competing contributions are legible, which is the practical test of whether an explanation is usable by a non-technical reader.
 
 ---
 
-## What Phase 5 sets up for later phases
+## What this changes for later phases
 
-| Finding                                                                                                                    | Where it gets used                                                                                                            |
-| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `Loan_Repayment_Ratio` is the dominant global driver, followed by `Education_Ratio`, `City_Tier_Tier_1`, `Groceries_Ratio` | Candidate features to check as clustering inputs in Phase 6, and the headline finding for Phase 7's business translation      |
-| No interaction effects exist for this model, by construction                                                               | An honest scope-limiting finding for Phase 7 — any interaction-based recommendation would need a different (non-linear) model |
-| `Rent_Ratio` has near-zero within-tier variance                                                                            | A data-generation observation worth flagging in Phase 8's reporting, tying back to the README's synthetic-data limitation     |
-| Individual predictions decompose exactly into a small number of business-tracked features                                  | Demonstrates the model is usable by a non-technical marketing team, directly answering Phase 0's framing requirement          |
-
-**Next:** [Phase 6 — Unsupervised Extension](phase6.md) (`06_clustering_personas.ipynb`), which clusters individuals on expense-category proportions to find natural spending personas, and checks whether those personas correlate with `Goal_Met` — using the same expense-ratio features this phase just showed drive the supervised model's predictions.
+| Phase | Consequence |
+| --- | --- |
+| **6 — Clustering** | Personas built on spending mix explain at most ~27% of what drives the outcome. Expect them to segment on income more than on behaviour; say so rather than over-reading them. |
+| **7 — Business translation** | Three constraints: (a) lead with income, which is 38.4% of attribution; (b) **a high grocery share is a positive signal conditional on income** — do not invert it from the Phase 1 correlation; (c) the area-type gradient is largely an income gradient, so geographic targeting is mostly income targeting by proxy. |
+| **8 — Reporting** | `results/shap_summary.png` and `shap_dependence.png` replace the synthetic SHAP figure. The interaction result (41.9%) is the concrete reason a linear model was not selected. |

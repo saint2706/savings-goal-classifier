@@ -1,132 +1,172 @@
-# Phase 6 — Unsupervised Extension
+# Phase 6 (IHDS-II) — Unsupervised Extension
 
 **Source:** [README § Phase 6 — Unsupervised Extension](../README.md#phase-6--unsupervised-extension)
 **Notebook:** [`notebooks/06_clustering_personas.ipynb`](../notebooks/06_clustering_personas.ipynb)
-**Builds on:** [Phase 2 — Feature Engineering](phase2.md), [Phase 5 — Explainability](phase5.md)
+**Builds on:** [Phase 2 (IHDS-II)](phase2.md), [Phase 5 (IHDS-II)](phase5.md)
+**Artifacts:** `results/persona_profiles.csv`, `results/personas.png`, `results/cluster_selection.png`
+**Replaces:** [`phase6.md`](phase6.md)
 
-Phases 1–5 build a supervised model of `Goal_Met`. Phase 6 asks a different kind of question: **without using the label at all**, does the population naturally separate into distinct spending personas on the same expense-ratio features Phase 2 engineered — and if so, do those personas say anything about `Goal_Met`? This is a check on whether the supervised model's story (Phase 5: `Loan_Repayment_Ratio`, `Education_Ratio`, and `City_Tier` drive risk) is corroborated by an entirely independent, unsupervised method, or whether it's an artifact of how the classifier happens to be built.
+Phase 2 rejected the CLR transform for classification but left the log-ratio question open for clustering, which is the step that genuinely needs a metric on the simplex. This phase builds an **ILR** basis (full-rank, unlike CLR), uses it, and then discovers that the clean-looking clusters it produces are keyed on something other than what "spending persona" implies.
+
+Two predictions were made going in. **One was confirmed, one was falsified**, and both are reported as such.
 
 ---
 
 ## Research questions & answers
 
-| #   | Question                                                                       | Answer                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | What spending personas emerge from clustering on expense-category proportions? | Three personas, separated almost entirely by two near-categorical signals already present in the raw data: **Persona 0** — Tier-1 residents with dependents (n=4,758); **Persona 1** — no dependents, any city tier (n=4,061); **Persona 2** — Tier-2/Tier-3 residents with dependents (n=11,181). Not a rich multivariate spending-mix discovery — `Education_Ratio` and `Rent_Ratio` alone account for essentially all the separation. |
-| 2   | How many clusters are statistically justified?                                 | `k=3` — silhouette score peaks there (0.096) and declines for every larger `k`; the elbow in inertia is also past by `k=3`. Silhouette scores are uniformly low (< 0.1) across every `k` tested — the dataset supports only weak cluster structure overall.                                                                                                                                                                              |
-| 3   | Do the resulting personas correlate meaningfully with `Goal_Met`?              | Yes, sharply: **all 112 at-risk individuals (100%) fall in Persona 0**; Personas 1 and 2 have an at-risk rate of exactly 0% (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹). This independently corroborates Phase 5's SHAP finding that `City_Tier_Tier_1` pushes the model's decision score toward "at-risk."                                                                                                                                              |
-
-The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | What spending personas emerge from clustering on expense-category proportions? | Three, and they are defined by **which core categories are absent**, not by how present categories are allocated: **Persona 0** (11.7%) records no transport spend; **Persona 2** (18.6%) records no healthcare spend; **Persona 1** (69.7%) spends on everything. The adjusted Rand index between the personas and the raw zero-pattern of the core parts is **0.858**. |
+| 2 | How many clusters are statistically justified? | **k = 3 on the 6-part ILR**, silhouette **0.4115** — the only clustering in this project ever to clear the ~0.25 "reasonable structure" threshold. But that score is largely **manufactured by the zero-replacement step**, so it overstates how much genuine structure exists. Raw shares peak at 0.2516 (k=8); ILR plus participation indicators is worst at 0.2054. |
+| 3 | Do the personas correlate meaningfully with `Goal_Met`? | **Yes, and more than the headline number suggests.** Raw association is weak (χ² = 238.8, p ≈ 1.4×10⁻⁵², **Cramér's V = 0.076**), but income *suppresses* it: the mean spread in goal attainment across personas **within** an income decile is **0.167**, versus **0.092** unconditionally — **181% of the raw effect survives the control**. At income decile 7, Persona 0 attains 78.9% versus Persona 1's 46.6%. |
 
 ---
 
 ## Notebook walkthrough
 
-The notebook carries only section headers and code; the reasoning behind each step lives here.
+### Cell 1 (code) — Load and drop the undefined rows
 
-### Cell 0 (markdown) — Title
+The 2 households Phase 2 left with undefined CLR (they spend nothing on any core category) are dropped, leaving 41,516. Reported rather than silently filtered, because a clustering that quietly discards rows is a clustering of a different population than the one described.
 
-### Cell 1 (code) — Imports, data load, and ratio features
-
-Rebuilds `Goal_Met` and the Phase 2 expense-to-income ratio columns (`{category}_Ratio` for each of the 11 expense categories) directly from `dataset/data.csv`, matching every prior phase's self-contained, rebuild-from-raw-CSV pattern. `Goal_Met` is reconstructed here **only to evaluate the clusters against it afterward** — it plays no role in fitting the clustering itself, which is the entire point of an unsupervised method: if the resulting groups still say something about the label, that's discovered structure, not something engineered in.
-
-### Cell 2 (markdown) — "Choosing k"
-
-### Cell 3 (code) — Elbow and silhouette sweep
+### Cell 3 (code) — Building and verifying the ILR basis
 
 ```python
-scaler = StandardScaler()
-X_ratios = scaler.fit_transform(df[ratio_cols])
-
-for k in range(2, 9):
-    km = KMeans(n_clusters=k, n_init=10, random_state=42)
-    labels = km.fit_predict(X_ratios)
-    inertias.append(km.inertia_)
-    silhouettes.append(silhouette_score(X_ratios, labels))
+def helmert_basis(D):
+    V = np.zeros((D, D - 1))
+    for i in range(D - 1):
+        V[: i + 1, i] = 1.0 / (i + 1)
+        V[i + 1, i] = -1.0
+        V[:, i] *= np.sqrt((i + 1) / (i + 2))
+    return V
 ```
 
-**What it does:** Standardizes the 11 ratio columns (`StandardScaler`, the same choice Phase 2 recommended for distance-based methods — KMeans is exactly that) and fits `KMeans` for every `k` from 2 to 8, recording both inertia (within-cluster sum of squares — the elbow-method input) and the silhouette score (how well-separated the resulting clusters are — ranges from -1 to 1, higher is better).
+ILR coordinates are `clr(x) @ V`, where `V` is a D×(D−1) orthonormal contrast matrix. Because it drops one dimension, ILR is **full-rank** — which is precisely the defect that disqualified CLR in Phase 2 (CLR components sum to zero, so their covariance is singular).
 
-**Why both diagnostics, not just one:** inertia always decreases as `k` grows (more clusters can only fit the data at least as well), so it never has a true minimum to pick — only an "elbow" where the rate of decrease slows, which is often subjective to read off a chart. Silhouette score doesn't have that problem: it penalizes over-splitting directly, so it can and does peak at a specific `k` and decline afterward. Using both means the elbow's informal read can be checked against a metric that doesn't share its blind spot.
+**Three properties verified rather than assumed:**
 
-**Result:** silhouette peaks at `k=3` (0.096) and declines monotonically for every larger `k`; the elbow in the inertia curve is also past by `k=3` (the per-`k` improvement flattens out noticeably from there). Both diagnostics agree, so `k=3` is used for the rest of the notebook.
+| Check | Result |
+| --- | --- |
+| `V'V = I` (orthonormal) | max error 2.22×10⁻¹⁶ |
+| Columns sum to zero (orthogonal to the constant) | exactly 0 |
+| Aitchison distance = Euclidean distance in ILR space | max error 1.78×10⁻¹⁵ |
 
-**Why report the low absolute silhouette value plainly, rather than only the relative ranking:** a silhouette of ~0.1 is weak by the standard rule of thumb (values above ~0.5 are considered strong, reasonable structure is usually >0.25) — this dataset's expense-ratio space does not have well-separated natural clusters. Reporting `k=3` as "the best available `k`" rather than "strong evidence of 3 real personas" is the honest framing, and it's exactly what the persona-composition finding below explains mechanically.
+The third is the one that matters for this phase: it is the formal statement that **KMeans in ILR space is doing legitimate geometry on the simplex**, which it is not doing on raw shares. Checking it costs three lines and converts an assumption into a fact.
 
-### Cell 4 (markdown) — "Fitting k=3 and profiling the personas"
+### Cell 5 (code) — Choosing the representation and k (Q2)
 
-### Cell 5 (code) — Fitting KMeans and building the persona profile table
+| k | ILR (6 core) | ILR + indicators | Raw shares (11) |
+| --- | --- | --- | --- |
+| 2 | 0.3705 | 0.1890 | 0.1988 |
+| **3** | **0.4115** | 0.2054 | 0.1756 |
+| 4 | 0.2829 | 0.1907 | 0.1999 |
+| 6 | 0.2358 | 0.1857 | 0.2321 |
+| 8 | 0.2385 | 0.2026 | 0.2516 |
 
-```python
-kmeans = KMeans(n_clusters=3, n_init=10, random_state=42)
-df["Persona"] = kmeans.fit_predict(X_ratios)
-```
+**The ILR transform is vindicated on the metric it was proposed for.** Silhouette 0.4115 versus 0.2516 for raw shares is a large margin, and it is the first clustering in either track of this project to clear ~0.25. The synthetic Phase 6 never got above 0.1 at any k.
 
-**What it does:** Fits the chosen `k=3` model and attaches the resulting cluster label as a new `Persona` column, then tabulates each persona's size and mean value for every one of the 11 ratio features.
+**A design error worth recording.** The first version of this notebook **hardcoded** `BEST_REP = "ILR + participation indicators"` — the representation that scored *worst* (0.2054). The sweep existed to make that choice and was then overridden by an assumption. The notebook now selects `argmax(silhouette)` from the sweep itself. This is exactly the failure mode a selection step is supposed to prevent, and it was caught only because the sweep's output was read rather than skimmed.
 
-### Cell 6 (code) — Between-persona variance share
+**Why adding participation indicators hurt.** The five binary indicators contribute variance that is unrelated to the ILR geometry, and after standardisation each binary column carries as much weight as a continuous ILR coordinate. They dilute a well-formed metric with five axes that KMeans cannot use coherently.
 
-```python
-between_var = pd.DataFrame(X_ratios, columns=ratio_cols).assign(Persona=df["Persona"]).groupby("Persona")[ratio_cols].mean().var()
-total_var = pd.DataFrame(X_ratios, columns=ratio_cols).var()
-(between_var / total_var).sort_values(ascending=False)
-```
+### Cell 8 (code) — The personas (Q1)
 
-**What it does:** For each standardized feature, computes the variance _of the three persona means_ relative to that feature's _total_ variance across the whole population — a quick, single-number version of a one-way ANOVA's eta-squared, showing how much of each feature's spread is "explained" by which persona a row belongs to.
+| Persona | n | % | Median income | Goal_Met | Median savings rate |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 4,876 | 11.7% | ₹48,820 | 0.3123 | −0.119 |
+| 1 | 28,937 | 69.7% | ₹78,700 | 0.3008 | −0.145 |
+| 2 | 7,703 | 18.6% | ₹84,340 | **0.3930** | **+0.035** |
 
-**Why this is necessary, not just a nice-to-have:** the persona profile table (Cell 5) shows _what_ each persona's average ratios are, but with 11 features it's easy to eyeball small, meaningless differences as if they were the defining trait. This ranks features by how much they actually _drove_ the clustering, which is a very different (and much shorter) list.
+Spending signatures (mean share):
 
-**Result:** `Education_Ratio` (share ≈ 1.74) and `Rent_Ratio` (share ≈ 1.12) dominate; every other feature's share is below 0.001 — three orders of magnitude smaller. The clustering is, in effect, a 2-feature clustering wearing an 11-feature label.
+| Category | P0 | P1 | P2 |
+| --- | --- | --- | --- |
+| Groceries | 0.540 | 0.448 | 0.470 |
+| **Transport** | **0.000** | 0.073 | 0.083 |
+| **Healthcare** | 0.099 | 0.117 | **0.001** |
+| Miscellaneous | 0.148 | 0.135 | 0.187 |
+| Utilities | 0.112 | 0.097 | 0.107 |
 
-### Cell 7 (markdown) — "Persona composition"
+Two cells are exactly zero, and they are the whole story.
 
-### Cell 8 (code) — What `Dependents`, `City_Tier`, `Income`, and `Age` look like per persona
+### Cell 9 (code) — What the clusters are actually keyed on
 
-### Cell 9 (code) — Persona × `City_Tier` crosstab
+**This is the cell that reframes the phase.** The core parts include Transport (11.4% zero) and Healthcare (19.2% zero), and Phase 2 replaced those zeros with a small δ before taking logs — which places them far out in log-ratio space. So the question is whether the personas are allocation patterns or just zero patterns.
 
-**What it does:** Cross-references the personas against columns that were never part of the clustering input (`Dependents`, `City_Tier`, `Income`, `Age`, and the raw share of individuals with `Education_Ratio == 0`) to explain _why_ `Education_Ratio` and `Rent_Ratio` split the way they do.
+**Share of households recording zero spend:**
 
-**Result, and why it matters:** `Education_Ratio` is exactly 0 for every individual with 0 `Dependents` and positive otherwise — in this dataset it functions as a `Dependents == 0` indicator, not a continuous spending choice. `Rent_Ratio` separates `City_Tier_1` residents from `City_Tier_2`/`City_Tier_3` residents, which lines up exactly with Phase 2's and Phase 5's finding that `Rent_Ratio` has near-zero _within_-tier variance (plausibly because this dataset generates `Rent` as a roughly fixed proportion of income conditional on tier). `Income`, `Age`, and `Occupation` are flat across all three personas (mean age ≈ 41 in every persona; occupation split ≈25%/25%/25%/25% in every persona) — they play no role in the split at all.
+| Core part | P0 | P1 | P2 |
+| --- | --- | --- | --- |
+| Transport | **0.956** | 0.003 | 0.000 |
+| Healthcare | 0.246 | 0.002 | **0.868** |
+| Groceries | 0.001 | 0.000 | 0.001 |
+| Utilities | 0.004 | 0.001 | 0.002 |
 
-**Conclusion for Question 1:** the three personas are **Persona 0 — Tier-1 residents with dependents**, **Persona 1 — no dependents (any tier)**, and **Persona 2 — Tier-2/Tier-3 residents with dependents**. This is a demographic/geographic split that was already fully present in the raw `Dependents` and `City_Tier` columns — clustering on 11 ratio features rediscovered a 2-column segmentation rather than surfacing a new, richer behavioral archetype. That's a legitimate, useful finding in its own right (see Question 3), just not the kind of discovery "spending persona" might suggest at first read.
+Zero-pattern signatures: Persona 0 = `001000` (transport absent), Persona 1 = `000000` (all present), Persona 2 = `000100` (healthcare absent).
 
-### Cell 10 (markdown) — "Persona vs. `Goal_Met`"
+**Adjusted Rand index between the personas and the raw zero-pattern of the core parts: 0.858.**
 
-### Cell 11 (code) — Cross-tabulating personas against the target
+**So the silhouette of 0.4115 is largely manufactured, not discovered.** The multiplicative zero replacement assigns every transport-less household the *same* imputed value, and δ sits far from any genuine share. Those households therefore form a tight, well-separated blob in ILR space — and silhouette rewards exactly that. The clustering has mostly rediscovered which categories the survey recorded as zero.
 
-```python
-persona_goal = pd.crosstab(df["Persona"], df["Goal_Met"])
-persona_goal["at_risk_rate"] = persona_goal["Not met (0)"] / persona_goal.sum(axis=1)
-```
+**This does not make the result worthless, but it changes what it is.** "Persona" implies a style of allocating a budget. What the algorithm found is a **participation pattern**: which categories a household spends on at all. That is a real and interpretable distinction — it just is not the question Phase 6 was posed to answer, and calling these "spending personas" without the qualifier would oversell them.
 
-### Cell 12 (code) — Chi-square test of independence
+**The honest methodological conclusion:** ILR is the correct transform for clustering compositional data, and it beat the alternatives on the intended metric. But **zero replacement and silhouette interact badly** — any log-ratio clustering of zero-inflated compositions will tend to find the zero pattern first, and a good silhouette is weak evidence against that. The zero-pattern ARI is the check that distinguishes the two, and it should accompany any log-ratio clustering of data like this.
 
-```python
-chi2, p_value, dof, _ = chi2_contingency(pd.crosstab(df["Persona"], df["Goal_Met"]))
-```
+### Cell 11 (code) — Association with `Goal_Met` (Q3, unconditional)
 
-**What it does:** Tests whether persona membership and `Goal_Met` are statistically independent. A large χ² with a small p-value rejects independence — persona membership and at-risk status move together more than chance would predict.
+χ² = 238.8, p ≈ 1.4×10⁻⁵², **Cramér's V = 0.0758**. Highly significant and substantively weak — at n = 41,516 significance is close to guaranteed, so the effect size is the number that matters, and 0.076 is below the conventional 0.1 "weak" mark.
 
-### Cell 13 (code) — At-risk rate by persona (chart)
+Persona 2 attains 39.3% against Persona 1's 30.1% — a 9.2-point spread around a 31.9% base rate.
 
-**Result:** χ² = 360.8, p ≈ 4.5×10⁻⁷⁹ — decisively not independent. More useful than the p-value itself: **all 112 at-risk individuals in the entire dataset fall in Persona 0**; Personas 1 and 2 have an at-risk rate of exactly 0.00%. This is not a mild skew — it's total concentration in one segment out of three.
+**This is where the phase would have stopped if it took the headline number at face value**, and it would have concluded that spending personas barely relate to the outcome.
 
-**Answer to Question 3:** yes, and the relationship is as strong as a categorical split can be. This independently corroborates Phase 5's SHAP finding that `City_Tier_Tier_1` is among the winning model's top global drivers, pushing predictions toward "at-risk" — an unsupervised method that never saw the label agrees with the supervised model's explanation, from a completely different angle.
+### Cell 12 (code) — Conditioning on income, and the falsified prediction
 
-### Cell 14 (markdown) — "Persisting results"
+**The prediction going in (from Phase 5) was that the personas would largely be an income split**, since income is 38.4% of model attribution and spending mix only 26.7%. Two measurements say that is wrong:
 
-### Cell 15 (code) — Persisting results
+**Adjusted Rand index between personas and income tertiles: 0.0057** — essentially independent. The personas are not income groups in disguise.
 
-Saves `results/persona_profiles.csv` (the full per-persona ratio-feature means) and `results/persona_clusters.png` (the at-risk-rate-by-persona chart).
+**And the association with the outcome is *suppressed* by income, not driven by it:**
+
+| Income decile | Persona 0 | Persona 1 | Persona 2 |
+| --- | --- | --- | --- |
+| 0 | 0.051 | 0.009 | 0.030 |
+| 3 | 0.261 | 0.105 | 0.231 |
+| 5 | 0.472 | 0.249 | 0.368 |
+| **7** | **0.789** | 0.466 | 0.569 |
+| 9 | 0.911 | 0.835 | 0.811 |
+
+| | |
+| --- | --- |
+| Raw spread across personas | 0.0921 |
+| Mean spread **within** income decile | **0.1668** |
+| Proportion of the effect surviving the control | **181%** |
+
+**The persona effect nearly doubles once income is held constant.** This is classic suppression: Persona 0 has the *lowest* median income (₹48,820) but the *highest* within-decile attainment, so in the unconditional comparison its low income cancels its behavioural advantage. At decile 7 the gap between Persona 0 and Persona 1 is **32 percentage points** — far from the 9-point unconditional spread.
+
+**Why this makes mechanical sense.** Personas 0 and 2 are defined by *not spending* on a whole category. Fewer active expense categories means lower total consumption at a given income, and the target is `1 − COTOTAL/INCOME`. Households that record no transport or no healthcare spending are, other things equal, spending less overall — so they save more. This is the same mechanism Phase 5 found behind the grocery-share result: a budget concentrated in fewer categories signals the absence of the outlays that push consumption above income.
+
+**A necessary caveat.** Some of this is measurement, not behaviour. A household recording zero healthcare spend may have had no health event that year rather than a savings strategy, and zero transport spend plausibly marks a household that does not commute. These are not levers a savings-product team can pull — nobody should be advised to stop spending on healthcare. Phase 7 must treat these personas as **descriptive segments, not as interventions.**
+
+### Cell 14 (code) — Figure and artifacts
+
+Three panels: the spending-signature heatmap (where the two exact zeros are visible at a glance), goal attainment by persona with Cramér's V in the title, and income distribution by persona labelled with the ARI. The third panel's caption originally asserted that "the segmentation is largely an income split" — the ARI of 0.006 contradicted it, and the caption now states the measured result instead.
 
 ---
 
-## What Phase 6 sets up for later phases
+## What this changes for later phases
 
-| Finding                                                                                                                                          | Where it gets used                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All 112 at-risk individuals fall in the Tier-1-with-dependents persona                                                                           | Headline targeting finding for Phase 7's business translation — corroborates Phase 5's SHAP result via an independent, unsupervised method                                             |
-| Clustering on 11 ratio features reduces to a 2-feature (`Education_Ratio`, `Rent_Ratio`) split, both proxies for columns already in the raw data | An honest scope note for Phase 7: a persona-based targeting layer would add complexity without adding signal beyond `City_Tier` and `Dependents`, which the Phase 4 model already uses |
-| Silhouette scores are uniformly low (< 0.1) across every `k` tested                                                                              | A limitation worth stating plainly rather than overstating "3 natural personas" as strong multivariate structure                                                                       |
+| Phase | Consequence |
+| --- | --- |
+| **7 — Business translation** | The personas are **descriptive, not actionable** — they are defined by category absence, some of which is measurement (no health event) rather than choice. Report the within-income spread (0.167), never the unconditional 0.092, and never Cramér's V alone. |
+| **8 — Reporting** | `results/personas.png` replaces the synthetic persona figure. The headline is that spending structure matters **more** than it first appears, once income is controlled — the opposite of the naive read. |
 
-**Next:** [Phase 7 — Business Translation](phase7.md) (`07_business_translation.ipynb`), which converts this phase's and Phase 4/5's findings into stakeholder-facing recommendations and quantifies where the most actionable, recoverable savings potential sits.
+## Comparison with the synthetic Phase 6
+
+| | Synthetic | IHDS-II |
+| --- | --- | --- |
+| Best silhouette | < 0.1 at every k | 0.4115 (k = 3, ILR) |
+| What drove the clusters | `Education_Ratio`, `Rent_Ratio` — proxies for `Dependents` and `City_Tier` | Zero-pattern of transport and healthcare spend |
+| Relation to `Goal_Met` | **All 112** at-risk cases in one persona (χ² = 360.8) | Cramér's V 0.076 raw; within-income spread 0.167 |
+| Honest verdict | A demographic split already present in the raw data | A **participation** pattern, partly a zero-replacement artifact, but carrying real suppressed signal |
+
+Both phases end at the same methodological place from opposite directions: the clusters are real but are not the rich multivariate spending archetypes the phase name implies. In the synthetic data they re-encoded demographics that were baked into the generator; here they re-encode which categories the survey recorded as zero.

@@ -1,115 +1,143 @@
-# Phase 7 — Business Translation
+# Phase 7 (IHDS-II) — Business Translation
 
 **Source:** [README § Phase 7 — Business Translation](../README.md#phase-7--business-translation)
 **Notebook:** [`notebooks/07_business_translation.ipynb`](../notebooks/07_business_translation.ipynb)
-**Builds on:** [Phase 4 — Model Comparison](phase4.md), [Phase 5 — Explainability](phase5.md), [Phase 6 — Unsupervised Extension](phase6.md)
+**Builds on:** Phases 0–6 (IHDS-II)
+**Artifacts:** `results/business_recommendations.csv`, `results/business_translation.png`
+**Replaces:** [`phase7.md`](phase7.md)
 
-Phases 1–6 answer analytical questions. Phase 7 asks a different one: **given everything found so far, what should a fintech marketing team actually do, and what should they be told before they act on it?** This phase does not introduce new modeling — it reframes existing results (Phase 4's classifier, Phase 5's SHAP explanations, Phase 6's personas, and the dataset's own `Potential_Savings_*` columns, unused until now) into recommendations, a quantified answer on where unrealized savings concentrate, and an explicit statement of the model's reliability limits.
+This is where the project has to say what it would actually recommend. On the synthetic data that was easy and dramatic: all 112 at-risk individuals lived in Tier-1 cities, groceries held ₹18.2M/month of unrealised savings, and 99.1% of shortfalls were recoverable. **Every one of those findings reverses or dissolves on real data**, and the recommendations that survive are more modest and more honest.
 
 ---
 
 ## Research questions & answers
 
-| #   | Question                                                                                               | Answer                                                                                                                                                                                                                                                                                                                                                                                |
-| --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | What are the 3–5 most actionable findings, stated as recommendations rather than statistics?           | Five: (1) target outreach by `City_Tier`, not occupation or age; (2) lead nudge campaigns with grocery-spend reduction; (3) frame the ask as small and achievable, not remedial; (4) deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging; (5) don't build a separate persona-based targeting layer. See the Recommendations table below for the evidence behind each. |
-| 2   | Which expense category carries the most unrealized (potential) savings across the population?          | `Groceries` — ₹18.2M/month in aggregate (35% of the ₹51.6M addressable across all 8 tracked categories) and ₹912/month per person, roughly double the next-largest category (`Transport`).                                                                                                                                                                                            |
-| 3   | Where does the model fail or lose reliability — what should a stakeholder be told before acting on it? | Four caveats: the minority-class sample is tiny (112 of 20,000 rows); precision is ~0.88, not 1.0 (~1 in 8 flagged individuals are false positives); the model is linear and structurally blind to any real interaction effect (Phase 5); and the dataset shows signs of being synthetically generated (Phases 1, 2, 5).                                                              |
-
-The rest of this document walks through _how_ the notebook arrives at each answer, cell by cell, and why each analysis step was chosen.
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | What are the 3–5 most actionable findings, stated as recommendations? | Five, below. The lead finding is uncomfortable: **the model beats "contact the poorest households first" by only 1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%). |
+| 2 | Which expense category carries the most unrealised savings? | **Miscellaneous** (₹36 crore/yr aggregate excess vs same-income peers). But the next two — **Healthcare** and **Education** — are largely non-discretionary, and at-risk households spend **8.8pp *less* of their budget on groceries** than on-track peers. The synthetic project's grocery-led recommendation is reversed. |
+| 3 | Where does the model fail, and what must a stakeholder be told? | Calibration is excellent (max error 0.036), but accuracy sags to **0.78–0.80 in income deciles 5–7** — exactly the middle where the decision is real. And **32.3% of the at-risk group** report spending more than twice their income, which is a measurement artifact rather than observed distress. |
 
 ---
 
 ## Notebook walkthrough
 
-The notebook carries only section headers and code; the reasoning behind each step lives here.
+### Cell 1 (code) — Out-of-fold scores for every household
 
-### Cell 0 (markdown) — Title
+Predictions come from `cross_val_predict`, so every household has a score from a model that never saw it. **Why not fit once and predict in-sample:** the targeting analysis below ranks households by score and measures capture at a contact budget. In-sample scores would be optimistically ordered and would overstate the campaign's reach — the exact number a stakeholder would plan against.
 
-### Cell 1 (code) — Imports and data load
+### Cell 3 (code) — Does the model beat the obvious rule? (Q1)
 
-Loads `dataset/data.csv` directly (not the Phase 2 engineered matrix — this phase works with the raw `Potential_Savings_*` and money columns, which were never part of the feature set). Reconstructs `Goal_Met`, and adds two derived columns used throughout: `Total_Potential_Savings` (sum of the 8 `Potential_Savings_*` columns) and `Shortfall` (`Desired_Savings - Disposable_Income` — how far short of their own goal an individual falls; positive only for the 112 at-risk individuals).
+The comparison is against the **Phase 3 income rule**, not against random contact. Phase 3 exists so this phase cannot quietly benchmark against the weakest possible alternative.
 
-### Cell 2 (markdown) — "Unrealized savings by category"
+| Strategy | Capture @10% | @25% | @50% | Precision @25% |
+| --- | --- | --- | --- | --- |
+| **Model** | 14.7% | **36.6%** | 70.8% | **99.6%** |
+| Income rule | 14.4% | 35.0% | 65.8% | 95.4% |
+| Random contact | 10.0% | 25.1% | 49.8% | 68.3% |
 
-### Cell 3 (code) — Aggregating potential savings by category
+**The model's edge over "contact the poorest first" is 1.5 percentage points of capture.** That is the single most important number in this phase, and it is deliberately placed first in the recommendations rather than buried.
 
-```python
-category_totals = df[potential_cols].sum().sort_values(ascending=False)
-category_pct_income = (df[potential_cols].div(df["Income"], axis=0)).mean()
-```
+**Why the lift over random looks so unimpressive.** At-risk households are **68.1%** of the population, so contacting 25% at random already reaches 25.1% of them. The model reaches 36.6% — a lift of **1.46×**. Lift figures are only impressive when the target class is rare; here it is the majority, and any business case written around "finding a hidden segment" is unsupportable.
 
-**What it does:** For each of the 8 `Potential_Savings_*` columns, computes the population-wide total (₹/month, aggregate), the mean per person, and the mean as a percentage of that person's income — three views of the same ranking, so the answer isn't an artifact of one framing (e.g., a category could look large in aggregate purely because it applies to more people, not because it's large per person).
+**Where the model does add real value: precision.** 99.6% of the top-quartile contacts are genuinely at risk, against 68.3% at random. If the cost is per-contact and the campaign has a fixed budget, that is a meaningful reduction in wasted outreach — it is just a different argument from the one a lift curve usually makes.
 
-### Cell 4 (code) — Bar chart of unrealized savings by category
+### Cell 4 (code) — Where the at-risk households are
 
-**Answer to Question 2:** `Groceries` leads by a wide margin under every framing — ₹18.2M/month aggregate (35% of the ₹51.6M total addressable across all 8 categories), ₹912/month mean per person, and ~2.2% of income — roughly double `Transport`, the next-largest category (₹9.5M / ₹473 / ~1.1%). This is not a small-household artifact: it holds in aggregate and per-person terms simultaneously.
+| Area type | At-risk rate | Share of all at-risk |
+| --- | --- | --- |
+| Less developed village | 73.3% | 37.4% |
+| Developed village | 69.1% | 30.9% |
+| Other urban | 63.0% | 25.4% |
+| Metro urban | 57.9% | 6.3% |
 
-### Cell 5 (markdown) — "Coverage of the at-risk shortfall"
+| Occupation | At-risk rate |
+| --- | --- |
+| No regular worker | 75.0% |
+| Agricultural labour | 74.9% |
+| Farm | 74.3% |
+| Business | 71.3% |
+| Non-ag labour | 68.3% |
+| Salaried | 55.9% |
 
-### Cell 6 (code) — Can addressable savings close the gap?
+**Both columns matter and they say different things.** Less-developed villages have the *highest rate* and also the largest *share* of the at-risk population — so they are the priority on either reading. But metro urban has a 57.9% at-risk rate, which is high in absolute terms even though metro contributes only 6.3% of all at-risk households; a campaign sized by rate alone would misallocate.
 
-```python
-at_risk = df[df["Goal_Met"] == 0]
-coverage = {
-    "All 8 categories": (at_risk["Total_Potential_Savings"] >= at_risk["Shortfall"]).mean(),
-    "Groceries + Transport only": ((at_risk["Potential_Savings_Groceries"] + at_risk["Potential_Savings_Transport"]) >= at_risk["Shortfall"]).mean(),
-    "Groceries only": (at_risk["Potential_Savings_Groceries"] >= at_risk["Shortfall"]).mean(),
-}
-```
+**This is the direct reversal of the synthetic project's headline.** There, 100% of at-risk individuals lived in Tier-1 cities and the flagship recommendation was to target them. Here metro households are the *least* likely to be at risk. Any slide deck carrying the Tier-1 recommendation is now wrong.
 
-**What it does:** For each of the 112 at-risk individuals, compares their addressable savings potential (under three different scopes: all 8 categories, the top-2 categories, or `Groceries` alone) against their actual shortfall, and reports what fraction of at-risk individuals have _enough_ addressable potential to fully close their gap.
+The income-decile table shows why geography is mostly a proxy: at-risk falls from **97.8%** in decile 0 to **16.9%** in decile 9. Phase 5 already found income's SHAP effect is near-identical across area types, so the area gradient is largely an income gradient wearing a geographic label.
 
-**Why this matters, beyond "which category is biggest":** Question 2's answer alone doesn't say whether the recoverable savings are _large enough to matter_ for the people who actually need them — a category could be the biggest source of unrealized savings in aggregate while still being a drop in the bucket for the specific people this project cares about (the at-risk group). This cell tests that directly.
+### Cells 6–7 (code) — What "recoverable" means without a `Potential_Savings` column (Q2)
 
-**Result:** for **99.1%** of at-risk individuals, their total addressable savings potential across all 8 tracked categories already exceeds their shortfall (mean shortfall ≈ ₹784/month vs. mean total potential ≈ ₹2,912/month — potential exceeds the gap by roughly 3.7× on average). A narrower two-category nudge (`Groceries` + `Transport`) still closes the gap for **87.5%** of them. This is the evidence behind recommendation 3 below: the at-risk classification reflects a recoverable gap, not a structural one.
+The synthetic dataset shipped `Potential_Savings_*` columns that simply asserted how much each household could save. IHDS has nothing equivalent, and inventing a discretionary/non-discretionary split would smuggle in an assumption. Instead, **recoverable is defined by peer benchmarking**: for each at-risk household, how much more of its budget goes to each category than the *median on-track household in the same income decile*.
 
-### Cell 7 (markdown) — "At-risk segment profile"
+**Why the same income decile:** comparing a household earning ₹40,000 against the population median would just re-measure poverty. Holding income roughly constant makes the comparison one of allocation between households with comparable means.
 
-### Cell 8 (code) — Who is at risk?
+| Category | Median excess (pp) | % above peer | Aggregate excess (₹cr/yr) |
+| --- | --- | --- | --- |
+| Miscellaneous | −0.21 | 48.6% | **35.8** |
+| Healthcare | **+2.53** | 63.5% | 34.2 |
+| Education | +1.41 | 64.4% | 19.8 |
+| Transport | +1.33 | 62.8% | 17.6 |
+| Groceries | **−8.79** | 27.1% | 4.5 |
+| Utilities | −2.77 | 29.8% | 3.4 |
 
-**What it does:** Breaks the 112 at-risk individuals down by `City_Tier`, `Occupation`, and mean `Dependents`, comparing each against the population baseline.
+**Two findings that reverse the synthetic recommendation.**
 
-**Result:** every one of the 112 at-risk individuals lives in a **Tier-1** city (100%, 0 in Tier-2 or Tier-3); `Occupation` is close to evenly split among them (no concentration); `Dependents` is only mildly elevated (2.25 vs. 1.996 population mean) — nowhere near as decisive a signal as `City_Tier`. This matches Phase 5's SHAP finding (`City_Tier_Tier_1` among the top global drivers) and Phase 6's clustering finding (100% of at-risk individuals fall in the Tier-1-with-dependents persona) — three independent analyses (supervised explanation, unsupervised clustering, and this direct cross-tab) converge on the same segment.
+First, **groceries is not the lever.** At-risk households spend **8.8 percentage points less** of their budget on food than on-track households at the same income, and only 27.1% exceed their peers. The synthetic project's flagship advice — lead nudge campaigns with grocery-spend reduction — is exactly backwards here. This is the same relationship Phase 5 found conditionally: a high food share marks a household *without* large non-food outlays, and those households save more.
 
-### Cell 9 (markdown) — "Model reliability"
+Second, **the largest genuine excesses are in categories nobody can be asked to cut.** Healthcare has the biggest median excess (+2.5pp, 63.5% of at-risk households above their peers) and Education is third. Both are close to non-negotiable, and a nudge campaign built on them would be both ineffective and inappropriate. `Miscellaneous` tops the aggregate table, but its median excess is *negative* (−0.21pp) — the aggregate is driven by a minority with very large miscellaneous spend, not by a broad tendency.
 
-### Cell 10 (code) — Pulling Phase 4's final test-set numbers
+### Cell 7 (code) — Is the gap even closable?
 
-Reads `results/final_test_evaluation.csv` (written by Phase 4) rather than retraining anything — Phase 7's job is to communicate the existing model's numbers honestly to a stakeholder audience, not to reproduce Phase 4 or Phase 5.
+| | |
+| --- | --- |
+| Median annual gap to the 20% benchmark | **₹37,114** |
+| Median recoverable (peer excess, all categories) | **₹22,939** |
+| At-risk households whose peer-excess would close the gap | **28.5%** |
 
-**Answer to Question 3 — four caveats a stakeholder should have before acting on the model's flags:**
+**Only 28.5% of at-risk households could reach the benchmark even by matching their income peers' spending in every single category.** For the other 71.5%, the shortfall is not a spending problem that a budgeting nudge can fix.
 
-1. **Small minority-class sample.** Only 112 of 20,000 individuals (0.56%) are at-risk. Phase 4's `recall_0 = 1.0` — both cross-validated and on the held-out test set — is measured against roughly 90–112 examples; it is strong evidence, not a guarantee that a genuinely new population would also be caught perfectly.
-2. **Precision, not certainty.** `precision_0 ≈ 0.88` means about 1 in 8 people the model flags as at-risk are not. Phase 4's cost framing treats this as acceptable (an unneeded nudge is low-cost), but a stakeholder acting on a specific flagged individual should know it is not a certainty.
-3. **No interaction effects, by construction.** The winning model is linear, and Phase 5 proved its SHAP explanations cannot represent any interaction between features. A real-world risk factor that only shows up as a _combination_ of features (e.g., high rent stacked with high loan repayment specifically) would not be visible to this model even if it existed in the data.
-4. **Possibly synthetic data.** Phases 1, 2, and 5 each separately noted signs the dataset may be synthetically generated (e.g., `Rent_Ratio`'s near-zero within-tier variance). Absolute figures — and possibly the relationships themselves — should be validated against real customer data before this model or these recommendations are deployed operationally.
+**The synthetic project reported 99.1%.** That figure came from the generated `Potential_Savings_*` columns — the generator had written recoverability into the data. Measured against real peers, the answer nearly inverts. This is the single largest substantive difference between the two tracks, and it changes the product implication completely: for most at-risk households in this data, **the answer is more income, not less spending.**
 
-### Cell 11 (markdown) — "Recommendations"
+### Cells 9–10 (code) — Reliability (Q3)
 
-### Cell 12 (code) — Recommendations table
+**Calibration is genuinely good.** Across ten probability bins the maximum absolute error is **0.036**, and most bins are within 0.01. A predicted 70% really does mean about 70%, so the scores can be used for ranking *and* for expected-value arithmetic — which is not something most classifiers earn without an explicit calibration step.
 
-Builds and saves `results/business_recommendations.csv`:
+**Accuracy by income decile shows where it degrades:**
 
-| Recommendation                                                      | Evidence                                                                                                                                                 |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prioritize outreach by `City_Tier`, not occupation or age           | 100% of at-risk individuals (112/112) live in Tier-1 cities; `Occupation` and `Age` show no comparable skew                                              |
-| Lead nudge campaigns with grocery-spend reduction                   | `Groceries` is the largest unrealized-savings category: ₹18.2M/month aggregate, ~2× the next category (`Transport`)                                      |
-| Frame the ask as small and achievable, not remedial                 | `Groceries` + `Transport` alone closes the shortfall for 87.5% of at-risk individuals; all 8 tracked categories close it for 99.1%                       |
-| Deploy the SVM (Linear) classifier at threshold t=-0.4 for flagging | `recall_0 = 1.0` (test set), `precision_0 = 0.88` — catches every at-risk case at the cost of ~12% unnecessary low-cost nudges                           |
-| Do not build a separate persona-based targeting layer               | Phase 6 clustering found personas driven by `City_Tier` and `Dependents` — signal already used by the Phase 4/5 model, not an independent source of lift |
+| Decile | 0 | 3 | 5 | 6 | 7 | 9 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Accuracy | 0.979 | 0.870 | 0.799 | 0.788 | 0.779 | 0.887 |
 
-**Why these five, and in this order:** they're ordered by how directly actionable they are for a marketing team — the first two are "who to target" and "with what message," the middle one is a framing choice for that same message, and the last two are guidance for whoever owns the classifier deployment (deploy this, don't build that). Each recommendation is paired with the specific number behind it rather than left as an unsupported assertion, so a stakeholder can trace every claim back to a phase and a cell.
+**The model is weakest exactly where the decision matters.** At the extremes it is nearly perfect, but those households need no model — the poorest are almost all at risk (97.8%) and the richest mostly are not (16.9%). In deciles 5–7, where at-risk rates run 70% → 49% and a targeting decision is genuinely contested, accuracy falls to 0.78–0.80. Reporting overall accuracy of 0.86 without this breakdown would overstate usefulness at the only point where the model changes an action.
+
+**The measurement caveat, quantified.** 9,137 households (22.0%) report spending more than twice their reported income. **All of them are classified at-risk, and they alone are 32.3% of the entire at-risk group.** Roughly a third of the "at-risk" population is therefore an artifact of income under-reporting rather than observed distress. That does not make the ranking useless — under-reporting correlates with informal, irregular income, which is itself a risk marker — but it forbids treating the at-risk count as a population estimate.
+
+**Threshold sensitivity:** moving the benchmark from 20% to 10% or 30% shifts the at-risk share from 68.1% to 61.7% or 74.7%, with ~93.5% agreement in both directions. Findings quoted here hold across that range; the *level* does not.
 
 ---
 
-## What Phase 7 sets up for later phases
+## The five recommendations
 
-| Finding                                                                                                    | Where it gets used                                                                                                                         |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Groceries` is the dominant unrealized-savings category, both in aggregate and per-person                  | The headline number for Phase 8's stakeholder-facing report                                                                                |
-| 99.1% of at-risk individuals have addressable savings potential exceeding their shortfall                  | Reframes "at-risk" as "recoverable" for Phase 8 — an important tone-setting fact for a non-technical audience                              |
-| Four explicit model-reliability caveats (sample size, precision, no interactions, possibly-synthetic data) | Phase 8 should carry these forward rather than presenting the model's numbers without qualification                                        |
-| Five ranked, evidence-backed recommendations                                                               | The direct input to Phase 8's "3–4 visualizations that communicate findings fastest" — each recommendation is a candidate headline finding |
+1. **Prioritise by income first; use the model to re-rank within income bands.** The model adds +0.095 macro-F1 over the single income rule, but only **+1.5 points** of at-risk capture at a 25% budget. *Caveat: do not present the model as discovering who is at risk.*
 
-**Next:** Phase 8 — Reporting, which assembles the final write-up: the reasoning behind each modeling and business decision across all seven prior phases, plus the 3–4 visualizations that communicate the findings fastest to a non-technical reader.
+2. **Size the campaign as prioritisation, not needle-finding.** At-risk households are 68.1% of the population; the model's lift over random is **1.46×**. Its real value is precision — 99.6% vs 68.3%. *Caveat: a 1.5× lift will not support a "find the hidden segment" business case.*
+
+3. **Treat the shortfall as structural for most at-risk households.** Only **28.5%** could close the gap by matching peer spending in every category. *Caveat: this reverses the synthetic project's 99.1%; for most households the answer is more income, not less spending.*
+
+4. **Where a behavioural lever exists it is Miscellaneous — and it is NOT groceries.** At-risk households spend 8.8pp *less* on food than their income peers. *Caveat: never build a nudge on healthcare or education, the two largest genuine excesses.*
+
+5. **Report relative priority only.** 32.3% of the at-risk group report spending more than twice their income. *Caveat: "X% of Indian households save inadequately" is unsupported by this work.*
+
+---
+
+## What changed from the synthetic track
+
+| Finding | Synthetic | IHDS-II |
+| --- | --- | --- |
+| Who to target | 100% of at-risk in Tier-1 cities | Metro households are the **least** at risk (57.9% vs 73.3% in villages) |
+| Top savings lever | Groceries, ₹18.2M/month, ~2× next category | Groceries is **negative** (−8.8pp vs peers); largest excesses are non-discretionary |
+| Is the gap closable? | **99.1%** of at-risk | **28.5%** |
+| Model's targeting value | Perfect minority recall on 112 cases | +1.5pp capture over an income rule |
+
+Every headline reverses. The synthetic findings were artifacts of a generator that set rent by tier, made spending a fixed share of income, and wrote recoverability directly into a column.

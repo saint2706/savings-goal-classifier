@@ -22,7 +22,7 @@ You will also want `36151-0002-Codebook.pdf` from the same download — it is th
 ## 2. Build the analysis dataset
 
 ```bash
-python src/build_ihds_dataset.py \
+python src/build_dataset.py \
     --tsv path/to/ICPSR_36151/DS0002/36151-0002-Data.tsv \
     --out dataset/households.csv
 ```
@@ -36,7 +36,7 @@ final households:      41,518
 Goal_Met rate @ 20%:   0.3193
 ```
 
-The `--threshold` flag changes the savings-rate benchmark that defines `Goal_Met` (default `0.20`). If you change it, every downstream result changes with it — see the sensitivity table in `walkthrough/ihds_phase1.md`.
+The `--threshold` flag changes the savings-rate benchmark that defines `Goal_Met` (default `0.20`). If you change it, every downstream result changes with it — see the sensitivity table in `walkthrough/phase1.md`.
 
 ## 3. Build the engineered feature matrix
 
@@ -44,7 +44,7 @@ Run the feature-engineering notebook, which writes `dataset/features.csv`:
 
 ```bash
 cd notebooks
-jupyter nbconvert --to notebook --execute --inplace ihds_02_feature_engineering.ipynb
+jupyter nbconvert --to notebook --execute --inplace 02_feature_engineering.ipynb
 ```
 
 ## 4. Run the rest of the pipeline
@@ -53,17 +53,17 @@ In order — each phase depends on the artifacts of the previous one:
 
 | Notebook | Reads | Writes |
 | --- | --- | --- |
-| `ihds_01_eda_and_leakage_check.ipynb` | `households.csv` | `results/ihds_phase1_*.png` |
-| `ihds_02_feature_engineering.ipynb` | `households.csv` | **`features.csv`** |
-| `ihds_03_baseline.ipynb` | `features.csv` | `results/ihds_baseline.*` |
-| `ihds_04_model_comparison.ipynb` | `features.csv` | `results/ihds_model_comparison.*` |
-| `ihds_05_explainability.ipynb` | `features.csv` | `results/ihds_shap_*` |
-| `ihds_06_clustering_personas.ipynb` | `features.csv` | `results/ihds_persona*`, `ihds_cluster_selection.png` |
-| `ihds_07_business_translation.ipynb` | `features.csv` | `results/ihds_business_*` |
+| `01_eda_and_leakage_check.ipynb` | `households.csv` | `results/phase1_*.png` |
+| `02_feature_engineering.ipynb` | `households.csv` | **`features.csv`** |
+| `03_baseline.ipynb` | `features.csv` | `results/baseline.*` |
+| `04_model_comparison.ipynb` | `features.csv` | `results/model_comparison.*` |
+| `05_explainability.ipynb` | `features.csv` | `results/shap_*` |
+| `06_clustering_personas.ipynb` | `features.csv` | `results/persona*`, `cluster_selection.png` |
+| `07_business_translation.ipynb` | `features.csv` | `results/business_*` |
 
 ```bash
 cd notebooks
-for nb in ihds_0*.ipynb; do
+for nb in 0*.ipynb; do
     jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3000 "$nb"
 done
 ```
@@ -88,7 +88,7 @@ Runtime is roughly 20–30 minutes end to end on a laptop; Phase 4's randomised 
 **Two things to know before modifying the build:**
 
 - IHDS uses **two recall windows** — `CO1X`–`CO33` are 30-day, `CO34`–`CO52` are annual. The script annualises with `12 × monthly + annual` and this reproduces IHDS's own `COTOTAL` with a median error of 0. Mixing them silently inflates food 12× relative to durables.
-- The **expense-to-income ratios reconstruct the target** with 99.75% agreement, which is why the feature set uses each category's share of *total expenditure* instead. See `walkthrough/ihds_phase1.md` § Q5.
+- The **expense-to-income ratios reconstruct the target** with 99.75% agreement, which is why the feature set uses each category's share of *total expenditure* instead. See `walkthrough/phase1.md` § Q5.
 
 ## Citation
 

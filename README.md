@@ -7,7 +7,7 @@
 >
 > The original **synthetic** Kaggle dataset (`dataset/data.csv`) backs Phases 0–8 and the IEEE report in `project/`. The [bonus extensions](walkthrough/bonus.md) established that its columns were largely generated independently of one another — `Rent_Ratio` is a fixed 0.30/0.20/0.15 lookup on `City_Tier`, `Occupation` is pure noise, and discretionary spending is a flat ~7% of income at every age — so its near-perfect model scores demonstrate correct methodology on a well-behaved dataset rather than anything about Indian household finance.
 >
-> A parallel track on **real survey data** — [IHDS-II](walkthrough/ihds_migration.md) (ICPSR 36151), 41,518 households — is being migrated phase by phase in `ihds_*`-prefixed notebooks and walkthroughs. **Where the two disagree, the IHDS track is the one to cite.** Sections 2, 3, 8 and 9 below still describe the synthetic dataset unless stated otherwise.
+> A parallel track on **real survey data** — [IHDS-II](walkthrough/dataset_construction.md) (ICPSR 36151), 41,518 households — is being migrated phase by phase in `ihds_*`-prefixed notebooks and walkthroughs. **Where the two disagree, the IHDS track is the one to cite.** Sections 2, 3, 8 and 9 below still describe the synthetic dataset unless stated otherwise.
 >
 > | | Synthetic | IHDS-II |
 > | --- | --- | --- |
@@ -281,15 +281,15 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── 06_clustering_personas.ipynb
 │   ├── 07_business_translation.ipynb
 │   ├── 08_bonus_extensions.ipynb
-│   ├── ihds_01_eda_and_leakage_check.ipynb (IHDS-II track)
-│   ├── ihds_02_feature_engineering.ipynb   (IHDS-II track)
-│   ├── ihds_03_baseline.ipynb              (IHDS-II track)
-│   ├── ihds_04_model_comparison.ipynb      (IHDS-II track)
-│   ├── ihds_05_explainability.ipynb        (IHDS-II track)
-│   ├── ihds_06_clustering_personas.ipynb   (IHDS-II track)
-│   └── ihds_07_business_translation.ipynb  (IHDS-II track)
+│   ├── 01_eda_and_leakage_check.ipynb (IHDS-II track)
+│   ├── 02_feature_engineering.ipynb   (IHDS-II track)
+│   ├── 03_baseline.ipynb              (IHDS-II track)
+│   ├── 04_model_comparison.ipynb      (IHDS-II track)
+│   ├── 05_explainability.ipynb        (IHDS-II track)
+│   ├── 06_clustering_personas.ipynb   (IHDS-II track)
+│   └── 07_business_translation.ipynb  (IHDS-II track)
 ├── src/
-│   ├── build_ihds_dataset.py               (IHDS-II -> analysis-ready CSV)
+│   ├── build_dataset.py               (IHDS-II -> analysis-ready CSV)
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
 │   └── evaluation.py                       (planned)
@@ -318,16 +318,16 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase7.md
 │   ├── phase8.md
 │   ├── bonus.md
-│   ├── ihds_migration.md                   (IHDS-II track)
-│   ├── ihds_phase0.md                      (IHDS-II track)
-│   ├── ihds_phase1.md                      (IHDS-II track)
-│   ├── ihds_phase2.md                      (IHDS-II track)
-│   ├── ihds_phase3.md                      (IHDS-II track)
-│   ├── ihds_phase4.md                      (IHDS-II track)
-│   ├── ihds_phase5.md                      (IHDS-II track)
-│   ├── ihds_phase6.md                      (IHDS-II track)
-│   ├── ihds_phase7.md                      (IHDS-II track)
-│   └── ihds_phase8.md                      (IHDS-II track)
+│   ├── dataset_construction.md                   (IHDS-II track)
+│   ├── phase0.md                      (IHDS-II track)
+│   ├── phase1.md                      (IHDS-II track)
+│   ├── phase2.md                      (IHDS-II track)
+│   ├── phase3.md                      (IHDS-II track)
+│   ├── phase4.md                      (IHDS-II track)
+│   ├── phase5.md                      (IHDS-II track)
+│   ├── phase6.md                      (IHDS-II track)
+│   ├── phase7.md                      (IHDS-II track)
+│   └── phase8.md                      (IHDS-II track)
 ├── README.md
 └── requirements.txt
 ```
@@ -347,7 +347,7 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 ### 8a. IHDS-II track (real survey data) — Phases 1–4 complete
 
-41,518 households, target `Goal_Met` = savings rate ≥ 20% (31.9% positive). See [`walkthrough/ihds_migration.md`](walkthrough/ihds_migration.md) for how the dataset was built and why the target had to be redefined.
+41,518 households, target `Goal_Met` = savings rate ≥ 20% (31.9% positive). See [`walkthrough/dataset_construction.md`](walkthrough/dataset_construction.md) for how the dataset was built and why the target had to be redefined.
 
 **Winning model:** XGBoost — CV macro-F1 **0.8371**, ROC-AUC **0.9306**; held-out test (8,304 households) macro-F1 **0.838**, identical to the CV estimate. Hyperparameter search was worth **+0.0006** macro-F1, i.e. nothing.
 
@@ -366,7 +366,7 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 **Explainability (Phase 5, SHAP on XGBoost):** `Log_Income` alone is **38.4%** of all attribution (mean |SHAP| 2.617, 4.5× the next feature); spending mix is 26.7%. **Interactions are 41.9% of total attribution**, and 8 of the 10 strongest pairs involve income — the reason a linear model was not selected.
 
-**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/ihds_phase8.md`](walkthrough/ihds_phase8.md).
+**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/phase8.md`](walkthrough/phase8.md).
 
 **Spending personas (Phase 6):** k=3 on a 6-part ILR basis, silhouette **0.4115** — but the clusters are keyed on *which categories are absent* (adjusted Rand index 0.858 against the raw zero-pattern), largely an artifact of zero replacement. Their association with `Goal_Met` looks weak unconditionally (Cramér's V 0.076) yet **nearly doubles once income is held constant** (within-decile spread 0.167 vs 0.092 raw) — income was suppressing it. Personas are nearly independent of income (ARI 0.006).
 
@@ -401,7 +401,7 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 | Logistic Regression | 0.9970      | 0.8940        | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0`                                                                                                                                 |
 | SVM (Linear)        | 0.9979      | **0.9220**    | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
 
-**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/ihds_phase8.md`](walkthrough/ihds_phase8.md).
+**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/phase8.md`](walkthrough/phase8.md).
 
 **Spending personas (Phase 6):** `k=3` (silhouette-selected) — Persona 0, Tier-1 residents with dependents (n=4,758); Persona 1, no dependents, any tier (n=4,061); Persona 2, Tier-2/Tier-3 residents with dependents (n=11,181). **All 112 at-risk individuals fall in Persona 0** (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹), independently corroborating Phase 5's SHAP finding that `City_Tier_Tier_1` drives the model toward "at-risk." See [`walkthrough/phase6.md`](walkthrough/phase6.md).
 
