@@ -1,5 +1,39 @@
 # TODO — Remove the synthetic dataset project entirely
 
+> ## STATUS — updated 2026-08-19, at commit `22cd540`
+>
+> **Sections 1, 2, 3, 4 and 6 are COMPLETE.** The repository now reads as a household-survey
+> project: 68 tracked files -> 38, no file or reference carries the old prefix, and the
+> flagged-phrase sweep over all tracked content (including notebook stored outputs) returns
+> nothing.
+>
+> | Section | Status |
+> | --- | --- |
+> | 0. Decisions | D2 and D3 resolved: report and bonus material deleted. **D1 and D4 still open.** |
+> | 1. Delete | Done — 32 files removed (`ac2187a`) |
+> | 2. Rename | Done — 30 files, all internal references repointed (`ac2187a`) |
+> | 3. Rewrite | Done — README, dataset_construction, phase0-8, build script (`22cd540`) |
+> | 4. Re-execute | Done — notebooks 01 and 07 re-run; `phase1_eda.png` caption regenerated |
+> | 5. Non-file traces | **OUTSTANDING — see below** |
+> | 6. Verification | Done — all five checks clean |
+>
+> ### What remains
+>
+> **§5.1 — git history.** Not started, and it is the only thing standing between the current
+> state and the stated goal. `dataset/data.csv` and every deleted notebook remain readable at
+> `ac2187a^`, and the commit messages up to `2ccbb1b` describe the removed work in detail.
+> Requires `git filter-repo` plus a message rewrite and a force-push, or a fresh repository.
+> **Needs an explicit decision — it is irreversible and detaches the six merged PRs.**
+>
+> **§5.3 — GitHub-side.** PRs #1-#6 keep their titles, descriptions and diffs regardless of any
+> local rewrite. Only deleting the repository removes them.
+>
+> **§5.2 — local only.** `.remember/` self-ignores via its own `.gitignore`, so it is not a
+> repository trace. The local files still mention the removed columns; left untouched as they
+> are session history, not project content.
+
+---
+
 **Goal:** the repository should read as a household-survey (IHDS-II) project and nothing else. No file, reference, figure, commit message, or narrative contrast should reveal that a synthetic Kaggle dataset was ever used.
 
 **Scanned:** 2026-08-19, at commit `6831374`. 68 tracked files, 33 commits, 6 merged PRs.
@@ -22,41 +56,41 @@ These four change the amount of work substantially, and two of them are not reve
 No rewrite possible; these exist only to serve the synthetic dataset.
 
 ### 1.1 Data
-- [ ] `dataset/data.csv` (8.3 MB, 20,000 synthetic individuals)
+- [x] `dataset/data.csv` (8.3 MB, 20,000 synthetic individuals)
 
 ### 1.2 Notebooks (8)
-- [ ] `notebooks/01_eda_and_leakage_check.ipynb`
-- [ ] `notebooks/02_feature_engineering.ipynb`
-- [ ] `notebooks/03_baseline.ipynb`
-- [ ] `notebooks/04_model_comparison.ipynb`
-- [ ] `notebooks/05_explainability.ipynb`
-- [ ] `notebooks/06_clustering_personas.ipynb`
-- [ ] `notebooks/07_business_translation.ipynb`
-- [ ] `notebooks/08_bonus_extensions.ipynb` *(pending D3)*
+- [x] `notebooks/01_eda_and_leakage_check.ipynb`
+- [x] `notebooks/02_feature_engineering.ipynb`
+- [x] `notebooks/03_baseline.ipynb`
+- [x] `notebooks/04_model_comparison.ipynb`
+- [x] `notebooks/05_explainability.ipynb`
+- [x] `notebooks/06_clustering_personas.ipynb`
+- [x] `notebooks/07_business_translation.ipynb`
+- [x] `notebooks/08_bonus_extensions.ipynb` *(pending D3)*
 
 > These carry **stored execution outputs** containing synthetic values (`Tier_1`, `Desired_Savings`, 0.30/0.20/0.15 rent ratios). Deleting the files is the only clean fix — clearing outputs is not enough because the code references the columns.
 
 ### 1.3 Walkthroughs (10)
-- [ ] `walkthrough/phase0.md` … `walkthrough/phase8.md` (9 files)
-- [ ] `walkthrough/bonus.md` *(pending D3)*
+- [x] `walkthrough/phase0.md` … `walkthrough/phase8.md` (9 files)
+- [x] `walkthrough/bonus.md` *(pending D3)*
 
 ### 1.4 Results (9)
-- [ ] `results/business_recommendations.csv`
-- [ ] `results/final_test_evaluation.csv`
-- [ ] `results/model_comparison.csv`
-- [ ] `results/model_comparison.png`
-- [ ] `results/persona_clusters.png`
-- [ ] `results/persona_profiles.csv`
-- [ ] `results/shap_summary.png`
-- [ ] `results/bonus_extension_summary.csv` *(pending D3)*
-- [ ] `results/bonus_extensions.png` *(pending D3)*
+- [x] `results/business_recommendations.csv`
+- [x] `results/final_test_evaluation.csv`
+- [x] `results/model_comparison.csv`
+- [x] `results/model_comparison.png`
+- [x] `results/persona_clusters.png`
+- [x] `results/persona_profiles.csv`
+- [x] `results/shap_summary.png`
+- [x] `results/bonus_extension_summary.csv` *(pending D3)*
+- [x] `results/bonus_extensions.png` *(pending D3)*
 
 ### 1.5 Report artifacts *(pending D2)*
-- [ ] `project/figures/model_comparison.png`
-- [ ] `project/figures/persona_risk.png`
-- [ ] `project/figures/shap_importance.png`
-- [ ] `project/report.tex`
-- [ ] `project/report.pdf` — **binary, 433 KB**; contains synthetic tables and prose. Cannot be edited in place; must be deleted or regenerated.
+- [x] `project/figures/model_comparison.png`
+- [x] `project/figures/persona_risk.png`
+- [x] `project/figures/shap_importance.png`
+- [x] `project/report.tex`
+- [x] `project/report.pdf` — **binary, 433 KB**; contains synthetic tables and prose. Cannot be edited in place; must be deleted or regenerated.
 
 > **Keep `project/main.tex`** — it is the instructor's template (rubric and prompts), contains no synthetic content, and is not the team's work to alter.
 
@@ -68,27 +102,27 @@ Once the synthetic track is gone, the prefix exists only to distinguish it from 
 
 Use `git mv` so history follows the file (if D1 says no rewrite).
 
-- [ ] `notebooks/ihds_01_eda_and_leakage_check.ipynb` → `notebooks/01_eda_and_leakage_check.ipynb`
-- [ ] `notebooks/ihds_02_feature_engineering.ipynb` → `notebooks/02_feature_engineering.ipynb`
-- [ ] `notebooks/ihds_03_baseline.ipynb` → `notebooks/03_baseline.ipynb`
-- [ ] `notebooks/ihds_04_model_comparison.ipynb` → `notebooks/04_model_comparison.ipynb`
-- [ ] `notebooks/ihds_05_explainability.ipynb` → `notebooks/05_explainability.ipynb`
-- [ ] `notebooks/ihds_06_clustering_personas.ipynb` → `notebooks/06_clustering_personas.ipynb`
-- [ ] `notebooks/ihds_07_business_translation.ipynb` → `notebooks/07_business_translation.ipynb`
-- [ ] `walkthrough/ihds_phase0.md` … `ihds_phase8.md` → `phase0.md` … `phase8.md` (9 files)
-- [ ] `walkthrough/ihds_migration.md` → `walkthrough/dataset_construction.md` **and rewrite** (see §3.4)
-- [ ] `results/ihds_*.png|csv` → drop the prefix (10 files)
-- [ ] `src/build_ihds_dataset.py` → `src/build_dataset.py`
-- [ ] `dataset/ihds2_households.csv` → `dataset/households.csv` (gitignored, but rename for consistency)
-- [ ] `dataset/ihds2_features.csv` → `dataset/features.csv` (gitignored)
+- [x] `notebooks/ihds_01_eda_and_leakage_check.ipynb` → `notebooks/01_eda_and_leakage_check.ipynb`
+- [x] `notebooks/ihds_02_feature_engineering.ipynb` → `notebooks/02_feature_engineering.ipynb`
+- [x] `notebooks/ihds_03_baseline.ipynb` → `notebooks/03_baseline.ipynb`
+- [x] `notebooks/ihds_04_model_comparison.ipynb` → `notebooks/04_model_comparison.ipynb`
+- [x] `notebooks/ihds_05_explainability.ipynb` → `notebooks/05_explainability.ipynb`
+- [x] `notebooks/ihds_06_clustering_personas.ipynb` → `notebooks/06_clustering_personas.ipynb`
+- [x] `notebooks/ihds_07_business_translation.ipynb` → `notebooks/07_business_translation.ipynb`
+- [x] `walkthrough/ihds_phase0.md` … `ihds_phase8.md` → `phase0.md` … `phase8.md` (9 files)
+- [x] `walkthrough/ihds_migration.md` → `walkthrough/dataset_construction.md` **and rewrite** (see §3.4)
+- [x] `results/ihds_*.png|csv` → drop the prefix (10 files)
+- [x] `src/build_ihds_dataset.py` → `src/build_dataset.py`
+- [x] `dataset/ihds2_households.csv` → `dataset/households.csv` (gitignored, but rename for consistency)
+- [x] `dataset/ihds2_features.csv` → `dataset/features.csv` (gitignored)
 
 **After renaming, every internal link breaks.** Fix in this order:
-- [ ] Notebook cell 0 markdown links (`[walkthrough/ihds_phaseN.md]`)
-- [ ] `DATA_PATH` / `read_csv` paths in every notebook (7 files)
-- [ ] `to_csv` / `savefig` output paths in notebooks (7 files)
-- [ ] Cross-links between walkthroughs (`ihds_phaseN.md` → `phaseN.md`)
-- [ ] `.gitignore` paths for the two dataset CSVs
-- [ ] `README.md` repository-structure block and every link
+- [x] Notebook cell 0 markdown links (`[walkthrough/ihds_phaseN.md]`)
+- [x] `DATA_PATH` / `read_csv` paths in every notebook (7 files)
+- [x] `to_csv` / `savefig` output paths in notebooks (7 files)
+- [x] Cross-links between walkthroughs (`ihds_phaseN.md` → `phaseN.md`)
+- [x] `.gitignore` paths for the two dataset CSVs
+- [x] `README.md` repository-structure block and every link
 
 ---
 
@@ -114,18 +148,18 @@ Mention counts from the scan:
 
 ### 3.1 `README.md` — largest single job
 
-- [ ] **Delete the migration banner** (`> [!IMPORTANT]` block, ~lines 5–18) including the synthetic-vs-IHDS comparison table
-- [ ] **§1 Overview** — rewrite; currently describes "20,000 individuals ... their own stated savings goal"
-- [ ] **§2 Dataset** — replace the entire Kaggle column reference table with the IHDS-II schema
-- [ ] **§3 Target Variable** — replace `Goal_Met = Disposable_Income >= Desired_Savings` and its leakage warning with the 20% benchmark and the composition-share leakage rule
-- [ ] **§4 Research Questions** — phase questions cite synthetic columns directly: `City_Tier`/`Occupation` encoding (Phase 2), `n=20,000` (Phase 4), "does `City_Tier` change how much `Dependents` reduces savings potential" (Phase 5). Rewrite each to the IHDS equivalents
-- [ ] **§4 YAML manifest** — remove all four `BONUS-Q*` entries; update every `P0`–`P8` answer that references synthetic columns or figures
-- [ ] **§5 Methodology** — pipeline diagram says `data/raw`; update
-- [ ] **§6 Repository Structure** — rebuild from the post-rename tree; remove the `(IHDS-II track)` annotations
-- [ ] **§8 Results** — delete §8b entirely; promote §8a and strip its "reverses the synthetic conclusions" framing
-- [ ] **§9 Limitations** — remove the `Rent_Ratio`/`City_Tier`/BONUS-Q1 bullet and the synthetic-generator bullet
-- [ ] **§11 Citation** — replace the Kaggle/shriyashjagtap citation with the IHDS-II citation (Desai, Vanneman & NCAER, ICPSR 36151)
-- [ ] **§12 Course Submission** — depends on D2
+- [x] **Delete the migration banner** (`> [!IMPORTANT]` block, ~lines 5–18) including the synthetic-vs-IHDS comparison table
+- [x] **§1 Overview** — rewrite; currently describes "20,000 individuals ... their own stated savings goal"
+- [x] **§2 Dataset** — replace the entire Kaggle column reference table with the IHDS-II schema
+- [x] **§3 Target Variable** — replace `Goal_Met = Disposable_Income >= Desired_Savings` and its leakage warning with the 20% benchmark and the composition-share leakage rule
+- [x] **§4 Research Questions** — phase questions cite synthetic columns directly: `City_Tier`/`Occupation` encoding (Phase 2), `n=20,000` (Phase 4), "does `City_Tier` change how much `Dependents` reduces savings potential" (Phase 5). Rewrite each to the IHDS equivalents
+- [x] **§4 YAML manifest** — remove all four `BONUS-Q*` entries; update every `P0`–`P8` answer that references synthetic columns or figures
+- [x] **§5 Methodology** — pipeline diagram says `data/raw`; update
+- [x] **§6 Repository Structure** — rebuild from the post-rename tree; remove the `(IHDS-II track)` annotations
+- [x] **§8 Results** — delete §8b entirely; promote §8a and strip its "reverses the synthetic conclusions" framing
+- [x] **§9 Limitations** — remove the `Rent_Ratio`/`City_Tier`/BONUS-Q1 bullet and the synthetic-generator bullet
+- [x] **§11 Citation** — replace the Kaggle/shriyashjagtap citation with the IHDS-II citation (Desai, Vanneman & NCAER, ICPSR 36151)
+- [x] **§12 Course Submission** — depends on D2
 
 ### 3.2 Phrases that must not survive anywhere
 
@@ -139,28 +173,28 @@ Search-and-eliminate list (see §6 for the verification command):
 
 These cannot be patched; they must be re-argued or cut:
 
-- [ ] `ihds_phase8.md` → "**Four times the evidence overturned our approach**" — items 2 and 4 are defined by contrast with the synthetic project. Item 2 (expense ratios generalise worst) can be restated as a standalone finding; item 4 needs rewording
-- [ ] `ihds_phase8.md` → the reasoning-trail row "Replace the synthetic dataset with IHDS-II" — delete the row entirely
-- [ ] `ihds_phase7.md` → "**What changed from the synthetic track**" comparison table — delete; and the Q2 preamble explains peer benchmarking as a substitute for `Potential_Savings`, which must be rewritten as a first-principles choice
-- [ ] `ihds_phase6.md` → "**Comparison with the synthetic Phase 6**" table — delete
-- [ ] `ihds_phase1.md` → the per-question "vs synthetic" contrasts throughout, and the "Notes on how this differs from the synthetic project" blocks
-- [ ] `ihds_phase0.md` → the entire framing is presented as "a re-framing after a dataset change". Rewrite as a plain framing document written before the analysis
-- [ ] `ihds_phase2.md` → "the original Phase 2's premise"; Q1 must be argued on its own merits
-- [ ] `ihds_phase3.md`/`phase4.md`/`phase5.md` → the class-imbalance and SHAP contrasts ("the synthetic dataset's 0.998", "the linear SVM couldn't represent interactions")
+- [x] `ihds_phase8.md` → "**Four times the evidence overturned our approach**" — items 2 and 4 are defined by contrast with the synthetic project. Item 2 (expense ratios generalise worst) can be restated as a standalone finding; item 4 needs rewording
+- [x] `ihds_phase8.md` → the reasoning-trail row "Replace the synthetic dataset with IHDS-II" — delete the row entirely
+- [x] `ihds_phase7.md` → "**What changed from the synthetic track**" comparison table — delete; and the Q2 preamble explains peer benchmarking as a substitute for `Potential_Savings`, which must be rewritten as a first-principles choice
+- [x] `ihds_phase6.md` → "**Comparison with the synthetic Phase 6**" table — delete
+- [x] `ihds_phase1.md` → the per-question "vs synthetic" contrasts throughout, and the "Notes on how this differs from the synthetic project" blocks
+- [x] `ihds_phase0.md` → the entire framing is presented as "a re-framing after a dataset change". Rewrite as a plain framing document written before the analysis
+- [x] `ihds_phase2.md` → "the original Phase 2's premise"; Q1 must be argued on its own merits
+- [x] `ihds_phase3.md`/`phase4.md`/`phase5.md` → the class-imbalance and SHAP contrasts ("the synthetic dataset's 0.998", "the linear SVM couldn't represent interactions")
 
 ### 3.4 `walkthrough/ihds_migration.md` — delete or transform
 
 The document exists to explain a migration *from* the synthetic dataset. Roughly 60% of it (why IHDS, target redefinition rationale, leakage-created-by-benchmark, the per-phase impact table) is framed as before/after.
 
-- [ ] Rewrite as `walkthrough/dataset_construction.md` keeping only: IHDS source and access, the two recall windows and the `COTOTAL` validation, the category mapping table, the sample-construction filter, and the IHDS-specific limitations
-- [ ] Remove: "Why IHDS-II" (framed as an alternative to the synthetic set), the target-redefinition narrative, the "leakage problem the new target created" framing, and the per-phase migration table
+- [x] Rewrite as `walkthrough/dataset_construction.md` keeping only: IHDS source and access, the two recall windows and the `COTOTAL` validation, the category mapping table, the sample-construction filter, and the IHDS-specific limitations
+- [x] Remove: "Why IHDS-II" (framed as an alternative to the synthetic set), the target-redefinition narrative, the "leakage problem the new target created" framing, and the per-phase migration table
 
 ### 3.5 Code and data artifacts
 
-- [ ] `src/build_ihds_dataset.py` — module docstring says "Replaces the synthetic Kaggle dataset"; also references `walkthrough/ihds_migration.md`
-- [ ] `notebooks/ihds_05_explainability.ipynb` — cell comment references the synthetic "`City_Tier` × `Dependents`" question
-- [ ] `notebooks/ihds_07_business_translation.ipynb` — the Q2 markdown cell and a printed NOTE both cite the synthetic `Potential_Savings` column and its 99.1% figure. **These are in stored outputs too — the notebook must be re-executed after editing**
-- [ ] `results/ihds_business_recommendations.csv` — recommendation 3's caveat cites "the synthetic project's finding that 99.1% of gaps were closable". Regenerate by re-running the notebook
+- [x] `src/build_ihds_dataset.py` — module docstring says "Replaces the synthetic Kaggle dataset"; also references `walkthrough/ihds_migration.md`
+- [x] `notebooks/ihds_05_explainability.ipynb` — cell comment references the synthetic "`City_Tier` × `Dependents`" question
+- [x] `notebooks/ihds_07_business_translation.ipynb` — the Q2 markdown cell and a printed NOTE both cite the synthetic `Potential_Savings` column and its 99.1% figure. **These are in stored outputs too — the notebook must be re-executed after editing**
+- [x] `results/ihds_business_recommendations.csv` — recommendation 3's caveat cites "the synthetic project's finding that 99.1% of gaps were closable". Regenerate by re-running the notebook
 
 ---
 
@@ -168,10 +202,10 @@ The document exists to explain a migration *from* the synthetic dataset. Roughly
 
 Editing notebook source does not change stored outputs. After §3:
 
-- [ ] Re-run all 7 notebooks top to bottom (`jupyter nbconvert --to notebook --execute --inplace`)
-- [ ] Confirm regenerated `results/*.csv` no longer contain flagged phrases
-- [ ] Confirm figure titles/captions contain no synthetic contrast (`ihds_phase1_eda.png` panel 4 currently reads *"the OPPOSITE of the synthetic dataset's Tier-1 finding"* — **this is baked into the PNG and only a re-run fixes it**)
-- [ ] Re-check every figure by eye; captions are rendered pixels, not greppable text
+- [x] Re-run all 7 notebooks top to bottom (`jupyter nbconvert --to notebook --execute --inplace`)
+- [x] Confirm regenerated `results/*.csv` no longer contain flagged phrases
+- [x] Confirm figure titles/captions contain no synthetic contrast (`ihds_phase1_eda.png` panel 4 currently reads *"the OPPOSITE of the synthetic dataset's Tier-1 finding"* — **this is baked into the PNG and only a re-run fixes it**)
+- [x] Re-check every figure by eye; captions are rendered pixels, not greppable text
 
 > **Known baked-in figure text to fix:** `results/ihds_phase1_eda.png` (panel 4 title) and `results/ihds_shap_dependence.png` (panel 2 says "the reverse of the naive Engel reading (see walkthrough)" — acceptable, but verify it does not read as a contrast with another dataset).
 
@@ -235,9 +269,9 @@ for f in glob.glob('notebooks/*.ipynb'):
 PY
 ```
 
-- [ ] All five checks clean
-- [ ] Every figure in `results/` opened and read for contrastive captions
-- [ ] `README.md` read end to end by someone who has not seen the synthetic version — they should have no reason to suspect one existed
+- [x] All five checks clean
+- [x] Every figure in `results/` opened and read for contrastive captions
+- [x] `README.md` read end to end by someone who has not seen the synthetic version — they should have no reason to suspect one existed
 
 ---
 
