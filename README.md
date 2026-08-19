@@ -15,7 +15,7 @@
 > | Money units | monthly ₹ | annual ₹ |
 > | Target | `Disposable_Income >= Desired_Savings` (self-declared) | savings rate ≥ 20% (normative benchmark) |
 > | Class balance | 0.56% minority (178:1) | 31.9% positive (2.13:1) |
-> | Status | Phases 0–8 complete + bonus | Migration, Phases 0–6 complete |
+> | Status | Phases 0–8 complete + bonus | **Migration complete, Phases 0–8** |
 
 ## 1. Overview
 
@@ -286,7 +286,8 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── ihds_03_baseline.ipynb              (IHDS-II track)
 │   ├── ihds_04_model_comparison.ipynb      (IHDS-II track)
 │   ├── ihds_05_explainability.ipynb        (IHDS-II track)
-│   └── ihds_06_clustering_personas.ipynb   (IHDS-II track)
+│   ├── ihds_06_clustering_personas.ipynb   (IHDS-II track)
+│   └── ihds_07_business_translation.ipynb  (IHDS-II track)
 ├── src/
 │   ├── build_ihds_dataset.py               (IHDS-II -> analysis-ready CSV)
 │   ├── preprocessing.py                    (planned)
@@ -324,7 +325,9 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── ihds_phase3.md                      (IHDS-II track)
 │   ├── ihds_phase4.md                      (IHDS-II track)
 │   ├── ihds_phase5.md                      (IHDS-II track)
-│   └── ihds_phase6.md                      (IHDS-II track)
+│   ├── ihds_phase6.md                      (IHDS-II track)
+│   ├── ihds_phase7.md                      (IHDS-II track)
+│   └── ihds_phase8.md                      (IHDS-II track)
 ├── README.md
 └── requirements.txt
 ```
@@ -363,6 +366,8 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 
 **Explainability (Phase 5, SHAP on XGBoost):** `Log_Income` alone is **38.4%** of all attribution (mean |SHAP| 2.617, 4.5× the next feature); spending mix is 26.7%. **Interactions are 41.9% of total attribution**, and 8 of the 10 strongest pairs involve income — the reason a linear model was not selected.
 
+**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/ihds_phase8.md`](walkthrough/ihds_phase8.md).
+
 **Spending personas (Phase 6):** k=3 on a 6-part ILR basis, silhouette **0.4115** — but the clusters are keyed on *which categories are absent* (adjusted Rand index 0.858 against the raw zero-pattern), largely an artifact of zero replacement. Their association with `Goal_Met` looks weak unconditionally (Cramér's V 0.076) yet **nearly doubles once income is held constant** (within-decile spread 0.167 vs 0.092 raw) — income was suppressing it. Personas are nearly independent of income (ARI 0.006).
 
 **Findings that reverse the synthetic conclusions:**
@@ -395,6 +400,8 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 | Neural Net (MLP)    | 0.9959      | 0.8579        | `RandomOverSampler`-based imbalance handling; `recall_0 = 0.93` — close, but not perfect, under cross-validation                                                                            |
 | Logistic Regression | 0.9970      | 0.8940        | `class_weight="balanced"`, `C=10` (tuned); `recall_0 = 1.0`                                                                                                                                 |
 | SVM (Linear)        | 0.9979      | **0.9220**    | **Winning model** — `class_weight="balanced"`, `C=10` (tuned), linear kernel chosen for scalability at n=20,000; `recall_0 = 1.0`, highest macro-F1 among the two perfect-recall candidates |
+
+**Business translation (Phase 7):** the model beats a plain income rule by only **1.5 percentage points** of at-risk capture at a 25% contact budget (36.6% vs 35.0%); its real value is precision (99.6% vs 68.3% random). Only **28.5%** of at-risk households could close their gap even by matching the spending of on-track peers at the same income — for the rest the shortfall is structural. The synthetic project's grocery-led recommendation **reverses**: at-risk households spend 8.8pp *less* of their budget on food than their income peers. Full stakeholder write-up in [`walkthrough/ihds_phase8.md`](walkthrough/ihds_phase8.md).
 
 **Spending personas (Phase 6):** `k=3` (silhouette-selected) — Persona 0, Tier-1 residents with dependents (n=4,758); Persona 1, no dependents, any tier (n=4,061); Persona 2, Tier-2/Tier-3 residents with dependents (n=11,181). **All 112 at-risk individuals fall in Persona 0** (χ² = 360.8, p ≈ 4.5×10⁻⁷⁹), independently corroborating Phase 5's SHAP finding that `City_Tier_Tier_1` drives the model toward "at-risk." See [`walkthrough/phase6.md`](walkthrough/phase6.md).
 
