@@ -1,0 +1,5 @@
+id,question,answer,key_evidence
+BONUS-Q1,Can City_Tier be predicted from spending mix alone?,"Yes - perfectly, but trivially",CV accuracy 1.0000 vs 0.5034 majority baseline; Rent_Ratio is a deterministic tier lookup (0.30/0.20/0.15) and alone scores 1.0000; the other 10 ratios score 0.4925
+BONUS-Q2,Can Occupation be predicted from income + expense pattern?,No - indistinguishable from chance,CV accuracy 0.2590 vs 0.2510 majority baseline (4 balanced classes); adding Age and Dependents gives 0.2555
+BONUS-Q3,Does a lifecycle pattern exist between age and discretionary spending?,No - discretionary share is flat across age,Discretionary_Ratio ~ Age R2 = 0.000015; Age^2 term p = 0.503; Spearman rho = -0.0030
+BONUS-Q4,Does City_Tier affect disposable income after controlling for income?,"Yes - strongly, entirely via rent",R2 rises 0.777 -> 0.816 when tier is added (F = 2140); Tier_3 keeps 0.152 more of each rupee than Tier_1; Rent_Ratio accounts for 98.7% of the Tier_1-Tier_3 expense gap

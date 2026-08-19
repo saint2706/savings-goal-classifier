@@ -7,3 +7,13 @@
 *.fdb_latexmk
 *.bbl
 *.blg
+
+# IHDS-II derived microdata — NOT redistributable.
+# ICPSR study 36151 terms of use: "You agree not to redistribute data or other
+# materials without the written agreement of ICPSR." These files are household-level
+# records derived from that study, so they must not be committed to a public repo.
+# Reproduce them by downloading DS0002 from https://www.icpsr.umich.edu/web/DSDR/studies/36151
+# (free, registration required) and running:
+#   python src/build_ihds_dataset.py --tsv <path>/36151-0002-Data.tsv
+dataset/ihds2_households.csv
+dataset/ihds2_features.csv

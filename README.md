@@ -2,6 +2,21 @@
 
 > **Purpose of this document:** This README is written to be parsed by both humans and AI agents/LLMs. Every research question the project answers is listed in plain language under "Research Questions" **and** repeated in a machine-readable YAML manifest at the end of that section. An agent reading this file should be able to enumerate the full scope of the project, the target variable definition, the known data-leakage constraint, and the pipeline phases without needing to read any code.
 
+> [!IMPORTANT]
+> **Dataset migration in progress — this project now runs on two datasets.**
+>
+> The original **synthetic** Kaggle dataset (`dataset/data.csv`) backs Phases 0–8 and the IEEE report in `project/`. The [bonus extensions](walkthrough/bonus.md) established that its columns were largely generated independently of one another — `Rent_Ratio` is a fixed 0.30/0.20/0.15 lookup on `City_Tier`, `Occupation` is pure noise, and discretionary spending is a flat ~7% of income at every age — so its near-perfect model scores demonstrate correct methodology on a well-behaved dataset rather than anything about Indian household finance.
+>
+> A parallel track on **real survey data** — [IHDS-II](walkthrough/ihds_migration.md) (ICPSR 36151), 41,518 households — is being migrated phase by phase in `ihds_*`-prefixed notebooks and walkthroughs. **Where the two disagree, the IHDS track is the one to cite.** Sections 2, 3, 8 and 9 below still describe the synthetic dataset unless stated otherwise.
+>
+> | | Synthetic | IHDS-II |
+> | --- | --- | --- |
+> | Rows | 20,000 individuals | 41,518 households |
+> | Money units | monthly ₹ | annual ₹ |
+> | Target | `Disposable_Income >= Desired_Savings` (self-declared) | savings rate ≥ 20% (normative benchmark) |
+> | Class balance | 0.56% minority (178:1) | 31.9% positive (2.13:1) |
+> | Status | Phases 0–8 complete + bonus | Migration, Phases 1–4 complete |
+
 ## 1. Overview
 
 This project uses the **Indian Personal Finance and Spending Habits** dataset (20,000 individuals; income, category-level monthly expenses, and savings goals) to answer two linked questions:
@@ -108,10 +123,16 @@ Every question below maps to one phase of the project pipeline (Section 5). Ques
 
 ### Bonus / extension questions (not required for core deliverable)
 
-- Can `City_Tier` be predicted from spending mix alone?
-- Can `Occupation` be predicted from income + expense pattern?
-- Does a lifecycle pattern exist between age and discretionary spending (entertainment, eating out)?
-- Does `City_Tier` still affect disposable income after controlling for income level?
+All four are answered in [`walkthrough/bonus.md`](walkthrough/bonus.md) and [`notebooks/08_bonus_extensions.ipynb`](notebooks/08_bonus_extensions.ipynb).
+
+- **Can `City_Tier` be predicted from spending mix alone?**
+  **Yes — perfectly (1.0000 CV accuracy and macro-F1, vs a 0.5034 majority baseline), but trivially.** `Rent_Ratio` is a _deterministic_ encoding of `City_Tier` — exactly 0.30 in Tier-1, 0.20 in Tier-2, 0.15 in Tier-3, with zero within-tier variance — and reproduces the perfect score by itself. Remove it and the remaining ten ratios score **0.4925, below the majority baseline**. So: yes by construction, no behaviourally. This collinearity matters for reading Phase 5's SHAP rankings — see [`walkthrough/bonus.md`](walkthrough/bonus.md#what-the-bonus-work-sends-back-upstream).
+- **Can `Occupation` be predicted from income + expense pattern?**
+  **No — indistinguishable from chance.** Best model reaches 0.2590 CV accuracy against a 0.2510 majority baseline on four near-balanced classes, with a near-uniform out-of-fold confusion matrix. Adding `Age` and `Dependents` does not help (0.2555): every occupation spans the full 18–64 age range and has near-identical mean income, so `Occupation` was assigned independently of every other column.
+- **Does a lifecycle pattern exist between age and discretionary spending (entertainment, eating out)?**
+  **No.** Discretionary share is flat at ~7.0% in every age band from 18–25 to 56–64. `Discretionary_Ratio ~ Age` gives R² = 0.000015; the `Age²` term that would capture an inverted-U lifecycle profile is not significant (p = 0.503). Even with income, dependents, tier, and occupation controls, **adjusted R² is negative**. This is a limitation of the data, not a finding about people.
+- **Does `City_Tier` still affect disposable income after controlling for income level?**
+  **Yes — strongly, and entirely through rent.** Adding tier to an income-only model lifts R² from 0.777 to 0.816 (F(2, 19996) = 2140, p ≈ 0); the effect is unchanged by demographic controls. On the scale-free outcome, tier shifts the _share of income kept_ by **+10.0 pp** (Tier-2) and **+15.2 pp** (Tier-3) vs Tier-1, while `log(Income)` is insignificant (p = 0.21). Decomposing the gap, **`Rent_Ratio` accounts for 98.7%** of the Tier-1 → Tier-3 expense difference. Since `Disposable_Income` is an exact accounting identity over the expense columns, this is a construction fact, not a discovered causal effect.
 
 ### Machine-readable question manifest
 
@@ -221,15 +242,19 @@ questions:
   - id: BONUS-Q1
     phase: extension
     text: "Can City_Tier be predicted from spending mix alone?"
+    answer: "Yes, perfectly (1.0000 CV accuracy and macro-F1 vs 0.5034 majority baseline) but trivially: Rent_Ratio is a deterministic encoding of City_Tier (exactly 0.30/0.20/0.15, zero within-tier variance) and alone scores 1.0000; the other ten ratios score 0.4925, below the majority baseline."
   - id: BONUS-Q2
     phase: extension
     text: "Can Occupation be predicted from income + expense pattern?"
+    answer: "No. Best model 0.2590 CV accuracy vs 0.2510 majority baseline on four near-balanced classes; adding Age and Dependents gives 0.2555. Occupation was assigned independently of every financial and demographic column."
   - id: BONUS-Q3
     phase: extension
     text: "Does a lifecycle pattern exist between age and discretionary spending?"
+    answer: "No. Discretionary share is flat at ~7.0% in every age band; Discretionary_Ratio ~ Age has R2 = 0.000015, the Age^2 lifecycle term is not significant (p = 0.503), and adjusted R2 is negative even with full controls."
   - id: BONUS-Q4
     phase: extension
     text: "Does City_Tier still affect disposable income after controlling for income?"
+    answer: "Yes, strongly. R2 rises 0.777 -> 0.816 when tier is added (F = 2140, p ~ 0), unchanged by demographic controls; tier shifts the share of income kept by +10.0pp (Tier_2) and +15.2pp (Tier_3) while log(Income) is insignificant. Rent_Ratio accounts for 98.7% of the Tier_1 - Tier_3 expense gap, so the effect operates entirely through rent."
 ```
 
 ## 5. Methodology / Pipeline
@@ -254,8 +279,14 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── 04_model_comparison.ipynb
 │   ├── 05_explainability.ipynb
 │   ├── 06_clustering_personas.ipynb
-│   └── 07_business_translation.ipynb
+│   ├── 07_business_translation.ipynb
+│   ├── 08_bonus_extensions.ipynb
+│   ├── ihds_01_eda_and_leakage_check.ipynb (IHDS-II track)
+│   ├── ihds_02_feature_engineering.ipynb   (IHDS-II track)
+│   ├── ihds_03_baseline.ipynb              (IHDS-II track)
+│   └── ihds_04_model_comparison.ipynb      (IHDS-II track)
 ├── src/
+│   ├── build_ihds_dataset.py               (IHDS-II -> analysis-ready CSV)
 │   ├── preprocessing.py                    (planned)
 │   ├── models.py                           (planned)
 │   └── evaluation.py                       (planned)
@@ -266,7 +297,9 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── shap_summary.png
 │   ├── persona_profiles.csv
 │   ├── persona_clusters.png
-│   └── business_recommendations.csv
+│   ├── business_recommendations.csv
+│   ├── bonus_extension_summary.csv
+│   └── bonus_extensions.png
 ├── project/
 │   ├── main.tex                            (instructor's template/instructions)
 │   ├── report.tex                          (team's IEEE report, draft)
@@ -280,12 +313,18 @@ data/raw → Phase 1 (EDA + leakage check) → Phase 2 (feature engineering)
 │   ├── phase5.md
 │   ├── phase6.md
 │   ├── phase7.md
-│   └── phase8.md
+│   ├── phase8.md
+│   ├── bonus.md
+│   ├── ihds_migration.md                   (IHDS-II track)
+│   ├── ihds_phase1.md                      (IHDS-II track)
+│   ├── ihds_phase2.md                      (IHDS-II track)
+│   ├── ihds_phase3.md                      (IHDS-II track)
+│   └── ihds_phase4.md                      (IHDS-II track)
 ├── README.md
 └── requirements.txt
 ```
 
-Each `walkthrough/phaseN.md` answers that phase's research questions and, for phases with a notebook, walks through it cell by cell — what each cell does and the motivation behind it — so the reasoning behind the code doesn't have to be reconstructed from the code alone. Notebooks themselves carry only section headers and code; all narrative explanation lives in the matching walkthrough document.
+Each `walkthrough/phaseN.md` answers that phase's research questions and, for phases with a notebook, walks through it cell by cell — what each cell does and the motivation behind it — so the reasoning behind the code doesn't have to be reconstructed from the code alone. `walkthrough/bonus.md` does the same for the extension questions, which sit outside the numbered pipeline. Notebooks themselves carry only section headers and code; all narrative explanation lives in the matching walkthrough document.
 
 ## 7. Setup & Usage
 
@@ -297,6 +336,37 @@ jupyter notebook notebooks/01_eda_and_leakage_check.ipynb
 ```
 
 ## 8. Results
+
+### 8a. IHDS-II track (real survey data) — Phases 1–4 complete
+
+41,518 households, target `Goal_Met` = savings rate ≥ 20% (31.9% positive). See [`walkthrough/ihds_migration.md`](walkthrough/ihds_migration.md) for how the dataset was built and why the target had to be redefined.
+
+**Winning model:** XGBoost — CV macro-F1 **0.8371**, ROC-AUC **0.9306**; held-out test (8,304 households) macro-F1 **0.838**, identical to the CV estimate. Hyperparameter search was worth **+0.0006** macro-F1, i.e. nothing.
+
+| Model | CV accuracy | CV F1 (macro) | CV ROC-AUC |
+| --- | --- | --- | --- |
+| **XGBoost** | 0.8614 | **0.8371** | 0.9306 |
+| HistGradientBoosting | 0.8606 | 0.8360 | 0.9306 |
+| Random Forest | 0.8512 | 0.8249 | 0.9170 |
+| Logistic Regression | 0.8343 | 0.8186 | 0.9213 |
+| Linear SVM | 0.8332 | 0.8177 | — |
+| Decision Tree | 0.8067 | 0.7889 | 0.8847 |
+| Single income rule (Phase 3) | 0.7753 | 0.7425 | 0.7438 |
+| Majority baseline | 0.6807 | 0.4050 | 0.5000 |
+
+**The honest margin is +0.095 macro-F1 over a single income threshold** (predict "on track" if annual income > ₹121,685), not +0.432 over the majority baseline.
+
+**Findings that reverse the synthetic conclusions:**
+
+- **Income dominates, not spending mix.** `Log_Income` alone reaches ROC-AUC 0.835; adding one feature (`Groceries_Share`) reaches 0.876 against the full model's 0.921. The synthetic project's headline was the opposite.
+- **Geography reverses.** Goal attainment falls monotonically metro → village (0.4212 / 0.3698 / 0.3091 / 0.2666). The synthetic data put *all* risk in Tier-1 cities.
+- **Occupation is real signal**, not noise: salaried households meet the goal at 1.76× the rate of agricultural labourers (0.4410 vs 0.2512).
+- **Engel's law appears unprompted** — `Groceries_Share` correlates −0.266 with log income.
+- **Rent is absent for 90.5% of households** (most own their homes), retiring the synthetic dataset's deterministic rent-to-tier relationship entirely.
+
+**Caveat that must travel with every figure above:** 55.9% of IHDS households report consumption exceeding income (documented survey under-reporting of income), so `Goal_Met` is biased downward at any threshold. Relative comparisons are sound; absolute levels are not.
+
+### 8b. Synthetic track (original Kaggle dataset)
 
 > Phase 8's final stakeholder write-up is complete — see [`walkthrough/phase8.md`](walkthrough/phase8.md) for the plain-language report, the reasoning trail behind every modeling decision, and the 3-chart visual appendix. The modeling, explainability, and business-translation results below are final.
 
@@ -320,11 +390,14 @@ The table below reports **cross-validated (out-of-fold)** accuracy/macro-F1 for 
 
 **Business translation (Phase 7):** every one of the 112 at-risk individuals lives in a Tier-1 city — the single highest-leverage targeting signal. `Groceries` carries the most unrealized savings potential (₹18.2M/month aggregate, ~2× the next category). For 99.1% of at-risk individuals, addressable savings across all 8 tracked categories already exceeds their shortfall — the gap is recoverable, not structural. See [`walkthrough/phase7.md`](walkthrough/phase7.md) and [`results/business_recommendations.csv`](results/business_recommendations.csv) for the full set of five recommendations and their supporting evidence.
 
+**Bonus extensions:** all four extension questions are resolved in [`walkthrough/bonus.md`](walkthrough/bonus.md) — `City_Tier` is perfectly predictable from spending mix but only because `Rent_Ratio` is a deterministic 0.30/0.20/0.15 tier encoding; `Occupation` is unpredictable at chance level; no age/discretionary-spending lifecycle pattern exists (adjusted R² negative); and `City_Tier` shifts the share of income kept by +15.2 pp (Tier-3 vs Tier-1) after controlling for income, with rent accounting for 98.7% of the gap. See [`results/bonus_extension_summary.csv`](results/bonus_extension_summary.csv) and [`results/bonus_extensions.png`](results/bonus_extensions.png). The `Rent_Ratio` ≡ `City_Tier` collinearity qualifies how the Phase 5 SHAP rankings should be read — see [Limitations](#9-limitations).
+
 **Final report (Phase 8):** [`walkthrough/phase8.md`](walkthrough/phase8.md) assembles the above into a stakeholder-facing write-up — an executive summary, a reasoning trail explaining *why* each modeling decision was made (not just its score), and a 3-chart visual appendix drawn from `results/`.
 
 ## 9. Limitations
 
-- The dataset's income/expense figures may be synthetically generated rather than survey-collected — treat absolute figures as illustrative rather than nationally representative.
+- The dataset's income/expense figures may be synthetically generated rather than survey-collected — treat absolute figures as illustrative rather than nationally representative. The bonus extensions ([`walkthrough/bonus.md`](walkthrough/bonus.md)) turn this from a caveat into an evidenced claim: expense categories are set as fixed percentages of income, and only `City_Tier` (via rent) and `Dependents` (via education) introduce systematic structure. `Occupation` and `Age` are drawn independently of every financial column. The core model's predictive success should therefore be read as a demonstration of correct methodology on a well-behaved dataset, not as evidence about Indian household finance.
+- **`Rent_Ratio` is a deterministic encoding of `City_Tier`** (exactly 0.30 / 0.20 / 0.15, zero within-tier variance — BONUS-Q1). Any model given both features receives the same information twice. Because SHAP splits credit between exactly-collinear features rather than assigning it to one, the true importance of "lives in a Tier-1 city" in Phase 5 is the *sum* of the `City_Tier_Tier_1` and `Rent_Ratio` contributions, and each individually understates it — the gap between 1st-place `Loan_Repayment_Ratio` and 3rd-place `City_Tier_Tier_1` is narrower than the SHAP chart suggests. `Loan_Repayment_Ratio`'s dominance is unaffected, as it is collinear with neither.
 - `Goal_Met` is a self-referential target (defined from the individual's own stated goal), not an external measure of financial health.
 - Phase 6's clustering silhouette scores are uniformly low (< 0.1) across every `k` tested, and the chosen 3-cluster solution is driven almost entirely by two features (`Education_Ratio`, `Rent_Ratio`) that are themselves proxies for `Dependents` and `City_Tier` — the personas are a demographic/geographic split already present in the raw data, not a richly discovered multivariate spending archetype.
 - The winning model (SVM, linear) is provably incapable of representing any feature-interaction effect (Phase 5); the minority class (`Goal_Met = 0`) contains only 112 rows, so its `recall_0 = 1.0` result — while consistent across cross-validation and the held-out test set — rests on a small sample and is not a guarantee against a genuinely new population.
