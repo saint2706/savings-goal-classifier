@@ -315,7 +315,9 @@ ICPSR DS0002 → src/build_dataset.py → dataset/households.csv
 │   ├── dataset_construction.md
 │   └── phase0.md … phase8.md
 ├── project/
-│   └── main.tex                            (instructor's report template)
+│   ├── main.tex                            (instructor's report template)
+│   ├── report.tex / report.pdf             (the IEEE report; 6 pages)
+│   └── figures/make_figures.py             (regenerates the report's figures)
 ├── README.md
 └── requirements.txt
 ```
@@ -393,6 +395,8 @@ Desai, Sonalde, Reeve Vanneman, and National Council of Applied Economic Researc
 ## 12. Course Submission Information
 
 This project is submitted for **Advanced Machine Learning for Business Transformation (AMLBT)**, Goa Institute of Management — Big Data Analytics. [`project/main.tex`](project/main.tex) is the instructor-provided report template (submission requirements, rubric, prompts) and is retained unedited for reference.
+
+The report itself is [`project/report.tex`](project/report.tex), written to that template's structure and compiled to six IEEE conference pages (`pdflatex report.tex`, run twice for cross-references). Its four figures are built by [`project/figures/make_figures.py`](project/figures/make_figures.py) from the committed files in `results/` plus the tables published in `walkthrough/`, so they can be regenerated without the restricted microdata.
 
 ### Team
 
