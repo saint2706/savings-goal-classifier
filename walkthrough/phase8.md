@@ -23,6 +23,13 @@
 
 Across **41,518 Indian households** surveyed in 2011–12, **68% retain less than 20% of their annual income** after recorded consumption. A model can rank households by that risk with good accuracy (ROC-AUC 0.93, macro-F1 0.84) and unusually reliable probabilities.
 
+> **The four numbers this report leans on, in plain terms.** This section is written for readers with no machine-learning background, so the measures are worth stating once. (Fuller explanations sit in the phase documents: [ROC-AUC](dataset_construction.md#reserved-for-validation-never-features), [macro-F1](phase0.md), [calibration](phase7.md).)
+>
+> - **ROC-AUC 0.93** — take one household that really is on track and one that is not; the model gives the first a higher score 93 times out of 100. A coin flip scores 0.50. This measures the **order** the model puts households in, which is what a prioritised contact list needs.
+> - **Macro-F1 0.84** — how good the model's actual yes/no calls are, scored so that being right about at-risk households and being right about on-track households count equally. This matters because a model that simply labels *everyone* at risk would be right 68% of the time and useless; that do-nothing model scores 0.40 here.
+> - **Calibration error ≤ 0.036** — when the model says 70%, the true rate among those households is between about 66% and 74%. The probabilities are honest numbers, not just a ranking.
+> - **+0.095 macro-F1 over a single income rule** — the model's genuine contribution above simply sorting households by income, which is the comparison that matters. Against a do-nothing baseline the gain would look four times larger, and that comparison would be misleading.
+
 But three findings should temper any campaign built on it:
 
 1. **Income does most of the work.** A single threshold — earning more than ₹121,685/year — already recovers most of the model's performance. The full model adds real but modest value on top.
@@ -80,6 +87,12 @@ Every material decision, the phase that made it, and the evidence behind it.
 | XGBoost over logistic regression | Phase 4 | Macro-F1 0.837 vs 0.819. Phase 5 explains why: **41.9% of the model's behaviour is interactions**, which a linear model cannot represent. |
 | Optimise for recall on the at-risk class | Phase 4 | A missed at-risk household is a silent failure; an unnecessary nudge is cheap. Reaching 95% recall costs only ~8 points of precision. |
 | SHAP on trees, not coefficients | Phases 2, 5 | The 11 shares sum to 1, so they are exactly singular (VIF = ∞) and no coefficient is identified. |
+
+> **In plain terms — the technical terms in that table.**
+> - **XGBoost** is the chosen model: hundreds of small decision flowcharts built one after another, each correcting the mistakes the previous ones still make. **Logistic regression** is the simpler alternative — one fixed weight per feature, added up.
+> - An **interaction** means a feature's meaning depends on another feature's value: a high food share signals something different for a household earning ₹40,000 than for one earning ₹400,000. Logistic regression assigns each feature one fixed effect and cannot express that, which is the concrete reason it was not chosen.
+> - **Recall** on the at-risk class is the fraction of genuinely at-risk households the campaign reaches. **Precision** is the fraction of those contacted who genuinely needed it. Pushing one up pushes the other down, and the choice of where to sit is a business decision, not a technical one.
+> - **SHAP** breaks a single prediction into per-feature contributions — "income pushed this household up, family size pulled it down" — and it is used because the simpler route, reading the model's weights, is unavailable here: the eleven budget shares always add to 100%, which mathematically means there is no single correct set of weights to read.
 | Peer benchmarking for "recoverable" | Phase 7 | The survey does not say which spending was avoidable; comparing within income deciles avoids having to assume it. |
 
 ### Four times the evidence overturned our approach
@@ -90,6 +103,10 @@ Recording these matters more than recording the successes, because each was a pl
 2. **Expense-to-income ratios generalise *worst*** (Phase 2). Dividing spending by income is the intuitive way to make households comparable across income levels. Tested on a neutral target, it came last (0.589 against 0.625 for raw rupees) — income is the under-reported side of this survey, and so the worst available divisor.
 3. **A high grocery share predicts being *on track*** (Phase 5). We captioned the dependence plot with the opposite, from the obvious Engel's-law reading. The plot contradicted it. Reading this off Phase 1's unconditional correlation would have produced a backwards recommendation.
 4. **The spending personas are not an income split** (Phase 6). Phase 5 found income carries 38.4% of attribution against spending's 26.7%, which suggested the personas would largely re-encode income. The adjusted Rand index against income tertiles is 0.006. Income was *suppressing* the persona effect — controlling for it nearly doubled the spread (0.167 vs 0.092).
+
+> **In plain terms — the two terms in item 4.** The **adjusted Rand index** scores how much two ways of grouping the same households agree: 1.0 means identical, 0 means no more alike than chance. At 0.006 the spending groups are simply not income brackets in disguise.
+>
+> **Suppression** is the counter-intuitive part. One group of households was both poorer than average (which lowers saving) and spending on fewer categories (which raises it). Compared straightforwardly, the two effects cancel and the group looks unremarkable — a 9-point gap. Compared only against households *at the same income*, the behavioural effect stands alone and the gap grows to 17 points, reaching 32 points in one income band. The effect was there all along; income was hiding it.
 
 A fifth, methodological: Phase 6's notebook initially **hardcoded the worst-scoring representation** instead of selecting from the sweep it had just computed. Caught by reading the output rather than skimming it.
 
@@ -124,3 +141,5 @@ Spending signature, goal attainment by persona, and income distribution. Include
 - **Debt is a stock, not a flow.** IHDS records outstanding debt and interest rates but no repayment instalment, so `Debt_To_Income_W` stands in for a cash-flow burden it cannot directly measure.
 - **The at-risk class is the majority (68%)**, so lift-based business cases are structurally weak here regardless of model quality.
 - **Personas are partly a zero-replacement artifact** (adjusted Rand index 0.858 against the raw zero-pattern), not discovered behavioural archetypes.
+
+  > **In plain terms.** The grouping algorithm needed every category to hold a positive number, because it works with logarithms and the logarithm of zero does not exist. Categories a household recorded as zero were therefore filled with a tiny stand-in value — and households sharing the same fill pattern ended up looking near-identical to the algorithm. So the "personas" it found are largely *which categories the survey recorded as blank* (agreement of 0.858 with that raw pattern), rather than distinct styles of budgeting. They remain a real and interpretable distinction — some households simply record no transport or no healthcare spend — but they are descriptive, and some of what defines them is measurement rather than behaviour: a household with no healthcare spending may just have had a healthy year.
