@@ -1,47 +1,46 @@
-# Predicting Savings Adequacy — Indian Household Survey Data
+# Predicting Savings Adequacy: Indian Household Survey Data
 
-> **Purpose of this document:** This README is written to be parsed by both humans and AI agents/LLMs. Every research question the project answers is listed in plain language under "Research Questions" **and** repeated in a machine-readable YAML manifest at the end of that section. An agent reading this file should be able to enumerate the full scope of the project, the target variable definition, the known data-leakage constraints, and the pipeline phases without needing to read any code.
+> This README is written for people and for AI agents. Every research question is listed in plain language under Research Questions and repeated in a machine-readable YAML manifest at the end of that section, so an agent can read the project's scope, target definition, leakage constraints and pipeline without opening the code.
 
 ## 1. Overview
 
-This project uses the **India Human Development Survey-II** (IHDS-II, 2011-12; 41,518 households with income, category-level annual expenditure, and demographics) to answer two linked questions:
+The project uses the India Human Development Survey-II (IHDS-II, 2011-12): 41,518 households with income, category-level annual expenditure and demographics. It asks two linked questions:
 
-1. **Classification:** Can we predict whether a household retains an adequate share of its income after consumption — and from which features can we do so *without* reconstructing the label?
-2. **Segmentation:** What spending clusters exist in the population, and how do they relate to savings adequacy?
+1. Classification: can we predict whether a household keeps an adequate share of its income after consumption, and from which features can we do so without reconstructing the label?
+2. Segmentation: what spending clusters exist, and how do they relate to savings adequacy?
 
-The project is framed as a decision-support tool for a savings-product or financial-inclusion team deciding which households to prioritise for outreach.
+The intended user is a savings-product or financial-inclusion team deciding which households to contact first.
 
-**Headline result (post-audit, October 2026).** Spending composition is *not* leakage-free: household size × food share × income reconstructs total spend, and a model-free oracle built from those three columns ranks households at **ROC-AUC 0.895**. The headline model therefore uses only what is known at onboarding — income, demographics, debt, social group. Under cross-validation **grouped by primary sampling unit (PSU)**, tuned XGBoost reaches **ROC-AUC 0.882 / macro-F1 0.782** (held-out PSUs: **0.886 / 0.781**). Adding spending shares lifts that to 0.93, but mostly through the reconstruction route. At a 25% contact budget the model reaches **98.5%** of the attainable at-risk households against **95.4%** for "contact the poorest first" — **+1.1 pp (95% CI 1.0–1.3)**. See [§8 Results](#8-results) and [`TODO.md`](TODO.md) for the audit.
+Headline result: spending composition does not make a safe feature set. Food spending tracks household size, so household size, the food share and income together recover total spending. A formula built from those three columns, with no fitted model, ranks households at ROC-AUC 0.895. The headline model therefore uses only what a team would know at onboarding: income, demographics, debt and social group. Under cross-validation grouped by primary sampling unit (PSU), tuned XGBoost reaches ROC-AUC 0.882 and macro-F1 0.782; on held-out PSUs it scores 0.886 and 0.781. Adding spending shares raises the score to 0.93, mostly through the reconstruction route. At a 25% contact budget the model reaches 98.5% of the at-risk households any strategy could reach, against 95.4% for contacting the poorest first: a gain of 1.1 percentage points (95% CI 1.0 to 1.3). Details are in [§8 Results](#8-results).
 
 ## 2. Dataset
 
-**Source:** [India Human Development Survey-II (IHDS-II), 2011-12](https://www.icpsr.umich.edu/web/DSDR/studies/36151) — ICPSR study 36151, dataset DS0002 (Household)
-**Rows:** 41,518 households in 2,461 PSUs (from 42,152 raw; 634 dropped for non-positive income or missing consumption)
-**Grain:** One row per **household**, annual snapshot
-**Money units:** annual ₹
+Source: [India Human Development Survey-II (IHDS-II), 2011-12](https://www.icpsr.umich.edu/web/DSDR/studies/36151), ICPSR study 36151, dataset DS0002 (Household).
+Rows: 41,518 households in 2,461 PSUs (42,152 raw; 634 dropped for non-positive income or missing consumption).
+Grain: one row per household, annual snapshot. Money is in annual rupees.
 
-The data is **not committed** — ICPSR's terms prohibit redistribution. [`dataset/README.md`](dataset/README.md) documents the download, the `sgc build` command, and the notebook order.
+The data is not committed, because ICPSR's terms prohibit redistribution. [`dataset/README.md`](dataset/README.md) covers the download, the `sgc build` command and the notebook order.
 
 ### Column reference
 
 | Column | Description | Role |
 | --- | --- | --- |
 | `INCOME`, `Log_Income` | Total annual household income | Feature (headline) |
-| `Household_Size`, `Age_Dependents`, `Dependency_Ratio` | Household composition; `Age_Dependents` = members aged 0–14 or 60+ | Feature (headline) |
+| `Household_Size`, `Age_Dependents`, `Dependency_Ratio` | Household composition; `Age_Dependents` counts members aged 0–14 or 60+ | Feature (headline) |
 | `Head_Age` | Age of household head (male head, else female head) | Feature (headline) |
 | `Max_Adult_Education` | Highest adult education in the household | Feature (headline) |
-| `Occupation` | Dominant worker type (salaried / business / farm / ag-labour / non-ag-labour / none); ties go to the more regular income stream | Feature (categorical) |
-| `Area_Type` | Metro urban / other urban / developed village / less-developed village | Feature (categorical) |
+| `Occupation` | Dominant worker type (salaried, business, farm, agricultural labour, non-agricultural labour, none); ties go to the more regular income stream | Feature (categorical) |
+| `Area_Type` | Metro urban, other urban, developed village, less-developed village | Feature (categorical) |
 | `Caste_Group`, `Religion` | Social group | Feature (categorical) |
-| `Debt_To_Income`, `Has_Debt`, `Debt_Missing` | Outstanding debt as a multiple of income (winsorised at p99 inside the pipeline, per fold); a blank `DB5` is missing, not zero | Feature (headline) |
-| `{category}_Share` (11) | Each expense category as a share of **total expenditure** | **Diagnostic only** — jointly with size and income it reconstructs the label (A1) |
-| `Spends_On_{category}` (5) | Participation indicators for the majority-zero categories | Diagnostic only |
-| `Has_*` (6) | Survey-reported holdings: bank savings, fixed deposit, pension/LIC, securities, post office, gold | **External validation only — never a feature** |
-| 11 raw rupee categories, `Category_Total` | Groceries, Eating_Out, Utilities, Rent, Transport, Healthcare, Education, Entertainment, Insurance, Clothing_Footwear, Miscellaneous; their sum | **Leakage — excluded** |
-| `COTOTAL`, `Savings`, `Savings_Rate` | Total consumption and the savings residual | **Leakage — excluded** |
-| `IDPSU`, `WT` | Primary sampling unit (CV group key) and household survey weight | Grouping / population figures |
+| `Debt_To_Income`, `Has_Debt`, `Debt_Missing` | Outstanding debt as a multiple of income, winsorised at p99 inside the pipeline for each fold; a blank `DB5` is treated as missing, not zero | Feature (headline) |
+| `{category}_Share` (11) | Each expense category as a share of total expenditure | Diagnostic only: with size and income it reconstructs the label |
+| `Spends_On_{category}` (5) | Participation indicators for the categories that are zero for most households | Diagnostic only |
+| `Has_*` (6) | Survey-reported holdings: bank savings, fixed deposit, pension/LIC, securities, post office, gold | External validation only, never a feature |
+| 11 rupee categories, `Category_Total` | Groceries, Eating_Out, Utilities, Rent, Transport, Healthcare, Education, Entertainment, Insurance, Clothing_Footwear, Miscellaneous, and their sum | Leakage, excluded |
+| `COTOTAL`, `Savings`, `Savings_Rate` | Total consumption and the savings residual | Leakage, excluded |
+| `IDPSU`, `WT` | Primary sampling unit (the cross-validation group key) and household survey weight | Grouping and population figures |
 
-## 3. Target Variable
+## 3. Target variable
 
 ```text
 Savings      = INCOME - COTOTAL
@@ -49,39 +48,39 @@ Savings_Rate = Savings / INCOME
 Goal_Met     = 1 if Savings_Rate >= 0.20 else 0
 ```
 
-A household is **on track** if it retains at least 20% of its annual income after all recorded consumption. Class balance: **31.9% positive** (2.13 : 1); **30.5%** survey-weighted.
+A household is on track if it keeps at least 20% of its annual income after all recorded consumption. 31.9% of households are on track (2.13 : 1), or 30.5% with survey weights.
 
-The 20% threshold is a **convention, not a measurement**. It is configurable via `sgc build --threshold`, and [`walkthrough/phase1.md`](walkthrough/phase1.md) publishes the sensitivity curve (0% → 44.1% positive, 30% → 25.3%).
+The 20% threshold is a convention, not a measurement. `sgc build --threshold` changes it, and [`walkthrough/phase1.md`](walkthrough/phase1.md) gives the sensitivity curve (0% gives 44.1% positive, 30% gives 25.3%).
 
-**⚠️ Data leakage constraints (read before modifying the feature set):**
+Leakage constraints (read these before changing the feature set):
 
-- `Savings` is an exact identity over `INCOME` and `COTOTAL`. Our 11 categories sum to within 1% of `COTOTAL` for 97.7% of households, so the identity is approximate over the expense columns.
-- The 11 **raw rupee** categories, `Category_Total`, `COTOTAL`, `Savings` and `Savings_Rate` must **never** be features: with `INCOME` they reconstruct `Goal_Met` with **99.75%** agreement. **Expense-to-income ratios** are the same quantity divided by income — also 99.75%.
-- **Composition shares are not safe either (A1).** No single share predicts the label (largest marginal ROC-AUC distance from 0.5: 0.10), but food rupees track household size, so `COTOTAL ≈ k × Household_Size / Groceries_Share`. That oracle, with `k` = median food spend per person, ranks households at **ROC-AUC 0.895** with no learning. Shares may enter a deployed model only if observed *before* the prediction window — the scoring API enforces this. See [`results/leakage.json`](results/leakage.json).
+- `Savings` is an exact identity over `INCOME` and `COTOTAL`. The 11 categories sum to within 1% of `COTOTAL` for 97.7% of households, so the identity holds only approximately over the expense columns.
+- The 11 rupee categories, `Category_Total`, `COTOTAL`, `Savings` and `Savings_Rate` must never be features: with `INCOME` they reconstruct `Goal_Met` at 99.75% agreement. Expense-to-income ratios are the same quantities divided by income and give the same 99.75%.
+- Composition shares also leak, but only jointly. No single share predicts the label (the largest distance of a marginal ROC-AUC from 0.5 is 0.10). Food rupees track household size, so `COTOTAL ≈ k × Household_Size / Groceries_Share`, and that formula, with `k` the median food spend per person, ranks households at ROC-AUC 0.895 without any fitting. A deployed model may use shares only if they were observed before the prediction window; the scoring API enforces this. Numbers are in [`results/leakage.json`](results/leakage.json).
 
-## 4. Research Questions
+## 4. Research questions
 
-Every question maps to one phase of the pipeline (Section 5). Questions are answered in order; later phases depend on decisions made in earlier ones.
+Each question maps to one phase of the pipeline (Section 5). Later phases depend on decisions made in earlier ones.
 
-### Phase 0 — Framing
+### Phase 0: Framing
 
-- **What real business decision does this project inform?**
-  Whether a savings-product or financial-inclusion team should treat a household as **on-track** or **at-risk** against a normative savings-adequacy benchmark, and therefore which households to prioritise for a low-cost intervention. The output drives a triage/prioritisation decision, not a savings forecast.
-- **What is the precise, one-sentence definition of the target variable?**
-  `Goal_Met = 1` if a household retains at least 20% of its annual income after all recorded consumption expenditure (see Section 3).
-- **Is the primary task classification or regression, and why?**
-  **Binary classification**, on three grounds: the business decision is binary; the continuous alternative (`Savings_Rate`, median −0.108, minimum −1647) is dominated by a long left tail from the least reliable part of the data; and the binary label is robust to the survey's measurement error. A robust (quantile) regression on `Savings_Rate` is now run as a complement in notebook 08.
+- What business decision does this project inform?
+  Whether a savings-product or financial-inclusion team should treat a household as on track or at risk against a normative savings benchmark, and so which households to prioritise for a low-cost intervention. The output drives triage, not a savings forecast.
+- What is the precise definition of the target variable?
+  `Goal_Met = 1` if a household keeps at least 20% of its annual income after all recorded consumption (Section 3).
+- Is the primary task classification or regression, and why?
+  Binary classification, for three reasons: the business decision is binary; the continuous alternative (`Savings_Rate`, median −0.108, minimum −1647) is dominated by a long left tail from the least reliable part of the data; and the binary label is less sensitive to the survey's measurement error. Notebook 08 adds a quantile regression on `Savings_Rate` as a complement.
 
-### Phase 1 — Data Understanding
+### Phase 1: Data Understanding
 
 - What does each column mean, and what unit/time period does it represent?
-- What is the distribution of income, expenses, and savings — skew, outliers, implausible values?
+- What is the distribution of income, expenses, and savings: skew, outliers, implausible values?
 - Are there missing values or duplicate rows, and how are they handled?
 - How correlated are expense categories with income and with each other?
-- Is the target mathematically derivable from any candidate feature, singly or jointly (leakage check, A1)?
+- Is the target mathematically derivable from any candidate feature, singly or jointly (leakage check)?
 - What is the class balance of `Goal_Met` once leakage columns are excluded?
 
-### Phase 2 — Feature Engineering
+### Phase 2: Feature Engineering
 
 - Do expense-to-income ratios generalise better across income levels than raw expense values?
 - How should the categorical features be encoded, and how should missing categories be handled?
@@ -89,47 +88,46 @@ Every question maps to one phase of the pipeline (Section 5). Questions are answ
 - Which features require scaling, and does that depend on the downstream model?
 - Are any features redundant or highly collinear?
 
-### Phase 3 — Baseline
+### Phase 3: Baseline
 
 - What accuracy/F1 does a majority-class or simple single-rule baseline achieve?
 - What does plain logistic regression achieve using only income and 1–2 expense shares?
 
-### Phase 4 — Model Comparison
+### Phase 4: Model Comparison
 
 - Which 5–7 model families are appropriate given the data (n=41,518, mixed numeric/categorical, moderate dimensionality)?
 - What validation strategy fits the class balance found in Phase 1?
 - What hyperparameter search method is used, and what parameters move performance most?
-- Given the business framing, is precision or recall more important — is a missed at-risk household more costly than an unnecessary contact?
+- Given the business framing, is precision or recall more important? Is a missed at-risk household more costly than an unnecessary contact?
 
-### Phase 5 — Explainability
+### Phase 5: Explainability
 
 - Which features matter most globally for the winning model (SHAP)?
 - Are there notable interaction effects (e.g. does income change how much a spending signal matters)?
 - Can individual predictions be explained in plain business language?
 
-### Phase 6 — Unsupervised Extension
+### Phase 6: Spending clusters
 
 - What spending clusters emerge from clustering on expense-category proportions, and are they behavioural personas?
 - How many clusters are statistically justified (elbow method, silhouette score)?
-- Do the resulting personas correlate meaningfully with `Goal_Met`?
+- Do the clusters relate to `Goal_Met` beyond what income explains?
 
-### Phase 7 — Business Translation
+### Phase 7: Business Translation
 
-- What are the 3–5 most actionable findings, stated as recommendations rather than statistics?
+- What are the 3–5 findings a team can act on, stated as recommendations rather than statistics?
 - Which expense category carries the most recoverable spend across the population?
-- Where does the model fail or lose reliability — what should a stakeholder be told before acting on it?
+- Where does the model fail or lose reliability, and what should a stakeholder be told before acting on it?
 
-### Phase 8 — Reporting, and distance from adequacy
+### Phase 8: Reporting and distance from adequacy
 
 - Does the final write-up explain _reasoning_ rather than just reporting numbers?
 - Which 3–4 visualisations communicate the findings fastest to a non-technical reader?
-- Does ranking by predicted rupee shortfall (quantile regression on `Savings_Rate`) reach more of the gap than a classifier? (notebook 08)
+- Does ranking by predicted rupee shortfall (a quantile regression on `Savings_Rate`, notebook 08) reach more of the gap than the classifier?
 
 ### Machine-readable question manifest
 
 ```yaml
 project: indian-household-savings-adequacy
-revision: post-audit 2026-10 (see TODO.md)
 dataset:
   name: India Human Development Survey-II (IHDS-II)
   source: ICPSR study 36151, dataset DS0002 (Household)
@@ -193,7 +191,7 @@ questions:
     phase: data_understanding
     type: leakage_check
     text: "Is the target mathematically derivable from any candidate feature, singly or jointly?"
-    answer: "Yes from raw categories and expense-to-income ratios (99.75%). No single share carries it, but size x food share x income does: a model-free oracle reaches ROC-AUC 0.895, and a model without shares keeps 94.3% of the full model's AUC. Decision: headline = income + demographics model."
+    answer: "Yes from raw categories and expense-to-income ratios (99.75%). No single share carries it, but size x food share x income does: a model-free oracle reaches ROC-AUC 0.895, and a model without shares keeps 94.3% of the full model's AUC. So the headline model uses income, demographics and debt only."
   - id: P1-Q6
     phase: data_understanding
     text: "What is the class balance of Goal_Met once leakage columns are excluded?"
@@ -269,11 +267,11 @@ questions:
   - id: P7-Q1
     phase: business_translation
     text: "What are the most actionable findings?"
-    answer: "Five recommendations in results/business_recommendations.csv; lead: the model adds +1.1 pp (CI 1.0-1.3) of at-risk capture over a poorest-first rule at 25% (98.5% vs 95.4% of ceiling)."
+    answer: "Five recommendations in results/business_recommendations.csv. The first: the model adds +1.1 pp (CI 1.0-1.3) of at-risk capture over a poorest-first rule at 25% (98.5% vs 95.4% of ceiling)."
   - id: P7-Q2
     phase: business_translation
     text: "Which expense category carries the most recoverable spend?"
-    answer: "None demonstrably. Rupee excess is positive in every category by construction. In budget shares, at-risk households over-weight healthcare (+4.4pp), education (+2.8pp), miscellaneous (+2.1pp) and under-weight food (-9.0pp). The 'structural for 71.5%' claim is withdrawn: closable share is 22% or 93% depending on the benchmark."
+    answer: "None demonstrably. Rupee excess is positive in every category by construction. In budget shares, at-risk households over-weight healthcare (+4.4pp), education (+2.8pp), miscellaneous (+2.1pp) and under-weight food (-9.0pp). Whether the gap is closable by spending like peers depends on the benchmark: 22% (shares) or 93% (rupees)."
   - id: P7-Q3
     phase: business_translation
     text: "Where does the model fail?"
@@ -281,7 +279,7 @@ questions:
   - id: P8-Q1
     phase: reporting
     text: "Does the write-up explain reasoning, not just results?"
-    answer: "Yes - walkthrough/phase8.md and the TODO.md audit trail."
+    answer: "Yes: each walkthrough document records the evidence behind every decision, and walkthrough/phase8.md maps decisions to phases."
   - id: P8-Q2
     phase: reporting
     text: "Which visualisations communicate findings fastest?"
@@ -292,36 +290,35 @@ questions:
     answer: "On the rupee gap, yes: 45.5% of the total gap reached at a 25% budget vs 37.0% (classifier) and 28.7% (income rule)."
 ```
 
-## 5. Methodology / Pipeline
+## 5. Pipeline
 
 ```text
-ICPSR DS0002 TSV → sgc build (Polars + Pandera) → dataset/households.parquet + features.parquet (with PSU-grouped Is_Test)
-        → 01 EDA + leakage audit (A1) → 02 feature checks (train split) → 03 baselines
+ICPSR DS0002 TSV → sgc build (Polars + Pandera) → dataset/households.parquet + features.parquet (with a PSU-grouped Is_Test split)
+        → 01 EDA and leakage check → 02 feature checks on the training split → 03 baselines
         → 04 model comparison (7 families × 2 feature sets, grouped CV, tuning → model_final.json)
-        → 05 grouped SHAP + permutation + interactions → 06 ILR clustering
-        → 07 business translation (capture vs ceiling, bootstrap CIs, peer benchmarks)
+        → 05 grouped SHAP, permutation importance, interactions → 06 ILR clustering
+        → 07 business translation (capture against the ceiling, bootstrap CIs, peer benchmarks)
         → 08 quantile regression on Savings_Rate → make_figures.py → report.tex
 ```
 
-All logic lives in the `savings_goal` package (`src/savings_goal/`): `data/` (build, schema), `features/` (engineering, transforms), `models/` (pipelines, clusters, regression, uplift), `evaluation/` (`cv.py`, `metrics.py`, `leakage.py`, `explain.py`, `business.py`), `cli.py` and `api.py`. Notebooks are thin callers that print aggregates and write `results/*.json`.
+The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `data/` (build and schema), `features/` (engineering and transforms), `models/` (pipelines, clusters, regression, uplift), `evaluation/` (`cv.py`, `metrics.py`, `leakage.py`, `explain.py`, `business.py`), `viz.py` (the shared plot style), `cli.py` and `api.py`. The notebooks call the package, print aggregates and write `results/*.json`.
 
-## 6. Repository Structure
+## 6. Repository structure
 
 ```text
 .
 ├── dataset/README.md                       (acquisition and build; data files are gitignored)
 ├── notebooks/01_… 08_*.ipynb               (thin callers of the package)
-├── src/savings_goal/                       (the package: data, features, models, evaluation, cli, api)
-├── tests/                                  (unit + integration tests on a synthetic DS0002)
-├── results/                                (aggregate CSV / JSON / PNG artifacts only)
+├── src/savings_goal/                       (data, features, models, evaluation, viz, cli, api)
+├── tests/                                  (unit and integration tests on a synthetic DS0002)
+├── results/                                (aggregate CSV, JSON and PNG files only)
 ├── walkthrough/                            (phase-by-phase reasoning)
-├── project/                                (report.tex, figures/make_figures.py)
+├── project/                                (report.tex, report.pdf, figures/make_figures.py)
 ├── .github/workflows/ci.yml                (ruff, ruff format, mypy --strict, pytest)
-├── pyproject.toml / uv.lock
-└── TODO.md                                 (the audit and its resolution)
+└── pyproject.toml, uv.lock
 ```
 
-## 7. Setup & Usage
+## 7. Setup and usage
 
 ```bash
 git clone <repo-url> && cd savings-goal-classifier
@@ -333,65 +330,65 @@ done
 uv run python project/figures/make_figures.py
 ```
 
-Checks (what CI runs): `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`.
+CI runs `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`.
 
-**Scoring service.** `uv run sgc train` fits two tiers into `artifacts/` (gitignored). `uv sync --extra api && uv run sgc serve` exposes:
+Scoring service: `uv run sgc train` fits two tiers into `artifacts/` (gitignored), and `uv sync --extra api && uv run sgc serve` exposes:
 
-- `POST /score/onboarding` — tier 1, income + demographics + debt only;
-- `POST /score/with-spending` — tier 2, adds spending shares, **rejected (422)** unless `shares_observed_through` is strictly before `prediction_window_start`.
+- `POST /score/onboarding`: tier 1, income, demographics and debt only.
+- `POST /score/with-spending`: tier 2, adds spending shares. It returns 422 unless `shares_observed_through` falls strictly before `prediction_window_start`.
 
-Requests are validated by Pydantic and a Pandera schema (ranges, label sets, shares summing to one).
+Pydantic and a Pandera schema validate every request (ranges, label sets, shares summing to one).
 
 ## 8. Results
 
-**Headline model:** XGBoost on the deployable features (`max_depth=4`, `learning_rate=0.08`, `n_estimators=200`, `subsample=0.7`, `min_child_weight=1`). Grouped-CV macro-F1 **0.782**, ROC-AUC **0.882**; held-out PSUs (8,299 households): ROC-AUC **0.886**, macro-F1 **0.781**, at-risk PR-AUC 0.944 (base rate 0.681), Brier 0.127, ECE 0.009.
+Headline model: XGBoost on the deployable features (`max_depth=4`, `learning_rate=0.08`, `n_estimators=200`, `subsample=0.7`, `min_child_weight=1`). Grouped-CV macro-F1 0.782 and ROC-AUC 0.882. On the held-out PSUs (8,299 households): ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944 against a base rate of 0.681, Brier 0.127, ECE 0.009.
 
 | Model (grouped CV, training split) | F1 (macro) | ROC-AUC | PR-AUC (at-risk) | ECE | ROC-AUC with shares |
 | --- | --- | --- | --- | --- | --- |
-| **XGBoost (tuned)** | **0.782** | **0.882** | 0.942 | 0.011 | 0.929 |
+| XGBoost (tuned) | 0.782 | 0.882 | 0.942 | 0.011 | 0.929 |
 | HistGradientBoosting | 0.778 | 0.880 | 0.941 | 0.012 | 0.928 |
 | XGBoost (untuned) | 0.774 | 0.875 | 0.938 | 0.023 | 0.929 |
 | Logistic Regression | 0.773 | 0.876 | 0.938 | 0.103 | 0.920 |
-| Linear SVM | 0.774 | 0.876 | 0.938 | — | 0.920 |
+| Linear SVM | 0.774 | 0.876 | 0.938 | n/a | 0.920 |
 | Random Forest | 0.777 | 0.870 | 0.934 | 0.082 | 0.915 |
 | Decision Tree | 0.751 | 0.850 | 0.914 | 0.104 | 0.882 |
-| Single income threshold | 0.742 | 0.739 | 0.808 | 0.003 | — |
-| Majority class | 0.405 | 0.500 | 0.681 | 0.319 | — |
-| *Model-free oracle (size × food share × income)* | — | *0.895* | — | — | — |
+| Single income threshold | 0.742 | 0.739 | 0.808 | 0.003 | n/a |
+| Majority class | 0.405 | 0.500 | 0.681 | 0.319 | n/a |
+| Formula from size, food share and income (no model) | n/a | 0.895 | n/a | n/a | n/a |
 
-**Leakage audit (A1):** the oracle beats every model that does not see spending shares; dropping all shares keeps 94.3% of the full model's AUC. Spending shares are diagnostic.
+Leakage check: the formula beats every model that does not see spending shares, and removing all shares keeps 94.3% of the full model's AUC. The shares are kept for diagnosis only.
 
-**Explainability:** income is **58.0%** of grouped SHAP (82% of grouped permutation importance), the household-size family 14.5%; interactions are 31.6% of attribution over the full held-out set. The earlier "a higher food share predicts being on track, conditional on income" is the reconstruction route, not an Engel reversal.
+Explainability: income carries 58.0% of grouped SHAP attribution (82% of grouped permutation importance) and the household-size family 14.5%. Interactions are 31.6% of attribution over the full held-out set. In the full model a higher food share pushes toward "on track" once income is fixed; this is the reconstruction route (a smaller budget at the same size), not an Engel-curve effect.
 
-**Clusters:** k=3 on an ILR basis (all three indices agree; bootstrap ARI 0.998), keyed on absent categories (ARI 0.858 with the zero pattern). Significant given income decile (LR 774, 2 df), close to independent of income (NMI 0.012). Not personas.
+Clusters: three clusters on an isometric log-ratio basis, chosen by all three indices and stable under bootstrap resampling (ARI 0.998). They are defined by which categories a household does not spend on (ARI 0.858 with the zero pattern). Cluster membership is significant once income decile is controlled (likelihood ratio 774 on 2 df) and close to independent of income (NMI 0.012). They are descriptive segments, not personas.
 
-**Business translation:** at a 25% budget, 98.5% of the attainable at-risk households vs 95.4% for poorest-first (+1.1 pp, CI 1.0–1.3; +2.7 pp at 50%). Precision 98.5% vs 95.4%. Accuracy dips to 0.66 in income decile 7. Peer benchmarks cannot separate structural from behavioural shortfall (22% vs 93% "closable" depending on construction); miscellaneous is the third-largest composition excess, not the lever. Ranking by predicted rupee shortfall reaches 45.5% of the total rupee gap at 25% (classifier 37.0%).
+Business translation: at a 25% budget the model reaches 98.5% of the attainable at-risk households and the income rule 95.4% (+1.1 pp, CI 1.0 to 1.3; +2.7 pp at a 50% budget). Precision at 25% is 98.5% against 95.4%. Accuracy falls to 0.66 in income decile 7. Peer benchmarks cannot separate structural from behavioural shortfall: 22% or 93% of at-risk households could close their gap by spending like their peers, depending on how the benchmark is built. Among categories, miscellaneous takes the third-largest extra share of at-risk budgets, behind healthcare and education. Ranking by a quantile model's predicted rupee shortfall reaches 45.5% of the total rupee gap at a 25% budget, against 37.0% for the classifier.
 
 ## 9. Limitations
 
-- **Income under-reporting.** 55.9% of households report consumption exceeding income; 32.3% of the at-risk group report spending more than twice their income. Relative comparisons are sound; absolute prevalence figures are not.
-- **Vintage.** 2011-12. Sound for methodology, not current for market sizing.
-- **Household grain.** No per-person claims are supported.
-- **Weights.** `WT` is applied to population figures (prevalence, weighted capture) but not to model fitting. Rupee totals in `results/` are sample totals unless labelled otherwise.
-- **Spending shares leak jointly** with household size and income; they are usable only if measured before the outcome period.
-- **Debt is a stock, not a flow.**
-- **The at-risk class is the majority (68%)**, so capture must be read against its ceiling.
-- **No intervention data.** IHDS records no outreach, so nothing here estimates who responds to a nudge; `savings_goal.models.uplift` (T-learner) is ready for campaign data.
+- Income under-reporting: 55.9% of households report consumption above income, and 32.3% of the at-risk group report spending more than twice their income. Relative comparisons hold; absolute prevalence figures do not.
+- Vintage: 2011-12. Fine for methodology, out of date for market sizing.
+- Household grain: the data supports no per-person claims.
+- Weights: `WT` is applied to population figures (prevalence, weighted capture) but not to model fitting. Rupee totals in `results/` are sample totals unless labelled otherwise.
+- Spending shares leak jointly with household size and income, so they are usable only when measured before the outcome period.
+- Debt is a stock, not a flow.
+- The at-risk class is the majority (68%), so capture has to be read against its ceiling.
+- IHDS records no outreach or intervention, so nothing here estimates who would respond to a nudge. `savings_goal.models.uplift` (a T-learner) is ready for campaign data.
 
 ## 10. License
 
-Code in this repository: MIT License.
+Code: MIT License.
 Data: not redistributed; see the [ICPSR terms of use](https://www.icpsr.umich.edu/web/ICPSR/support/terms) for study 36151.
 
 ## 11. Citation
 
 Desai, Sonalde, Reeve Vanneman, and National Council of Applied Economic Research, New Delhi. *India Human Development Survey-II (IHDS-II), 2011-12.* Inter-university Consortium for Political and Social Research \[distributor\], 2018-08-08. <https://doi.org/10.3886/ICPSR36151.v6>
 
-## 12. Course Submission Information
+## 12. Course submission
 
-This project is submitted for **Advanced Machine Learning for Business Transformation (AMLBT)**, Goa Institute of Management — Big Data Analytics. [`project/main.tex`](project/main.tex) is the instructor-provided report template and is retained unedited for reference.
+The project is submitted for Advanced Machine Learning for Business Transformation (AMLBT), Goa Institute of Management, Big Data Analytics. [`project/main.tex`](project/main.tex) is the instructor's report template, kept unedited for reference.
 
-The report itself is [`project/report.tex`](project/report.tex), written to that template's structure (`pdflatex report.tex`, run twice). Its four figures are built by [`project/figures/make_figures.py`](project/figures/make_figures.py) from the aggregate files in `results/`, so they can be regenerated without the restricted microdata.
+The report is [`project/report.tex`](project/report.tex), written to the template's structure (`pdflatex report.tex`, run twice). [`project/figures/make_figures.py`](project/figures/make_figures.py) builds its four figures from the aggregate files in `results/`, so they can be regenerated without the restricted microdata.
 
 ### Team
 

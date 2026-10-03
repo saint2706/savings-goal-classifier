@@ -1,31 +1,13 @@
-# Phase 5 — Explainability
+# Phase 5: Explainability
 
-**Source:** [README § Phase 5 — Explainability](../README.md#phase-5--explainability)
+**Source:** [README § Phase 5: Explainability](../README.md#phase-5-explainability)
 **Notebook:** [`notebooks/05_explainability.ipynb`](../notebooks/05_explainability.ipynb)
-**Builds on:** [Phase 4](phase4.md), [Phase 2](phase2.md)
-**Artifacts:** `results/shap_importance.csv`, `results/shap_summary.png`, `results/shap_dependence.png`
+**Builds on:** [Phase 4](phase4.md) (both tuned models, stored in `results/model_final.json`), [Phase 2](phase2.md), [Phase 1](phase1.md) (the leakage check)
+**Artifacts:** `results/explain.json`, `results/shap_importance.csv`, `results/shap_summary.png`, `results/shap_summary_full.png`, `results/shap_dependence.png`
 
-Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to 1, so they are **exactly singular** (VIF = ∞) and no coefficient on them is identified. Phase 4 confirmed the logistic fit is only unique because of its L2 penalty. This phase deals with that first, then explains the model.
+This phase explains two models on the 8,299 held-out households (472 PSUs). The headline model is the tuned XGBoost on the deployable feature set: income, household demographics and debt, 13 raw features that one-hot encoding expands to 35 columns. The full model adds the 11 expense shares and 5 participation indicators (29 raw features, 51 encoded columns). Phase 1's leakage check showed that household size plus the food share recovers most of total spending, so the full model is explained as a diagnostic: its attributions show how the shares carry label information, not how households behave.
 
-> **In plain terms — what explainability is, and the problem blocking it.** A model that predicts well but cannot say *why* is hard to trust, hard to debug, and impossible to build a business recommendation on. **Explainability** is the work of extracting reasons: which features drive the outcome overall, and why this particular household got the score it did.
->
-> The obvious route is to read the model's **coefficients** — the weights a linear model attaches to each feature. [Phase 2](phase2.md) closed that route: because the eleven shares always add to 1, there are infinitely many sets of coefficients that predict identically, and the one reported was picked by the L2 penalty rather than by the data. Reading it as "the effect of food spending" would be reporting an arbitrary choice as a finding.
->
-> So this phase does two things in order: confirms that the route really is closed (and, importantly, shows why the obvious test for it is misleading), then explains the model a different way — with **SHAP**, introduced below.
-
----
-
-## Post-audit revision (October 2026)
-
-> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
-
-- SHAP via `shap.TreeExplainer` (shap 0.51 reads XGBoost 3.2; the `pred_contribs` workaround is gone); additivity 6.5e-06.
-- **Grouped families** (SHAP summed within family, then mean |·|), headline model: income 58.0%, household-size family 14.5%, social/geo 10.9%, debt 8.7%, head age & education 8.0%. **Permutation cross-check** (family permuted jointly, ROC-AUC drop): income 0.385 (82%), size 0.039, social/geo 0.022, debt 0.014, age/education 0.011.
-- Full model: shares family 19.1% of grouped SHAP, 16.0% of permutation importance.
-- **Interactions over the whole held-out set** (8,299 rows, not a 3,000-row sample): 31.6% of attribution in the headline model (top pair: size × income); 42.8% in the full model (top pair: food share × income).
-- **The "grocery reversal" is withdrawn as a behavioural finding.** At a given size and income a higher food share means a smaller budget, so it predicts adequacy mechanically (A1). Food-share SHAP rises as implied spend/income falls (Spearman 0.27).
-- **Identification, full table:** with all 11 shares 3 of 10 share coefficients flip sign across subsamples, 1 with food dropped. With standard scaling no share's coefficient spread changes by more than 1.4× when the reference is dropped. The earlier "Rent_Share 17× worse" was an artefact of `RobustScaler` on a share whose IQR is zero.
-- Individual explanations now print contributions only, not a household's raw values.
+> **In plain terms: what explainability is for.** A model that predicts well but cannot say why is hard to trust and hard to act on. Explainability extracts reasons at two levels: which inputs drive predictions across all households, and why one particular household got its score. The obvious route, reading the coefficients of a linear model, does not work for the expense shares (the first section below shows why), so the phase uses SHAP instead.
 
 ---
 
@@ -33,197 +15,159 @@ Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Which features matter most globally? | `Log_Income` dominates at mean \|SHAP\| **2.617** — 4.5× the next feature and **38.4%** of all attribution. Then `Household_Size` (0.576), `Groceries_Share` (0.555), `Utilities_Share` (0.314). By group: income 38.4%, spending mix 26.7%, categoricals 13.3%, household composition 11.2%. |
-| 2 | Are there notable interaction effects? | **Yes — interactions are 41.9% of total attribution**, far from negligible. The strongest are `Groceries_Share × Log_Income` (0.166), `Household_Size × Log_Income` (0.102) and `Utilities_Share × Log_Income` (0.089). Income does not merely add to the prediction; it changes what every spending feature means. |
-| 3 | Can individual predictions be explained in plain business language? | Yes — SHAP is additive, and the notebook prints per-household explanations verified against the raw margin to 8.6×10⁻⁶. The worked examples also expose a data-quality caveat that a purely aggregate view hides. |
+| 1 | Which features matter most globally? | In the headline model, income: mean \|SHAP\| 1.948 for `Log_Income`, 3.9 times the next column (`Household_Size`, 0.495). Summed by family, income is 58.0% of attribution, the household-size family 14.5%, social and geographic categoricals 10.9%, debt 8.7%, head age and education 8.0%. Permuting each family on the held-out set gives the same order, with income at 82% of the ROC-AUC loss (0.385 of 0.471). In the full model the share family is 19.1% of SHAP attribution and 16.0% of permutation importance; income is still first (51.8% and 73.8%). |
+| 2 | Are there notable interaction effects? | Yes. Over all 8,299 held-out households, interactions are 31.6% of total attribution in the headline model and 42.8% in the full model. Every top pair in the headline model involves income: size × income (0.242), education × income (0.125), debt × income (0.064). In the full model the top pair is food share × income (0.338). |
+| 3 | Can individual predictions be explained in plain business language? | Yes. SHAP values add up to the model's output (largest additivity error 6.5e-06 on the log-odds scale), so each household's explanation is a short list of signed pushes. The notebook prints three cases (most confident on track, most confident at risk, borderline) as contributions only, without any household's raw values. |
 
----
-
-## Dealing with the identification problem first
-
-### The stability test — and why it under-detects the problem
-
-The same regularised logistic model was fitted on **5 disjoint subsamples**. If the shares were identified, coefficients would be stable across them.
-
-| Share feature | mean | sd | sd/\|mean\| | flips sign |
-| --- | --- | --- | --- | --- |
-| `Insurance_Share` | 0.006 | 0.011 | **1.808** | **yes** |
-| `Healthcare_Share` | −0.204 | 0.132 | 0.648 | **yes** |
-| `Entertainment_Share` | −0.017 | 0.010 | 0.603 | **yes** |
-| `Eating_Out_Share` | 0.035 | 0.020 | 0.555 | no |
-| `Groceries_Share` | 1.084 | 0.163 | 0.150 | no |
-
-Control group (non-compositional): `Log_Income` sd/|mean| **0.029**, `Household_Size` 0.137, `Debt_To_Income_W` 0.161.
-
-> **In plain terms — the test and its columns.** Split the households into five separate groups, fit the same model on each, and compare the coefficients. If a coefficient is measuring something real, five independent fits should broadly agree on it.
->
-> - **sd/|mean|** puts the disagreement on a comparable scale: the wobble divided by the size of the thing wobbling. 0.029 means the five fits agree to within about 3% — solid. **1.808 means the wobble is nearly twice the value itself** — the coefficient is not being measured, it is being invented afresh each time.
-> - **Flips sign** is the starkest version: on some subsamples the feature appears to help, on others to hurt. There is no coherent reading of a feature that cannot decide which direction it points.
-> - The **control group** is the comparison that makes the result interpretable. `Log_Income` and `Household_Size` are ordinary features, not part of the sum-to-1 constraint, and they behave themselves. So the instability is not "small samples wobble" — it is specific to the compositional features, exactly as the algebra predicted.
-
-**3 of 11 shares flip sign across subsamples; 1 of 5 controls does.** `Log_Income`'s coefficient varies by 2.9% of its magnitude; `Insurance_Share`'s standard deviation is **1.8× its own mean**.
-
-**But this test is weaker evidence than it looks, and that matters.** L2 regularisation resolves a singular system by picking the *minimum-norm* solution — and it picks the same tie-break every time. So coefficients can be perfectly **reproducible** across subsamples while still not being **identified**: the regulariser, not the data, is choosing how credit is split between collinear shares. Reproducibility is not identification, and a stability test alone cannot distinguish them. The algebra (a feature that is an exact linear combination of others has no unique coefficient) is the real argument; this table only shows the symptom leaking through where the penalty binds loosest.
-
-> **In plain terms — reproducible is not the same as identified, and why that is a trap.** The **minimum-norm solution** is the specific tie-break L2 uses: among the infinitely many coefficient sets that predict identically, take the one with the smallest coefficients overall. It is a fixed rule, so it lands on the same answer every single time.
->
-> Now consider what that does to a stability test. The five subsamples could have produced *perfectly matching* coefficients — and it would have proved nothing, because the agreement would come from all five obeying the same tie-break rule, not from the data pinning down an answer. **Reproducible** means "you get the same number when you repeat it". **Identified** means "the data determines that number". A consistent bathroom scale that reads 5 kg heavy is reproducible and wrong.
->
-> This is why the section says the algebra is the real argument. The proof was already complete in [Phase 2](phase2.md); the table is only a visible symptom in the places where the penalty happens to grip loosest — and had the table come out clean, the conclusion would have been unchanged.
-
-### The reference-part fix, which does not fully work
-
-The standard remedy is to drop one part and read every remaining coefficient *relative* to it — the compositional analogue of a dummy baseline. Dropping `Groceries_Share`:
-
-| Feature | sd (all 11) | sd (reference dropped) | improvement |
-| --- | --- | --- | --- |
-| `Education_Share` | 0.043 | 0.009 | **4.9×** |
-| `Miscellaneous_Share` | 0.052 | 0.016 | 3.3× |
-| `Healthcare_Share` | 0.132 | 0.059 | 2.2× |
-| `Insurance_Share` | 0.011 | 0.007 | 1.7× |
-| `Utilities_Share` | 0.077 | 0.083 | 0.9× |
-| **`Rent_Share`** | 0.062 | **1.027** | **0.06× (17× worse)** |
-
-Median improvement: **1.22×** — modest. And `Rent_Share` becomes *dramatically* less stable, because it is zero for 90.4% of households (Phase 1); once the largest part is removed as the reference, the remaining variation in a mostly-zero column is too thin to pin its coefficient down.
-
-**Conclusion: the reference-part fix is not reliable here**, and it is reported as attempted-and-partially-failed rather than presented as the solution. **SHAP on the tree model is used instead** — it requires no matrix inversion, makes no identifiability assumption, and distributes credit by a game-theoretic rule that is well defined even under exact collinearity.
-
-> **In plain terms — what SHAP is.** SHAP answers, for one household: *how much did each feature push this prediction up or down, relative to the average household?*
->
-> The idea comes from **cooperative game theory** and is nearly a century old. Imagine the features as a team that jointly produced a result, and you must divide the credit fairly. The Shapley value does it by considering every possible order in which team members could have joined, measuring what each one added when they arrived, and averaging over all those orders. It is the unique way of splitting credit that satisfies a short list of fairness conditions — including that the parts must add up exactly to the whole.
->
-> Two properties make it the right tool here. It needs **no matrix inversion**, so the singularity that wrecked the coefficients is irrelevant to it. And it is **additive**: the contributions for one household sum exactly to that household's prediction, which is what makes a per-household explanation readable rather than merely indicative. The catch is cost — considering every ordering is astronomically expensive in general, which is why **TreeSHAP**, an exact shortcut that exploits the structure of decision trees, is what makes this practical on 41,518 households.
+A fourth result frames the rest: no coefficient on the expense shares can be read as an effect. With all 11 shares in a logistic regression, 3 of 10 share coefficients flip sign across five disjoint training subsamples. Dropping `Groceries_Share` as a reference part leaves 1 flip, but the median coefficient spread barely changes (ratio 0.97) and 6 of 10 shares get less stable.
 
 ---
 
 ## Notebook walkthrough
 
-### Cell 1 (code) — Fit Phase 4's winning configuration on transformed data
+### Cell 1: fit both tuned models and check they reproduce Phase 4
 
-The `ColumnTransformer` is applied explicitly and XGBoost fitted on the resulting frame, rather than wrapping both in a `Pipeline`. **Why:** SHAP needs to attribute to the *encoded* columns (50 of them, after one-hot expansion), and a pipeline hides those names. Test accuracy 0.8615 confirms this reproduces Phase 4.
+The notebook loads the engineered features (`savings_goal.io.load_features`), rebuilds the column lists with `savings_goal.features.engineer.spec_from_frame`, and reads the tuned hyperparameters with `savings_goal.models.pipeline.load_model_final`. For each feature set it fits `savings_goal.models.pipeline.xgb_pipeline` on the training split (33,219 households), which applies median imputation, debt winsorisation at the 99th percentile, and one-hot encoding before XGBoost.
 
-> **In plain terms — the two tools, and why one was unwrapped.** A **`ColumnTransformer`** applies the right preparation to each column — scale the numeric ones, one-hot the categorical ones. A **`Pipeline`** then bolts that preparation onto the model so the pair travels as one object, which is normally exactly what you want: the same preparation is guaranteed to be applied at prediction time as at training time, so it cannot be forgotten or applied differently by mistake.
->
-> The problem here is that the model does not see the 28 features written in [Phase 2](phase2.md) — one-hot encoding **expands** them to 50, since each category level becomes its own column. SHAP attributes to those 50, and a pipeline keeps them anonymous behind its interface. Unwrapping the two steps makes the encoded names visible so the attributions can be labelled. The accuracy check exists because unwrapping means reassembling by hand: matching [Phase 4](phase4.md)'s 0.8615 confirms the same model was rebuilt, not a subtly different one.
+| Model | Feature set | Encoded columns | Tuned parameters | Held-out ROC-AUC |
+| --- | --- | --- | --- | --- |
+| Headline | deployable | 35 | depth 4, lr 0.08, 200 trees, subsample 0.7, min_child_weight 1 | 0.886 |
+| Diagnostic | full | 51 | depth 4, lr 0.15, 200 trees, subsample 0.9, min_child_weight 5 | 0.932 |
 
-### Cell 6 (code) — Global importance via native TreeSHAP
+Both held-out scores match Phase 4, which confirms the same models were rebuilt. The cell also transforms the held-out rows through the fitted preprocessing step and keeps the encoded column names, because SHAP attributes to the 35 or 51 encoded columns rather than to the raw features.
 
-**An implementation note worth recording.** `shap.TreeExplainer` **fails on this model**: shap 0.49 cannot parse XGBoost 3.1's `base_score` serialisation (`could not convert string to float: '[3.1929308E-1]'`). The notebook uses XGBoost's own `pred_contribs=True` instead — the same TreeSHAP algorithm, computed inside XGBoost. It is verified rather than assumed: **SHAP values plus bias reproduce the raw model margin to a maximum absolute error of 8.58×10⁻⁶**, which is the additivity property TreeSHAP guarantees.
+> **In plain terms: encoded columns.** A categorical feature such as `Area_Type` cannot enter a tree model as text. One-hot encoding turns it into one yes/no column per level (`Area_Type_Metro_Urban`, `Area_Type_Other_Urban`, and so on). The four categoricals expand into 26 such columns, which is why 13 features become 35.
 
-> **In plain terms — what that verification proves.** The **bias** (or base value) is the model's starting point before any feature is considered — roughly, the average household's score. The **raw margin** is the model's output before it is squashed into a 0–1 probability. SHAP's promise is that *bias + all the feature contributions = the actual prediction*, exactly, for every household.
->
-> So the check is straightforward: add them up and compare with what the model really said. Agreement to 8.58×10⁻⁶ — eight millionths, i.e. rounding dust — means the contributions genuinely account for the prediction with nothing unexplained. This matters because the library's usual entry point had to be bypassed; rather than trusting the substitute route, the arithmetic was checked directly.
+### Cell 3: why no coefficient on the shares can be read
 
-**Top features (mean |SHAP|):**
+The 11 expense shares sum to 1 for every household, so any one of them is an exact linear combination of the other ten (Phase 2). A linear model with all 11 has infinitely many coefficient sets that predict identically. The cell fits the same weakly penalised logistic regression (`savings_goal.models.pipeline.logistic` with C = 100, standard-scaled inputs from `savings_goal.models.pipeline.preprocessor(linear=True)`) on 5 disjoint training subsamples using `savings_goal.evaluation.explain.coefficient_stability`, twice: once with all 11 shares, once with `Groceries_Share` dropped as the reference part.
 
-> **In plain terms — mean |SHAP|.** Each household gets its own SHAP value per feature, positive or negative. To rank features overall, take the **absolute value** (drop the minus signs, so a strong downward push counts as much as a strong upward one) and average across households. It measures how much a feature **moves** predictions, not which direction it moves them — a feature that pushes half the households up and half down still scores high, correctly, because it is doing a lot of work.
+| Share | sd (all 11) | sd (food dropped) | Flips sign (all 11) | Flips sign (dropped) | Zero in |
+| --- | --- | --- | --- | --- | --- |
+| Healthcare | 0.051 | 0.070 | no | no | 19% |
+| Miscellaneous | 0.043 | 0.049 | no | no | 0% |
+| Utilities | 0.028 | 0.031 | no | no | 0% |
+| Transport | 0.055 | 0.062 | no | no | 11% |
+| Insurance | 0.041 | 0.044 | yes | no | 74% |
+| Clothing & footwear | 0.052 | 0.053 | no | no | 1% |
+| Eating out | 0.074 | 0.073 | yes | yes | 72% |
+| Rent | 0.087 | 0.085 | yes | no | 90% |
+| Entertainment | 0.017 | 0.015 | no | no | 69% |
+| Education | 0.023 | 0.017 | no | no | 36% |
 
-| Feature | mean \|SHAP\| |
+With all 11 shares, 3 of 10 coefficients flip sign between subsamples (eating out, rent, insurance). Dropping the reference part removes two of those flips, but it does not tighten the estimates: the median ratio of spreads is 0.97, six shares get slightly less stable (healthcare is the worst, at 1.4 times the spread), and no share changes by more than a factor of 1.4 either way. The three that flip sign are among the shares that are zero for most households.
+
+> **In plain terms: reproducible is not the same as identified.** Fitting the same model on five separate groups of households and comparing coefficients is a quick test: a coefficient that measures something real should come out similar each time. A sign flip means the feature appears to help in one group and hurt in another. The test can only show the problem, though. A penalised regression breaks the tie between equivalent coefficient sets with a fixed rule, so five fits could agree perfectly and still be reporting the rule's choice rather than the data's. A bathroom scale that always reads 5 kg heavy is consistent and wrong. The algebra (shares that sum to 1 have no unique coefficients) is the argument; the table shows where it leaks through.
+
+The phase therefore explains the tree model with SHAP, which needs no matrix inversion and is defined whether or not features are collinear.
+
+> **In plain terms: SHAP.** For one household, SHAP answers: how much did each feature push this prediction up or down, compared with the average household? It comes from cooperative game theory. Treat the features as a team that jointly produced a score and split the credit by averaging, over every order in which the features could have been added, what each one contributed when it arrived. The contributions for a household add up exactly to the model's output for that household. TreeSHAP is an exact shortcut for tree models that makes this fast enough for thousands of households.
+
+### Cell 5: global importance per column, per family, and by permutation
+
+For each model the cell calls `savings_goal.evaluation.explain.tree_shap`, which runs `shap.TreeExplainer` and checks additivity: SHAP values plus the base value reproduce the raw model margin to within 6.5e-06 (headline) and 8.7e-06 (full).
+
+> **In plain terms: the additivity check.** The base value is the model's starting point before any feature is considered. The margin is the model's output before it is converted to a probability. SHAP promises base value plus contributions equals margin for every household. The check adds them up and compares; a gap of a few millionths is rounding error.
+
+Top columns in the headline model by mean |SHAP|:
+
+| Column | Mean \|SHAP\| |
 | --- | --- |
-| `Log_Income` | **2.6170** |
-| `Household_Size` | 0.5755 |
-| `Groceries_Share` | 0.5546 |
-| `Utilities_Share` | 0.3136 |
-| `Clothing_Footwear_Share` | 0.2204 |
-| `Max_Adult_Education` | 0.2151 |
-| `Debt_To_Income_W` | 0.2036 |
+| `Log_Income` | 1.948 |
+| `Household_Size` | 0.495 |
+| `Debt_To_Income` | 0.301 |
+| `Max_Adult_Education` | 0.260 |
+| `Occupation_Non_Ag_Labour` | 0.158 |
+| `Dependency_Ratio` | 0.125 |
+| `Area_Type_Less_Developed_Village` | 0.109 |
 
-**By group:**
+> **In plain terms: mean |SHAP|.** Each household gets one SHAP value per feature, positive or negative. Dropping the signs and averaging over households measures how far a feature moves predictions, regardless of direction.
 
-| Group | Share of attribution |
-| --- | --- |
-| Income | **38.4%** |
-| Spending mix (11 shares) | 26.7% |
-| Categoricals (all levels) | 13.3% |
-| Household composition | 11.2% |
-| Participation indicators | 4.0% |
-| Debt | 3.3% |
-| Education | 3.2% |
+Per-column rankings split a feature like `Area_Type` across four columns and score each separately. `savings_goal.evaluation.explain.grouped_shap` instead sums SHAP within each family for each household (families from `savings_goal.evaluation.explain.feature_families`), takes the absolute value, then averages. As a cross-check, `savings_goal.evaluation.explain.grouped_permutation_importance` shuffles all columns of a family together on the held-out set (5 repeats, families from `savings_goal.evaluation.explain.raw_families`) and records the drop in ROC-AUC.
 
-**This confirms Phase 3's prediction.** Income is 38.4% of all attribution on its own, and Phase 3 showed a single income threshold already reaches macro-F1 0.7425. **Spending mix is real and worth 26.7%, but it is the second story, not the first** — any narrative that leads with spending behaviour is contradicting the model's own attribution.
+Headline model:
 
-`Household_Size` at second place is new and was not visible in the univariate work — larger households consume more at any income, mechanically depressing the savings rate.
+| Family | Columns | Grouped mean \|SHAP\| | Share of SHAP | ROC-AUC drop when permuted | Share of permutation |
+| --- | --- | --- | --- | --- | --- |
+| Income | 1 | 1.948 | 58.0% | 0.385 | 81.7% |
+| Household size family | 3 | 0.487 | 14.5% | 0.039 | 8.3% |
+| Social/geo (categoricals) | 26 | 0.364 | 10.9% | 0.022 | 4.6% |
+| Debt | 3 | 0.291 | 8.7% | 0.014 | 3.0% |
+| Head age & education | 2 | 0.268 | 8.0% | 0.011 | 2.4% |
 
-**How to read a share's SHAP value (the compositional caveat).** Because the shares sum to 1, a household cannot raise one without lowering others. So `Groceries_Share`'s attribution is never "the effect of spending more on food"; it is **"the effect of food taking a larger portion of the budget, and everything else a correspondingly smaller one."** Every sentence about a share in Phase 7 must carry that relative framing.
+Full model:
 
-### Cell 9 (code) — Interactions (Q2)
+| Family | Columns | Share of SHAP | ROC-AUC drop when permuted | Share of permutation |
+| --- | --- | --- | --- | --- |
+| Income | 1 | 51.8% | 0.414 | 73.8% |
+| Spending mix (shares) | 11 | 19.1% | 0.090 | 16.0% |
+| Household size family | 3 | 10.9% | 0.033 | 5.9% |
+| Social/geo (categoricals) | 26 | 7.1% | 0.014 | 2.4% |
+| Head age & education | 2 | 4.4% | 0.004 | 0.7% |
+| Debt | 3 | 3.5% | 0.004 | 0.7% |
+| Participation indicators | 5 | 3.3% | 0.003 | 0.5% |
 
-> **In plain terms — an interaction.** Two features **interact** when the effect of one depends on the value of the other. Sugar improves coffee and improves lemonade, but sugar-in-coffee-with-salt is a different story — the effect is not a fixed amount you can add up independently.
->
-> Here the headline example is that a high grocery share means something different at ₹40,000 of income than at ₹400,000. An **additive** model — logistic regression, linear SVM — assigns each feature one fixed effect and literally cannot express that; a tree can, because a branch reached only by low-income households can behave differently from its high-income sibling.
+The two methods agree on the order in both models. Permutation gives income a larger share because it measures lost ranking ability: without income, the headline model's held-out ROC-AUC falls from 0.886 to about 0.50, while the other families each cost 0.04 or less.
 
-Computed with `pred_interactions=True` on a 3,000-household sample (the full tensor is n × 50 × 50).
+For the shares, the grouped value (0.973) is about half the sum of the 11 per-column values (1.815). The share columns push in opposite directions for the same household, because a larger food share forces the others down, so their contributions partly cancel. Adding per-column scores would overstate the family by almost a factor of two.
 
-> **In plain terms — why only 3,000 households.** Attributing to *pairs* of features means one number for every pair, for every household: 50 × 50 for each of 41,518 rows. That grid of numbers (a **tensor**, the general term for an array with more than two dimensions) runs to about 104 million entries, so the calculation is run on a random 3,000-household sample instead. Averages over 3,000 households are plenty precise for ranking which pairs matter.
+> **In plain terms: permutation importance.** Shuffle one family's values across households, so each household gets someone else's income (say), and see how much worse the model ranks households. A big drop means the model relied on that information. It measures the same thing as SHAP from a different direction, which is why agreement between the two is reassuring.
 
-| Pair | mean \|interaction SHAP\| |
-| --- | --- |
-| `Groceries_Share` × `Log_Income` | **0.16632** |
-| `Household_Size` × `Log_Income` | 0.10154 |
-| `Utilities_Share` × `Log_Income` | 0.08910 |
-| `Groceries_Share` × `Utilities_Share` | 0.04021 |
-| `Max_Adult_Education` × `Log_Income` | 0.03561 |
+### Cell 6: SHAP summary plots
 
-Main effects total 6.509; interactions total 4.689 — **interactions are 41.9% of all attribution.**
+One beeswarm plot per model (`shap_summary.png` for the headline model, `shap_summary_full.png` for the full model), 15 columns each. Each dot is a held-out household, placed by its SHAP value and coloured by the feature's value. In the headline plot, high income pushes toward on track and low income toward at risk, over a range of roughly −6 to +5 log-odds. Large households and high debt-to-income push toward at risk. Some smaller effects run against intuition: higher adult education and metro location push slightly toward at risk, while agricultural and non-agricultural labour households push slightly toward on track. These are conditional on income already being in the model and should not be read as the effect of education or occupation on saving.
 
-**Why this is a substantive finding, not a technical footnote.** More than two-fifths of the model's behaviour is interaction, and **eight of the ten strongest pairs involve `Log_Income`**. A purely additive model — logistic regression, a linear SVM — is provably incapable of representing any of it. Income is not simply an additive term: it changes what every spending signal means. A high grocery share means something different for a household earning ₹40,000 than for one earning ₹400,000.
+### Cell 8: interactions over the whole held-out set
 
-This also explains why Phase 4's logistic regression trailed XGBoost on macro-F1 (0.8186 vs 0.8371) while nearly matching it on ROC-AUC (0.9213 vs 0.9306) — a linear model captures the ranking well but misses the interaction structure that sharpens the decision boundary.
+`savings_goal.evaluation.explain.interaction_decomposition` computes XGBoost's exact TreeSHAP interaction values for every held-out household, in chunks of 2,000 rows so the full 8,299 × 35 × 35 array never sits in memory at once. The diagonal holds each column's main effect; the off-diagonal entries hold pairwise interactions.
 
-**One caveat on the 41.9% figure:** TreeSHAP interaction values are defined relative to the fitted tree ensemble, so this measures how much *this model* relies on interactions, not how much interaction exists in the population. Phase 4 found `max_depth=4` optimal with very low sensitivity, so the model has limited capacity for deep interaction — the true figure could be higher.
+| Model | Main effects | Interactions | Interaction share | Top pairs (mean \|interaction SHAP\|) |
+| --- | --- | --- | --- | --- |
+| Headline | 3.870 | 1.790 | 31.6% | size × income 0.242; education × income 0.125; debt-to-income × income 0.064; less-developed village × income 0.046 |
+| Full | 6.444 | 4.827 | 42.8% | food share × income 0.338; size × income 0.188; utilities share × income 0.172; education × income 0.089 |
 
-> **In plain terms — the caveat, and the apparent contradiction with Phase 4.** SHAP explains *the model*, not the world. It reports how this particular fitted ensemble reaches its answers; a different model trained on the same households would produce different attributions. So 41.9% is a fact about our model's machinery, and it is a floor rather than an estimate — a model capped at four questions deep can only represent so much interaction, so the households may well contain more than it captured.
->
-> This also resolves what looks like a clash with [Phase 4](phase4.md), where deeper trees bought nothing and the signal was called "close to additive". Both are true: the interactions that matter here are **shallow** — mostly one feature paired with income, which four levels of depth capture comfortably. Depth beyond that adds nothing because there is no deeper structure to find, not because interactions are unimportant.
+In the headline model all of the top six pairs involve `Log_Income`, so income changes how much household size, education and debt matter. The size × income pair fits the arithmetic of the target: a savings rate is one minus spending over income, and spending grows with household size, so an extra member costs a low-income household a larger fraction of its income.
 
-### Cell 11 (code) — The dependence plots, and a finding that reverses the naive reading
+The full model's larger interaction share comes from the shares. Food share × income is its top pair, ahead of size × income, which is what the leakage check predicts: food share, size and income together approximately rebuild total spending relative to income.
 
-> **In plain terms — a dependence plot.** One dot per household: its value for a feature along the bottom, that feature's SHAP contribution for that household up the side. It answers "as this feature rises, which way and how hard does the model push?" — and, because the dots are coloured by a second feature, whether that push differs between groups. Dots of different colours lying on top of one another means the relationship is the same for everyone; colours separating into distinct bands means an interaction.
+> **In plain terms: an interaction.** Two features interact when the effect of one depends on the value of the other. An extra household member means something different on Rs 40,000 a year than on Rs 400,000. A model that gives each feature one fixed effect (a logistic regression without interaction terms) cannot express this; a tree can, because a branch reached only by low-income households can behave differently from its high-income neighbour. These figures describe how this fitted model reaches its answers. A model restricted to depth 4 can only represent fairly shallow interactions.
 
-**Left panel — income.** The SHAP curve is monotone increasing and sigmoid-shaped, saturating below log-income ≈ 9.5 and above ≈ 13.5.
+### Cell 10: dependence plots, and what the food-share pattern means
 
-> **In plain terms — sigmoid, saturating, and those log numbers.** A **sigmoid** is an S-shape: flat, then a steep middle, then flat again. **Saturating** names the flat ends — past a point, more of the feature stops changing anything. In words: below a certain income essentially every household is at risk and further poverty adds no information; above a certain income essentially every household is fine; **all the model's discrimination happens in the middle**, which is exactly where [Phase 7](phase7.md) finds accuracy at its lowest and the decision hardest.
->
-> The axis is in **log** rupees, so the numbers need translating: log-income 9.5 is about **₹13,000** a year, and 13.5 is about **₹730,000**. Each step of 1 on this axis multiplies income by roughly 2.7. Crucially, **the four area types lie on top of one another.** Income's effect does not differ by geography. Combined with Phase 1's monotone area gradient (metro 42.1% → village 26.7%), the implication is that **the area-type gradient is largely an income gradient** — metro households save more because they earn more, not because location independently changes savings behaviour.
+`shap_dependence.png` has two panels.
 
-**Right panel — grocery share. This is where I got it wrong, and the data corrected me.**
+The left panel plots each held-out household's SHAP value for `Log_Income` in the headline model against its log income, one colour per area type. The curve is an S-shape: flat at about −5.5 below log income 9 (about Rs 8,000 a year), steep between 10 and 13, crossing zero near 11.5 (about Rs 100,000), and flattening near +4 to +5 above 14. The four area types lie on top of each other, so the model treats a rupee of income the same way in a metro and in a less-developed village.
 
-The naive expectation, and the caption I first wrote, was that a high food share pushes toward "not on track" — Engel's law says food share falls as income rises, so a high food share marks a poorer household. **The plot shows the exact opposite.** SHAP for `Groceries_Share` runs from roughly −3 at a 10% food share to about +1 at 80%, crossing zero near 0.45. **Conditional on income, a higher food share predicts being ON TRACK.**
+> **In plain terms: a dependence plot, and the log scale.** One dot per household: its value for a feature along the bottom, that feature's SHAP contribution up the side. It shows which way and how hard the model pushes as the feature rises. The axis is in natural-log rupees: each step of 1 multiplies income by about 2.7, so 9 is about Rs 8,100, 11.5 about Rs 99,000, and 14 about Rs 1.2 million.
 
-**Why, mechanically.** `Log_Income` is already in the model, so the grocery share is no longer acting as a poverty proxy — that job is done. What remains is budget *shape*: a household whose spending is dominated by food is, by the closure constraint, spending proportionally little on everything else. The categories that fall are the lumpy, non-routine ones — healthcare shocks, durables, education fees, social functions — and those are exactly what push total consumption above income and destroy the savings rate. A low food share at a given income does not signal affluence; it signals **a large non-food outlay.**
+The right panel plots the full model's SHAP value for `Groceries_Share` against the share itself, coloured by log(household size / food share / income). SHAP rises from about −3 at a 10% food share to about +1 above 60%, crossing zero near 45%. A naive reading would be that, at a given income, food-heavy budgets are prudent budgets. The data supports a mechanical reading instead. Food spending tracks household size (Phase 1: elasticity 0.63, R² 0.29), so at a given size, total spending is roughly food spending divided by the food share. A higher food share therefore implies a smaller total budget, and with income known, a smaller budget relative to income means a higher savings rate. The colour in the panel is that implied budget relative to income. The food-share SHAP value rises as it falls, with a Spearman correlation of 0.27 between the SHAP value and the negative of the implied ratio. The size × food-share oracle from Phase 1 uses the same route and reaches ROC-AUC 0.895 with no model at all.
 
-This is consistent with the strongest interaction in the model (`Groceries_Share × Log_Income`, 0.166), with the colour gradient in the panel, and with the borderline worked example below, where a 66.3% grocery share contributes **+0.711 toward "on track"**.
+> **In plain terms: conditional and unconditional.** Across all households, high food shares go with low income (poorer households spend proportionally more on food). Inside a model that already knows income and household size, a high food share mostly tells the model that total spending is small. The same column answers two different questions depending on what else is held fixed. A recommendation such as "target households with high food shares" would need the second reading, and the second reading here is arithmetic about the label rather than behaviour.
 
-**Why this matters beyond one chart.** Phase 1's univariate correlation (`Groceries_Share` vs log income, r = −0.266) is *real* and points the other way. Reading a conditional model's behaviour off an unconditional correlation would have produced a confident, backwards business recommendation — "target households with high food shares" is close to the opposite of the truth. The two views are not in conflict; they answer different questions, and only the conditional one describes what the model does.
+### Cell 12: individual predictions in plain language
 
-> **In plain terms — conditional vs unconditional, the single most useful distinction in this project.** Two different questions, easily confused:
-> - **Unconditional** (Phase 1): *across all households as they are*, do high food shares go with low income? Yes — because poorer households spend proportionally more on food. This is Engel's law.
-> - **Conditional** (this phase): *among households earning roughly the same*, does a higher food share go with saving more? **Also yes** — because at a given income, a food-dominated budget means the absence of the lumpy healthcare, durables and school-fee outlays that wreck a savings rate.
->
-> Both are correct. They differ because the first lets income vary and the second holds it fixed, and food share is doing two different jobs in the two settings — a marker of poverty in one, a marker of a simple budget in the other. Once income is already in the model, the first job is taken and only the second remains.
->
-> The practical lesson is blunt: a business recommendation is always a conditional claim ("among comparable households, target these"), so grounding it in an unconditional correlation can invert it. That is precisely what nearly happened here, and it is why [Phase 7](phase7.md) benchmarks every household against peers *within its own income decile*.
+`explain_row` prints the five largest contributions for one held-out household, with sign and direction, and the predicted probability. Raw feature values are not printed. Positive values push toward on track and negative values toward at risk, in log-odds.
 
-### Cell 12 (code) — Individual explanations (Q3)
+| Case | Predicted P(on track) | Actual | Largest contributions |
+| --- | --- | --- | --- |
+| Most confident on track | 98.9% | on track | income +4.48; adult education +0.41; dependency ratio +0.28; business occupation −0.17; debt-to-income +0.16 |
+| Most confident at risk | 0.0% | at risk | income −5.29; debt-to-income −1.09; household size −0.78; adult education +0.20; head age −0.17 |
+| Borderline | 50.0% | at risk | income +2.15; Sikh religion −0.66; household size −0.54; adult education −0.31; debt-to-income +0.20 |
 
-> **In plain terms — how to read these three examples.** Because SHAP is additive, one household's explanation is a short arithmetic story: start from the average household, then add each feature's push. **Positive numbers push toward "on track", negative numbers toward "at risk"**, and their size is how hard. `Log_Income` +6.737 means income alone moved this household a long way toward on-track; `Household_Size` −1.033 means a large family pulled another household back.
->
-> **P** is the model's final probability after all the pushes are totalled and converted to a 0–1 scale. The three cases are deliberately chosen from the two extremes and the middle — a classifier's confident calls and its genuinely uncertain ones fail in different ways, and only the borderline case tests whether an explanation is actually usable.
+The confident cases read as one sentence each: "very high income, with smaller pushes from adult education and the dependency ratio" or "very low income, heavy debt relative to income, and a large household". The borderline case shows the limits: a moderately positive income push is cancelled by several smaller negatives, and one of the larger ones is a religion indicator, which describes the household's group rather than anything it could change. An explanation can be legible and still give the household nothing to act on.
 
-**Most confident "on track"** — P = 100.0%, correct. Income ₹1,158,000/yr, 2 people, 0 dependents: `Log_Income` +6.737, `Household_Size` +0.929, `Groceries_Share` (0.465) +0.470. Plain language: *"very high income, small household, no dependents, and an ordinary food-centred budget."*
+> **In plain terms: reading an individual explanation.** Start from the average household's score, then add each listed push. Income +4.48 means income alone moved this household a long way toward on track. The final probability is what the summed score becomes after conversion to the 0 to 1 scale. Only the five largest pushes are shown, so the listed numbers do not add up to the full score.
 
-**Most confident "not on track"** — P = 0.0%, correct. Income ₹2,990/yr, 7 people, 4 dependents: `Log_Income` −5.653, `Miscellaneous_Share` (0.716) −1.160, `Debt_To_Income_W` at its winsorised ceiling of 10.234 −0.972.
+### Cell 13: write results
 
-**This example is also a data-quality exhibit.** A reported annual income of ₹2,990 — about ₹250 a month for seven people — is not credible as a true income. It is Phase 1's income under-reporting (55.9% of households report consumption exceeding income) showing up in a single record. The model is confidently right about the *label*, and the label is itself an artifact of measurement. Worth showing rather than quietly picking a tidier example: it is the clearest possible illustration of why Phase 0 restricted this project to relative prioritisation rather than absolute claims.
-
-**Borderline case** — P = 50.0%, actual on track. Income ₹111,660/yr, 8 people, 2 dependents: `Household_Size` −1.033 against `Groceries_Share` (0.663) +0.711 and `Log_Income` +0.413. Plain language: *"a moderate income stretched across eight people, offset by a lean, food-dominated budget with no large discretionary outlays."* The competing contributions are legible, which is the practical test of whether an explanation is usable by a non-technical reader.
+Writes the top 20 columns per model by mean |SHAP| to `results/shap_importance.csv`, and to `results/explain.json` (via `savings_goal.io.write_result`): the family tables, permutation tables, interaction totals and top 10 pairs, top 15 columns per model, the coefficient-stability table, and the food-share SHAP correlation (0.27).
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **6 — Clustering** | Personas built on spending mix explain at most ~27% of what drives the outcome. Expect them to segment on income more than on behaviour; say so rather than over-reading them. |
-| **7 — Business translation** | Three constraints: (a) lead with income, which is 38.4% of attribution; (b) **a high grocery share is a positive signal conditional on income** — do not invert it from the Phase 1 correlation; (c) the area-type gradient is largely an income gradient, so geographic targeting is mostly income targeting by proxy. |
-| **8 — Reporting** | `results/shap_summary.png` and `shap_dependence.png` are the explainability figures. The interaction result (41.9%) is the concrete reason a linear model was not selected. |
+| 6: Spending clusters | Spending mix carries about a fifth of the full model's attribution, and part of that is the size × food-share route to the label. Clusters built on spending shares should be checked against income before being read as behaviour, and any link they show with `Goal_Met` may run through the same budget-size arithmetic. |
+| 7: Business translation | Lead with income, which is 58% of the headline model's SHAP attribution and 82% of its permutation importance. Area-type effects are small once income is known and income's effect does not vary by area. A high food share is not a behavioural signal to target. Any statement about a share has to be relative ("food taking a larger part of the budget, and everything else less"). |
+| 8: Reporting | `shap_summary.png` and `shap_dependence.png` are the explainability figures. The interaction share (31.6% headline) shows the model is not additive, mostly through income. |

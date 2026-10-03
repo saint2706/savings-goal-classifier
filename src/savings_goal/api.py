@@ -1,10 +1,10 @@
 """Two-tier deployable scoring service.
 
 Tier 1 (onboarding) scores from income, demographics and debt only - the
-feature set A1 showed carries the defensible signal. Tier 2 adds spending
+feature set that does not reconstruct the label. Tier 2 adds spending
 shares, but only when they were observed *before* the prediction window opens:
 shares measured over the same period as the outcome reconstruct total spend
-(A1, T3), so scoring with them is a restatement of the label, not a forecast.
+(see ``evaluation.leakage``), so scoring with them is a restatement of the label, not a forecast.
 
 Run with ``uv run --extra api sgc serve`` after ``sgc train`` has written the
 model artifacts (git-ignored: they are fitted on IHDS microdata).

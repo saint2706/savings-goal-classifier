@@ -76,14 +76,23 @@ def capture_at_budget(
 ) -> tuple[float, float]:
     """Contact the top ``budget`` fraction by ``score``: (share of at-risk reached, precision).
 
-    With ``weights`` both quantities are survey-weighted (population figures).
-    Ties in ``score`` are broken by a stable sort, so pass a continuous score.
+    With ``weights`` the budget is a share of the weighted population (households
+    are taken in score order until their weights reach ``budget`` of the total),
+    and both returned quantities are survey-weighted. Ties in ``score`` are
+    broken by a stable sort, so pass a continuous score.
     """
     at_risk = np.asarray(at_risk, dtype=float)
-    w = np.ones_like(at_risk) if weights is None else np.asarray(weights, dtype=float)
     order = np.argsort(-np.asarray(score, dtype=float), kind="stable")
-    n_top = round(len(order) * budget)
+    if weights is None:
+        w = np.ones_like(at_risk)
+        n_top = round(len(order) * budget)
+    else:
+        w = np.asarray(weights, dtype=float)
+        cum = np.cumsum(w[order])
+        n_top = int(np.searchsorted(cum, budget * cum[-1], side="right"))
     top = order[:n_top]
+    if n_top == 0:
+        return 0.0, float("nan")
     captured = (at_risk[top] * w[top]).sum()
     return float(captured / (at_risk * w).sum()), float(captured / w[top].sum())
 

@@ -1,4 +1,4 @@
-"""I1: spending-pattern clusters on an ILR basis, with stability and sensitivity checks."""
+"""Spending-pattern clusters on an ILR basis, with stability and sensitivity checks."""
 
 from __future__ import annotations
 

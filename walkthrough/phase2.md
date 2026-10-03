@@ -1,33 +1,15 @@
-# Phase 2 — Feature Engineering
+# Phase 2: Feature Engineering
 
-**Source:** [README § Phase 2 — Feature Engineering](../README.md#phase-2--feature-engineering)
+**Source:** [README § Phase 2: Feature Engineering](../README.md#phase-2-feature-engineering)
 **Notebook:** [`notebooks/02_feature_engineering.ipynb`](../notebooks/02_feature_engineering.ipynb)
 **Builds on:** [Phase 1](phase1.md), [Dataset construction](dataset_construction.md)
-**Output:** `dataset/features.csv` — 41,518 households × 28 features
+**Artifacts:** `results/feature_engineering.json`; the feature table `dataset/features.parquet` (41,518 households × 43 columns) is written by `sgc build` through `savings_goal.features.engineer.engineer`
 
-Phase 1 left four decisions open. This phase settles each one **empirically** rather than by convention, and two of the four go against the textbook answer — including one of my own proposals.
+The feature table is built by the package, not by this notebook. The notebook rebuilds it, checks the rebuild matches the saved file exactly, and then tests each design choice behind it. Every test runs on the training split only: one PSU-grouped fold (8,299 households, 472 PSUs) is held out as the test set before any choice is made, leaving 33,219 households in 1,989 PSUs.
 
-> **In plain terms — feature engineering, and "empirically".** **Feature engineering** is the work of turning raw survey columns into the inputs a model actually sees: combining them, rescaling them, splitting a single messy column into two clean ones, deciding what to do with blanks. It is where most of the judgement in a project like this lives.
->
-> Settling a decision **empirically** means building both versions, scoring both, and keeping whichever wins — rather than following the textbook rule. The phrase matters here because two of the four textbook answers lose.
+> **In plain terms: feature engineering.** Raw survey columns rarely go straight into a model. Feature engineering is the step that turns them into model inputs: dividing, logging, adding yes/no flags, deciding what to do with blanks. Each choice here is settled by building both versions and scoring them, not by convention.
 
----
-
-## Post-audit revision (October 2026)
-
-> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
-
-All decisions below were re-taken on the **training split only** (33,219 households, one PSU-grouped fold held out first) under grouped CV.
-
-| Decision | Current result |
-| --- | --- |
-| Ratios vs raw vs shares (transfer across income halves, `Has_Bank_Savings`) | Ratios still transfer worst after p99 winsorising: 0.603 vs raw 0.628 vs shares 0.618 (unwinsorised 0.581 / 0.620 / 0.614). |
-| Categorical missingness | `Unknown` level; missing caste uninformative (0.333 vs 0.319, n = 69). |
-| Participation indicators | Kept for the diagnostic full set (0.917 → 0.919). |
-| Debt | Winsorised at p99 **inside the pipeline** (`QuantileClipper`, refit per fold) instead of on the full sample; `Debt_Missing` added. log1p and in-pipeline winsorising tie (0.920). |
-| CLR | Still rejected (0.911 vs 0.920). |
-| Scaling | `RobustScaler` is no longer used: zero-inflated shares have IQR ≈ 0 (Entertainment scaled to 154). Linear models use `StandardScaler` and drop `Groceries_Share` as reference; trees are unscaled. AUC is unaffected (0.9200 vs 0.9199). |
-| Final sets | Full: 29 features (25 numeric + 4 categorical). **Headline (deployable): 13** — income, size, age dependents, dependency ratio, head age, education, debt ×3, four categoricals. |
+> **In plain terms: why decide on the training split only.** If the test households influenced which features were built, the final test score would be slightly flattering, because the design was tuned to them. Holding the test fold out first keeps it unseen until Phase 4 scores the finished model on it.
 
 ---
 
@@ -35,204 +17,167 @@ All decisions below were re-taken on the **training split only** (33,219 househo
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Do expense-to-income ratios generalise better across income levels than raw expense values? | **No — they generalise worst.** Fitting on one half of the income distribution and scoring on the other: raw rupees 0.6245, composition shares 0.6175, expense/income ratios **0.5893**. The intuition that dividing by income aids transfer does not hold on this data. |
-| 2 | How should `Occupation` and the other categoricals be encoded? | One-hot, with an explicit `Unknown` level. All four are low-cardinality (4–8 levels), so one-hot costs little and keeps every coefficient interpretable. Missingness is **not** informative (`Caste_Group` missing: Goal_Met 0.3176 vs 0.3193 present), so the `Unknown` level is a transparency choice rather than a signal-preserving one. |
-| 3 | Which features require scaling, and does that depend on the downstream model? | Barely matters here: ROC-AUC is 0.9212 / 0.9212 / 0.9211 for RobustScaler / StandardScaler / none under logistic regression, and 0.9162 / 0.9160 / 0.9160 under the forest — despite a **658×** spread in feature standard deviations. Scaling is still specified for the linear models because it makes coefficients comparable and helps convergence, not because it moves the score. |
-| 4 | Are any features redundant or highly collinear? | **Yes, and structurally so.** The 11 shares have **VIF = ∞** because they sum to 1 — they are exactly singular as a set. Beyond that: `Household_Size` × `Dependents` r = 0.714 (VIF 8.98 / 5.23), and each `*_Share` × `Spends_On_*` pair r ≈ 0.45–0.67 by construction. |
+| 1 | Do expense-to-income ratios generalise better across income levels than raw expense values? | No. Trained on one income half and scored on the other (target `Has_Bank_Savings`, p99 winsorising inside the pipeline), mean ROC-AUC is 0.603 for ratios, 0.628 for raw rupees and 0.618 for shares. Without winsorising: 0.581, 0.620, 0.614. Ratios transfer worst either way. |
+| 2 | How should the categorical features be encoded, and how should missing categories be handled? | One-hot encoding with an explicit `Unknown` level. Only `Caste_Group` has missing values in the training split (69 households); their goal rate is 0.333 against 0.319, so the missingness carries no visible signal. Levels: `Occupation` 6, `Area_Type` 4, `Caste_Group` 7 (including `Unknown`), `Religion` 9. |
+| 3 | Should the majority-zero expense categories get explicit participation indicators? | Yes, for the five shares zero for more than 30% of training households (rent, insurance, eating out, entertainment, education). Logistic regression ROC-AUC rises from 0.917 to 0.919 and macro-F1 from 0.814 to 0.818. The indicators belong to the diagnostic full set only. |
+| 4 | Which features require scaling, and does that depend on the downstream model? | Linear models get `StandardScaler`; tree models get none. `RobustScaler` is not used on shares: for zero-inflated shares the interquartile range is close to zero, and `Entertainment_Share` scales to values up to 154. The ROC-AUC difference between the two scalers is 0.0001 (0.9200 vs 0.9199). Debt is winsorised at p99 inside the pipeline; log1p ties with it (0.920 both, logistic). The centred log-ratio transform loses to raw shares (0.911 vs 0.920). |
+| 5 | Are any features redundant or highly collinear? | The 11 shares are exactly collinear because they sum to one (VIF about 10¹⁵). With `Groceries_Share` dropped as a reference, as the linear pipelines do, the largest VIF is `Age_Dependents` 8.92, then `Household_Size` 5.20 and `Dependency_Ratio` 4.60; no share exceeds 1.86. |
 
-> **In plain terms — the four pieces of jargon in that table.**
-> - **Encoding / one-hot.** Models do arithmetic, so a text column like `Occupation = "Farm"` has to become numbers. Numbering the categories 1–6 would be a disaster, because the model would infer that Farm is twice Salaried and that the midpoint between them means something. **One-hot encoding** avoids that by replacing one text column with one yes/no column per category: `Is_Farm`, `Is_Salaried`, and so on, exactly one of which is 1. **Cardinality** is just how many distinct categories a column has — with only 4–8 here, one-hot adds a handful of columns and costs nothing. With thousands of categories it would be unusable.
-> - **Scaling.** Different columns arrive on wildly different scales: income in hundreds of thousands, shares between 0 and 1. Some model families treat a big-numbered column as automatically important, so columns are **scaled** to a common footing first — **StandardScaler** using the average and standard deviation, **RobustScaler** using the median and the middle 50% (the version that shrugs off outliers, see [Phase 1](phase1.md) on skew). Tree-based models are immune to all of this, since they only ever ask "is this value above or below a cut-point?"
-> - **Collinear / redundant.** Two features are **collinear** when they carry nearly the same information — household size and number of dependents, for instance. The model still works, but it can no longer tell which of the two deserves the credit.
-> - **VIF** (variance inflation factor) puts a number on that. It answers "how well can the other features predict this one?" 1 means not at all (perfectly independent); above about 10 is conventionally considered a problem; **∞ means another feature reproduces this one exactly**, which is what the eleven-slices-of-one-pie constraint guarantees. Q4 below explains why that is survivable for prediction and fatal for interpretation.
+Final sets: the full (diagnostic) set has 29 features, 25 numeric plus 4 categorical. The headline deployable set has 13: `Log_Income`, `Household_Size`, `Age_Dependents`, `Dependency_Ratio`, `Head_Age`, `Max_Adult_Education`, `Debt_To_Income`, `Has_Debt`, `Debt_Missing`, and the four categoricals.
+
+> **In plain terms: one-hot encoding.** A model does arithmetic, so a text column like `Occupation = "Farm"` must become numbers. Numbering the categories 1 to 6 would imply an order and spacing that do not exist. One-hot encoding replaces the column with one yes/no column per category, exactly one of which is 1.
 
 ---
 
-## The four open decisions
+## Notebook walkthrough
 
-### Decision 1 — Categorical missingness: explicit `Unknown`
+### Cell 1: load, rebuild check, training split
 
-`Caste_Group` is missing for 85 households (0.21%) and `Religion` for 12 (0.03%). The question was whether refusal to state caste is itself informative.
+Loads the household table (`savings_goal.io.load_households`) and the saved feature table (`savings_goal.io.load_features`), then calls `savings_goal.features.engineer.engineer` on the households and asserts the output equals the saved table column for column. If anyone edits the build code without rebuilding, the notebook fails here.
 
-**It is not.** Goal_Met among households with missing `Caste_Group` is 0.3176 against 0.3193 for those with it recorded — a 0.17 percentage point difference on 85 households, indistinguishable from noise. Either imputation or an explicit level is therefore defensible on predictive grounds.
+`engineer` does the following, in order:
 
-> **In plain terms — "indistinguishable from noise".** Any two groups of households will differ *a little* by pure chance, the way two handfuls of coins rarely give identical head counts. **Noise** is that meaningless random variation. On only 85 households a swing of a few tenths of a percentage point is well inside what chance alone produces, so the honest reading is "we found nothing", not "we found a small effect". This phrase recurs throughout the project, and it is usually the reason a decision gets made on grounds *other* than the score.
+1. Draws the test fold with `savings_goal.evaluation.cv.grouped_test_mask` (the first fold of a stratified, PSU-grouped 5-fold split, seed 42) and stores it as `Is_Test`.
+2. Fills missing categoricals with `Unknown`.
+3. Measures each share's zero rate on the training rows and adds a `Spends_On_*` indicator for every share zero more than 30% of the time.
+4. Adds `Has_Debt` and `Dependency_Ratio` (`Age_Dependents / Household_Size`).
+5. Picks the log-ratio core (shares zero less than 20% of the time), replaces their zeros and writes six `*_CLR` columns. These are not model features; they record the log-ratio view of the core for inspection.
 
-`Unknown` is used anyway, because at this rate the choice cannot affect the model and an explicit level does not silently assert a caste the household declined to give. That is a reporting-integrity reason, not a statistical one, and it is worth being clear that the evidence did not force it.
+The cell selects the training rows (`Is_Test == False`), prints 33,219 households in 1,989 PSUs with 8,299 held out, and defines `cv_score`, which runs `savings_goal.evaluation.cv.cross_validate_grouped` with `grouped_cv()` (`StratifiedGroupKFold`, 5 folds, grouped by `IDPSU`) and the metrics from `savings_goal.evaluation.metrics.fold_metrics`.
 
-### Decision 2 — Zero-inflation: participation indicators, kept
+> **In plain terms: stratified, grouped folds.** Grouped means no PSU is split between training and scoring. Stratified means each fold gets roughly the same share of on-track households (about 32%), so no fold is scored on an unusual mix.
 
-Phase 1 found five categories zero for more than 30% of households. A single share column conflates "spends nothing on this" with "spends a little", which are different states. Binary `Spends_On_*` indicators were added for all five and tested.
+### Cell 3: ratios vs raw rupees vs shares (Q1)
 
-**Result:** ROC-AUC 0.9183 → **0.9204**, macro-F1 0.8160 → 0.8195. A small gain, but consistent, and the univariate breakdown shows why:
+Ratios are often recommended because they make households of different incomes comparable. The test cannot use `Goal_Met`: Phase 1 showed raw rupees and ratios reconstruct it for 99.75% of households, so they would win by construction. The neutral target is `Has_Bank_Savings`, a survey-reported fact outside the consumption arithmetic (33,112 training households with a recorded answer; 57.7% hold a bank account with savings).
 
-| Indicator | Goal_Met if no | Goal_Met if yes | Lift |
-| --- | --- | --- | --- |
-| `Spends_On_Insurance` | 0.2938 | 0.3906 | **+0.0968** |
-| `Spends_On_Eating_Out` | 0.3067 | 0.3515 | +0.0448 |
-| `Spends_On_Entertainment` | 0.3125 | 0.3346 | +0.0221 |
-| `Spends_On_Rent` | 0.3198 | 0.3148 | −0.0050 |
-| `Spends_On_Education` | 0.3721 | 0.2897 | **−0.0825** |
+Each representation is fitted with logistic regression (median imputation, optional `savings_goal.features.transforms.QuantileClipper` at p99, `StandardScaler`) on the households at or below median income and scored on those above it, then the reverse.
 
-The two large effects point in opposite directions and both are interpretable. Paying insurance premiums at all is a marker of financial slack — households already saving are the ones who buy insurance. Paying school fees at all costs **8.3 percentage points** of goal attainment: it is a large, non-negotiable claim on income that falls on households with dependents. That is a genuine finding about dependent burden, and it is the sort of thing a single continuous share would have blurred, because the difference between ₹0 and ₹1 of school fees is categorical, not marginal.
+| Representation | Winsorised | High → low | Low → high | Mean |
+| --- | --- | --- | --- | --- |
+| Raw rupees | no | 0.601 | 0.639 | 0.620 |
+| Raw rupees | p99 | 0.606 | 0.650 | 0.628 |
+| Share of expenditure | no | 0.604 | 0.624 | 0.614 |
+| Share of expenditure | p99 | 0.606 | 0.629 | 0.618 |
+| Expense / income | no | 0.577 | 0.585 | 0.581 |
+| Expense / income | p99 | 0.590 | 0.615 | 0.603 |
 
-`Spends_On_Rent` is essentially flat (−0.005) — paying rent at all does not predict the outcome, which is unsurprising given Phase 1's finding that 90.4% of households record no rent.
+Winsorising helps the ratios most (+0.022), as expected for a heavy-tailed representation, but they still transfer worst. Income is the under-reported side of this survey (Phase 1, Q2), which makes it a noisy divisor. Shares remain the spending representation because they do not reconstruct the target on their own, not because they transfer better than raw rupees; raw rupees transfer slightly better and are excluded as leakage.
 
-### Decision 3 — `Debt_To_Income`: winsorised at the 99th percentile
+> **In plain terms: this transfer test.** A random split lets the model see rich and poor households during training. Training only on the poorer half and scoring on the richer half (then the reverse) asks whether what was learned about one income level carries to another, which is the claim made for ratios.
 
-Phase 1 flagged a tail reaching 1,300× annual income. Three variants were compared across both model families:
+### Cell 5: categorical encoding and missing caste (Q2)
 
-| Variant | logreg ROC-AUC | rf ROC-AUC | logreg F1 |
-| --- | --- | --- | --- |
-| Raw | 0.9210 | 0.9172 | 0.8201 |
-| Winsorised (p99 = 10.234) | 0.9212 | 0.9168 | 0.8202 |
-| `log1p` | **0.9215** | 0.9172 | **0.8203** |
+Compares the goal rate of households with and without a recorded `Caste_Group` in the training split: 69 missing, rate 0.333 against 0.319. On 69 households that gap is well inside chance variation. `Unknown` is kept as its own level anyway, so the model never assigns a caste a household did not report. The other three categoricals have no missing values in the training split.
 
-> **In plain terms — the three variants and the two models.**
-> - **Raw** = leave the runaway values alone. **Winsorised at p99** = find the value only 1% of households exceed (here 10.234× income) and cap everyone above it at that number. **`log1p`** = replace each value `x` with `log(1 + x)`, which squashes the tail — 1,300 becomes about 7.2 while 0.5 stays about 0.4. The "1 +" is there so that a debt of zero maps to zero instead of to the undefined log of 0.
-> - **logreg** is **logistic regression**, the standard straight-line classifier: it weighs each feature, adds the weights up, and converts the total into a probability. **rf** is a **random forest**: hundreds of yes/no decision trees, each grown on a slightly different slice of the data, voting together. They are included as a pair deliberately — they fail in different ways, so a change that helps both is real, while one that helps only one is usually noise.
+Encoding happens inside `savings_goal.models.pipeline.preprocessor` with `OneHotEncoder(handle_unknown="ignore")`, so a category unseen in a training fold is encoded as all zeros instead of raising an error.
 
-**The honest answer is that this decision does not matter** — the spread is 0.0005 ROC-AUC across all three, far inside fold-to-fold noise. `log1p` is nominally best on the linear model and the raw form is nominally best on the forest, which is itself a sign that the differences are noise rather than signal.
+> **In plain terms: inside chance variation.** Two groups of households will differ a little by luck, the way two handfuls of coins rarely give the same number of heads. With 69 households, a 1.4-point gap in the goal rate is the size luck alone produces, so the reading is "no evidence of a difference".
 
-Winsorisation at p99 is used (affecting 416 households) because when nothing separates the options on performance, the tiebreaker should be interpretability: a coefficient on a variable bounded at 10× income is readable, one on a variable reaching 1,300× is not. `Has_Debt` is carried alongside it, since roughly half of households have no debt at all and the same zero-inflation argument as Decision 2 applies.
+### Cell 7: participation indicators (Q3)
 
-### Decision 4 — The compositional transform: **proposed, tested, rejected**
+Zero rates on the training split:
 
-Phase 1 argued that the shares live on a simplex, so Euclidean methods are not well-founded on them, and that a centred log-ratio (CLR) transform is the standard fix. That was my recommendation going into this phase. The notebook implemented it properly and the evidence rejected it.
-
-> **In plain terms — what a CLR actually does.** Recall the problem from [Phase 1](phase1.md): the eleven shares are slices of one pie, so they are not free to vary independently and ordinary straight-line distance mismeasures how different two budgets are.
->
-> The **centred log-ratio** transform is the textbook repair. For each household, work out the typical size of its slices (specifically the **geometric mean**, an average that suits ratios); then replace every share with the logarithm of that share divided by the typical size. In words, each number stops saying *"food is 45% of the budget"* and starts saying *"food is unusually large or small relative to this household's other categories."* Once expressed that way, the values are free to move independently again and normal geometry applies.
->
-> Two consequences follow, and both bite later. First, the transform is deliberately blind to the absolute level of a share — that is exactly what "relative to this household's own budget" buys, and exactly what turns out to be predictive information we cannot afford to lose. Second, the transformed values now sum to **zero** for every household instead of to one, which swaps one constraint for another rather than removing it.
-
-**Implementation.** The transform was restricted to a **core sub-composition** — the six parts zero for under 20% of households (`Groceries`, `Utilities`, `Transport`, `Healthcare`, `Clothing_Footwear`, `Miscellaneous`). Forcing `Rent_Share` through a log when it is zero for 90.4% of households would produce a column that is mostly imputed constant. Zeros in the core were handled by multiplicative replacement at 0.65× the smallest observed positive value in each part (Martín-Fernández et al.), which is the standard method:
-
-> **In plain terms — sub-composition and zero replacement.** A **sub-composition** is a subset of the slices, re-scaled to be a pie of its own. Six of the eleven categories are used here because the transform needs logarithms, **and the logarithm of zero does not exist** — so any category that is zero for most households cannot go through it.
->
-> Even the six chosen categories have some zeros, so those have to be replaced with something small but positive. **Multiplicative replacement** is the established recipe: for each category, take the smallest genuine non-zero value anyone recorded and use 0.65 of it as the stand-in (this stand-in is written **δ**, the Greek letter delta). It is called *multiplicative* because the other slices are then shrunk proportionally so the pie still totals one. The point of tying δ to each category's own smallest real value — rather than picking one convenient number like 0.00001 — is that the substitute stays on the same scale as the data. The bug recorded at the end of this section is precisely what happens when that is not respected.
-
-| Part | δ |
+| Share | Zero rate |
 | --- | --- |
-| `Groceries_Share` | 2.230×10⁻³ |
-| `Miscellaneous_Share` | 6.776×10⁻⁴ |
-| `Utilities_Share` | 2.505×10⁻⁴ |
-| `Clothing_Footwear_Share` | 1.129×10⁻⁴ |
-| `Healthcare_Share` | 8.302×10⁻⁵ |
-| `Transport_Share` | 6.738×10⁻⁵ |
+| `Rent_Share` | 0.903 |
+| `Insurance_Share` | 0.737 |
+| `Eating_Out_Share` | 0.724 |
+| `Entertainment_Share` | 0.695 |
+| `Education_Share` | 0.359 |
+| `Healthcare_Share` | 0.193 |
+| `Transport_Share` | 0.114 |
+| `Clothing_Footwear_Share` | 0.014 |
+| `Utilities_Share` | 0.002 |
+| `Miscellaneous_Share` | 0.001 |
+| `Groceries_Share` | 0.001 |
 
-The result satisfies the defining property of a CLR — rows sum to zero, max |row sum| = 7.99×10⁻¹⁵.
+The five above 30% get indicators: `Spends_On_Rent`, `Spends_On_Insurance`, `Spends_On_Eating_Out`, `Spends_On_Entertainment`, `Spends_On_Education`. A share alone cannot tell "spends nothing" from "spends a little", and for a straight-line model the step from zero to any spending is a change of kind.
 
-**Result:**
+Logistic regression on shares plus demographics, grouped CV:
 
-| Feature set | logreg ROC-AUC | rf ROC-AUC | logreg F1 |
-| --- | --- | --- | --- |
-| Raw shares | **0.9212** | **0.9168** | **0.8202** |
-| CLR core + zero-inflated shares | 0.9117 | 0.9095 | 0.8097 |
-
-**Why the theoretically-correct transform lost.** Two reasons, and the second is decisive:
-
-1. It discards information. The CLR is scale-free *within* the composition, which is exactly the property that makes it appropriate for clustering — but the absolute level of a share (`Groceries_Share` = 0.70 vs 0.35) is directly informative about the standard of living, and Phase 1 showed that is Engel's law doing real predictive work. The log-ratio deliberately throws that away.
-2. **CLR components sum to zero by construction, so their covariance matrix is exactly singular.** The first run recorded VIF up to 3×10⁵ for the CLR columns. A CLR basis can never be used safely in an unregularised linear model. The standard remedy is an **isometric log-ratio (ILR)** basis, which drops one dimension and is therefore full-rank.
-
-> **In plain terms — singular, full-rank, and why ILR fixes it.** A **covariance matrix** is the grid of how the features vary together (the correlation matrix from [Phase 1](phase1.md), in unstandardised form). Fitting a linear model requires, in effect, dividing by that grid — and **singular** means the division is impossible, the matrix equivalent of dividing by zero. It happens whenever one feature can be reconstructed exactly from the others, which the sum-to-zero constraint guarantees. **Full-rank** is the healthy opposite: no feature is a rebuild of the rest, and the division works.
->
-> The **ILR (isometric log-ratio)** basis solves this by keeping the same geometry but expressing it in one fewer column — five coordinates instead of six. That is not a loss: because the six always summed to zero, only five of them were ever carrying independent information. Removing the redundant one removes the singularity. Note the CLR is not abandoned; [Phase 6](phase6.md) builds its ILR by transforming the CLR values, since clustering is the task that genuinely needs simplex geometry.
-
-**Outcome:** CLR is excluded from the classification feature set. The six CLR columns are still written to `features.csv` for **Phase 6** to evaluate, because clustering is the step that genuinely needs a metric on the simplex — but Phase 6 should test ILR rather than CLR, for the singularity reason above.
-
-**A first-run bug worth recording.** The initial implementation used a single flat `δ = 10⁻⁵`, which is 10–30× smaller than the smallest genuine values in these parts, and manufactured artificial extremes at ±9.59 (the CLR of a household where one part is ~1 and the rest are imputed δ). It also produced `NaN` for the **2 households that spend nothing on any core category**, whose composition is undefined. Both were fixed before the comparison above; the corrected CLR ranges are ±2.7 to ±7.3 rather than ±9.6, and the 2 undefined households are left as `NaN` rather than silently filled.
-
-> **In plain terms — why too small a δ is worse than none.** Logarithms magnify small numbers ferociously: the gap between 0.001 and 0.00001 is a hundredfold, and after taking logs it looks like an enormous distance. So a stand-in chosen far below the real data does not quietly fill a hole — it **fabricates households at the extremes**, sitting further from everyone else than any genuine household does. Every later method that measures distance would then organise itself around a value nobody actually reported. That is why δ is anchored to each category's own smallest observed value.
->
-> **`NaN`** is the "not a number" marker software uses for an undefined result. Two households recorded no spending at all in any of the six core categories, so their budget shape is genuinely undefined — there is no pie to slice. They are left marked as undefined rather than filled with a fake value, and [Phase 6](phase6.md) drops them explicitly and says so.
-
----
-
-## Q1 in detail — why the ratio intuition fails here
-
-The question of whether expense-to-income ratios generalise better than raw values **cannot be tested against `Goal_Met`**: Phase 1 showed raw rupee categories reconstruct the target with 99.75% agreement, so the leaky representation would win by construction and the result would be meaningless.
-
-The comparison is instead run against **`Has_Bank_Savings`** — a survey-reported behaviour that is not an accounting function of the expense columns, so all three representations face it on equal terms. The real question is generalisation *across income levels*, so the test fits on one half of the income distribution and scores on the other:
-
-> **In plain terms — generalisation, and this particular test.** **Generalising** means working on households the model has never seen. Scoring a model on the same rows it learned from proves nothing — it can memorise. So the data is always split: learn on one part, score on another.
->
-> This test uses a deliberately harsh split. Instead of a random division, it trains only on the **richer half** of households and scores on the **poorer half**, then reverses. That asks a much tougher question — does what the model learned about rich households transfer to poor ones? — and it is the right question here, because "dividing by income makes households comparable across income levels" is precisely the claim being tested. A random split would have let the model see both halves and would never have exposed the failure.
-
-| Representation | high → low | low → high | mean |
-| --- | --- | --- | --- |
-| Raw rupees | 0.6063 | 0.6428 | **0.6245** |
-| Share of expenditure | 0.6075 | 0.6275 | 0.6175 |
-| Expense / income | 0.5828 | 0.5957 | 0.5893 |
-
-**Expense-to-income ratios transfer worst.** Raw rupees and shares are within 0.007 of each other; the ratio form loses 3.5 points.
-
-**Why the intuition fails.** Dividing by income is worthwhile when the raw columns are largely restatements of income — the division removes a redundancy that would otherwise crowd out everything else. Phase 1 measured that correlation at only **0.09–0.43** here, so there is little redundancy to remove. What the division does instead is inject the noise in a poorly-measured denominator: recall from Phase 1 that income is the *under-reported* side of this survey, so it is the worst available choice of divisor.
-
-**This does not undo the feature-set design.** Composition shares remain the right representation, but for a specific reason: they are **not reconstructable from the target** (Phase 1, Test C), not because they generalise better than raw values — which they marginally do not. Raw rupees generalise slightly better and are unusable for leakage reasons. That trade is now explicit rather than assumed.
-
----
-
-## Q4 in detail — the collinearity that cannot be engineered away
-
-```text
-Groceries_Share            inf
-Eating_Out_Share           inf
-Utilities_Share            inf
-... all 11 shares          inf
-Dependents                8.98
-Household_Size            5.23
-Dependency_Ratio          4.61
-Log_Income                1.68
-```
-
-**The 11 shares sum to exactly 1, so one is a perfect linear combination of the other ten.** This is the same singularity that disqualified CLR, present in the raw shares as well — it is a property of compositional data, not of either transform.
-
-**Why the pipeline still works:** both models in use are robust to it. L2-regularised logistic regression has a unique solution even with a singular design matrix, and tree ensembles never invert one. The measured performance (0.9212) is real.
-
-> **In plain terms — regularisation, and why it rescues a broken system.** With the shares summing to 1, there is no single right answer for how much credit each share deserves: you could add 1 to one coefficient and subtract 1 from another and get *identical* predictions, forever. The system has infinitely many equally good solutions.
->
-> **L2 regularisation** (also called a **penalty** or *ridge*) breaks the tie by adding a rule: among all solutions that fit equally well, prefer the one whose coefficients are smallest overall. That is enough to single out exactly one answer, so the model becomes computable and its predictions are perfectly sound. But read what just happened — **the tie-break was chosen by the penalty, not by the data.** The predictions are trustworthy; the individual coefficients are an arbitrary pick from an infinite set. That distinction is the whole reason [Phase 5](phase5.md) refuses to interpret them.
->
-> **Tree ensembles** (random forests, gradient boosting) never face the problem at all, because they only ever compare a value against a cut-point and never solve a system of equations.
-
-**What later phases must not do:**
-
-- **Do not fit an unregularised linear model** (plain OLS/`LinearRegression`, or `LogisticRegression(penalty=None)`) on the full share set. It is rank-deficient and the coefficients will be arbitrary.
-
-  > **In plain terms.** **Unregularised** means no tie-break rule — so the model is handed the infinite set of equally-good answers with no way to choose, and returns whichever one the arithmetic stumbles into, which can change completely on a slightly different sample. **OLS (ordinary least squares)** is the plainest such fit, the classic straight-line-through-the-points method. **Rank-deficient** is the same condition as *singular*: the features contain fewer genuinely independent pieces of information than there are columns.
-
-- **Phase 5 must not read individual share coefficients as identified effects.** With a singular set, the split of credit between shares is determined by the regulariser, not the data. Either drop one share as an explicit reference part (the compositional analogue of a dummy baseline) before interpreting, or use SHAP on the tree model, which does not depend on invertibility.
-
-  > **In plain terms — "identified", and the reference-part idea.** A coefficient is **identified** when the data pins it to one value. Here it is not, for the reason above. One standard escape is to nominate one share as the **reference part** and quote every other coefficient *relative to it* — the same trick as reporting salaries "compared to the graduate-entry grade" rather than in absolute terms. Comparisons against a fixed baseline are well-defined even when the absolute levels are not. [Phase 5](phase5.md) tries this and reports that it only partly works.
-
-`Dependents` at VIF 8.98 sits just under the conventional threshold of 10 and is explained by `Household_Size` (r = 0.714) and `Dependency_Ratio` (r = 0.678), which is arithmetic — the ratio is built from the other two. Keeping all three is defensible for the tree models; a linear model should take `Dependency_Ratio` and `Household_Size` and drop the raw count.
-
----
-
-## Final feature set — 28 features
-
-**Numeric (24):** 11 `*_Share`, `Log_Income`, `Household_Size`, `Dependents`, `Dependency_Ratio`, `Head_Age`, `Max_Adult_Education`, 5 `Spends_On_*`, `Debt_To_Income_W`, `Has_Debt`
-
-**Categorical (4):** `Occupation`, `Area_Type`, `Caste_Group`, `Religion`
-
-**Also exported, not features:** 6 `*_CLR` columns (for Phase 6 only), `Goal_Met`, `Savings_Rate`, `IDHH`, `WT`
-
-| Model | ROC-AUC | F1 (macro) |
+| Feature set | ROC-AUC | Macro-F1 |
 | --- | --- | --- |
-| Logistic Regression | **0.9212** | **0.8203** |
-| Random Forest | 0.9160 | 0.8162 |
+| Shares only | 0.917 | 0.814 |
+| Shares + indicators | 0.919 | 0.818 |
 
-Notably the linear model is **ahead** of the forest on both metrics, which is unusual on tabular data of this size. The participation indicators are the likely reason: they hand the linear model the threshold effects it cannot otherwise express, which is exactly what a tree would have had to spend splits discovering.
+A small gain, and it applies only to the diagnostic full set; the deployable headline set has no shares or indicators.
+
+### Cell 9: debt handling (Q4)
+
+`Debt_Missing` covers 7.57% of training households. Their goal rate is 0.367 against 0.315 when debt is recorded, a 5-point gap on about 2,500 households, so the flag is kept as a feature instead of imputing the blank as zero debt.
+
+`Debt_To_Income` reaches 1,300 times annual income. Two treatments are compared with logistic regression and a 150-tree random forest:
+
+| Variant | Logistic ROC-AUC | Random forest ROC-AUC |
+| --- | --- | --- |
+| log1p | 0.9204 | 0.9130 |
+| p99 winsorised per fold | 0.9200 | 0.9128 |
+
+The difference is 0.0004 at most, so the choice does not matter for performance. The pipeline uses winsorising: `savings_goal.models.pipeline.preprocessor` routes `Debt_To_Income` through `QuantileClipper(upper=0.99)`, which learns the cap on each training fold (about 11 times income on the full training split) and applies it to the scored fold. A capped ratio in units of annual income is easier to read in Phase 5 than a log.
+
+> **In plain terms: winsorising and log1p.** Winsorising at p99 finds the value only 1% of households exceed and caps everyone above it at that value. log1p replaces x with log(1 + x), which compresses the tail (1,300 becomes about 7.2) and keeps zero at zero. Learning the cap inside each training fold means the scored households never influence where it sits.
+
+> **In plain terms: logistic regression and random forest.** Logistic regression weighs each feature, adds the weights and turns the total into a probability. A random forest grows many decision trees on resampled data and averages their votes. They fail in different ways, so a change that helps both is more convincing than one that helps one.
+
+### Cell 11: log-ratio transform and scaler choice (Q5)
+
+First comparison: the full numeric set with raw shares, against the same set with the six core shares replaced by their centred log-ratio (CLR) columns.
+
+| Representation | Logistic ROC-AUC |
+| --- | --- |
+| Raw shares | 0.920 |
+| CLR core + zero-inflated shares | 0.911 |
+
+The CLR loses by 0.009 and is not used for classification. It expresses each share relative to the household's own typical share, which discards the absolute level (food at 70% of the budget against 35%) that Engel's law makes predictive. The six `*_CLR` columns stay in the feature table. Phase 6 clusters on the same six core shares with the same zero replacement, expressed in an isometric log-ratio (ILR) basis by `savings_goal.models.personas.ilr_coordinates`. Two households spend nothing in any core category; their CLR values are left missing.
+
+> **In plain terms: centred log-ratio.** For each household, take the geometric mean of its core shares, then replace each share with the log of share ÷ that mean. The result says "food is large or small relative to this household's other categories". Zeros have no logarithm, so the core is limited to the six categories zero for under 20% of households, and their remaining zeros are replaced by 0.65 × the smallest positive value seen in training (`savings_goal.features.transforms.multiplicative_replacement`). CLR values sum to zero in every row, which is why Phase 6 drops one dimension with the ILR.
+
+Second, why shares never go through `RobustScaler`. That scaler divides by the interquartile range, which collapses for zero-inflated shares:
+
+| Share | Zero rate | IQR | Max \|scaled value\| |
+| --- | --- | --- | --- |
+| `Entertainment_Share` | 0.695 | 0.0042 | 154.5 |
+| `Insurance_Share` | 0.737 | 0.0073 | 107.3 |
+| `Eating_Out_Share` | 0.724 | 0.0072 | 104.1 |
+| `Clothing_Footwear_Share` | 0.014 | 0.0353 | 23.2 |
+| `Education_Share` | 0.359 | 0.0624 | 15.6 |
+| `Groceries_Share` | 0.001 | 0.2093 | 2.5 |
+| `Rent_Share` | 0.903 | 0.0000 | 1.0 (scale set to 1) |
+
+Third, the two scalers head to head on the full logistic pipeline: `StandardScaler` ROC-AUC 0.9200, log-loss 0.3605; `RobustScaler` 0.9199, 0.3607. Performance is the same. `StandardScaler` is kept for linear models because it does not produce the values in the hundreds shown above. Tree models are not scaled, since a split only asks whether a value is above a cut-point. Both rules are built into `savings_goal.models.pipeline.preprocessor`.
+
+> **In plain terms: scaling.** Income is in the tens of thousands, shares lie between 0 and 1. Linear models compare coefficient sizes across columns, so columns are put on a common footing first. `StandardScaler` subtracts the mean and divides by the standard deviation; `RobustScaler` subtracts the median and divides by the spread of the middle 50%.
+
+### Cell 13: collinearity, and the saved results (Q6)
+
+Computes the variance inflation factor (VIF) for each numeric feature on standardised training data, first with all 11 shares and then with `Groceries_Share` removed.
+
+| Feature | VIF, all shares | VIF, `Groceries_Share` dropped |
+| --- | --- | --- |
+| Any of the 11 shares | ≈ 1.0 × 10¹⁵ | 1.11 to 1.85 |
+| `Age_Dependents` | 8.92 | 8.92 |
+| `Household_Size` | 5.20 | 5.20 |
+| `Dependency_Ratio` | 4.60 | 4.60 |
+| `Spends_On_Insurance` | 1.89 | 1.89 |
+| `Log_Income` | 1.57 | 1.57 |
+| `Debt_To_Income` | 1.03 | 1.03 |
+
+With all 11 shares the design is singular: any one share equals one minus the sum of the other ten. Dropping one share as a reference removes that exactly, which is what `preprocessor(..., linear=True)` does whenever all 11 shares are present. Every remaining share coefficient is then read relative to food. The size family (`Age_Dependents`, `Household_Size`, `Dependency_Ratio`) is the only other cluster, and it stays below the conventional threshold of 10. Tree models never invert this matrix, so they are unaffected.
+
+> **In plain terms: VIF.** VIF asks how well the other features predict this one. 1 means not at all; above about 10 is usually treated as a problem; a value near 10¹⁵ means another combination of features reproduces this one exactly. When that happens, a linear model has many equally good ways to split credit between the columns and its individual coefficients mean nothing.
+
+> **In plain terms: the reference share.** Dropping one share is like quoting salaries relative to the entry grade instead of in rupees. With food as the reference, a positive coefficient on insurance means "a larger insurance share, with a correspondingly smaller food share, goes with a higher chance of meeting the goal".
+
+The cell writes every table above, both VIF series and the final column lists to `results/feature_engineering.json` with `savings_goal.io.write_result`, and prints the final sizes: 29 features (25 numeric + 4 categorical), deployable subset 13.
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **3 — Baseline** | Load `dataset/features.csv` directly. Majority baseline: 0.681 accuracy / 0.405 macro-F1. |
-| **4 — Model comparison** | Scaling barely moves the score, but keep `RobustScaler` for linear models given skew up to 7.4. **Do not** include an unregularised linear model. Logistic regression is the one to beat at 0.9212. |
-| **5 — Explainability** | Individual share coefficients are not identified (VIF = ∞). Use SHAP on a tree model, or drop a reference part first. |
-| **6 — Clustering** | Use the exported `*_CLR` columns, but prefer an **ILR** basis — CLR is singular. The 2 all-zero-core households must be excluded or handled explicitly. |
-| **7 — Business translation** | `Spends_On_Education` (−8.3pp) and `Spends_On_Insurance` (+9.7pp) are the two most actionable univariate signals found so far. |
+| 3: Baseline | Read `dataset/features.parquet` and use the stored `Is_Test` split; score baselines on the training split under the same grouped CV. |
+| 4: Model comparison | Headline models use the 13 deployable features; the 29-feature full set is reported as a diagnostic. Build every pipeline with `savings_goal.models.pipeline.preprocessor`, so debt is winsorised per fold, linear models drop `Groceries_Share` and get `StandardScaler`, and trees are unscaled. |
+| 5: Explainability | Share coefficients from linear models are relative to food. Use SHAP on the tree model for attributions; it does not depend on inverting the collinear design. |
+| 6: Clustering | Cluster on the six core shares in an ILR basis (five coordinates), with the same zero replacement; drop the 2 households with no core spending. |

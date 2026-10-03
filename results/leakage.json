@@ -76,7 +76,7 @@
     "within_5pct": 0.9828748976347609,
     "label_agreement": 0.997470976443952
   },
-  "t1_ablation": [
+  "ablation": [
     {
       "feature set": "all features",
       "n features": 29,
@@ -114,12 +114,12 @@
       "AUC retained": 0.9434182020666988
     }
   ],
-  "t2": {
+  "food_size_fit": {
     "r2": 0.2920391323894237,
     "elasticity": 0.6296937317472555,
     "n": 41494
   },
-  "t3": {
+  "oracle": {
     "auc": 0.8950303135967488,
     "k": 8848.5,
     "n_used": 41494,
@@ -127,7 +127,7 @@
     "agreement_at_threshold": 0.8217573625102425
   },
   "decision": {
-    "reframe": true,
+    "shares_diagnostic": true,
     "headline": "deployable"
   }
 }

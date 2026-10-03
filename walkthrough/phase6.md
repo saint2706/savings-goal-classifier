@@ -1,32 +1,17 @@
-# Phase 6 — Unsupervised Extension
+# Phase 6: Spending clusters
 
-**Source:** [README § Phase 6 — Unsupervised Extension](../README.md#phase-6--unsupervised-extension)
+**Source:** [README § Phase 6: Spending clusters](../README.md#phase-6-spending-clusters)
 **Notebook:** [`notebooks/06_clustering_personas.ipynb`](../notebooks/06_clustering_personas.ipynb)
-**Builds on:** [Phase 2](phase2.md), [Phase 5](phase5.md)
-**Artifacts:** `results/persona_profiles.csv`, `results/personas.png`, `results/cluster_selection.png`
+**Builds on:** [Phase 2](phase2.md) (zero replacement and log-ratio transforms), [Phase 5](phase5.md) (how spending shares relate to the label)
+**Artifacts:** `results/personas.json`, `results/persona_profiles.csv`, `results/cluster_selection.png`, `results/personas.png`
 
-Phase 2 rejected the CLR transform for classification but left the log-ratio question open for clustering, which is the step that genuinely needs a metric on the simplex. This phase builds an **ILR** basis (full-rank, unlike CLR), uses it, and then discovers that the clean-looking clusters it produces are keyed on something other than what "spending persona" implies.
+This phase groups households by the shape of their budgets, without using `Goal_Met`, and then asks what the groups are keyed on and whether they relate to the target once income is held fixed. The clustering runs on one representation, isometric log-ratio (ILR) coordinates of the six core expense categories, and the number of clusters is chosen within it. The result is three stable spending clusters, defined almost entirely by which categories a household records as zero.
 
-Two predictions were made going in. **One was confirmed, one was falsified**, and both are reported as such.
+> **In plain terms: supervised and unsupervised.** Phases 3 to 5 were supervised: the data came with an answer (`Goal_Met`) and the model learned to reproduce it. Clustering is unsupervised. The algorithm sees only the spending shares and is asked to put similar households together. It always returns groups, whether or not real groups exist, so most of the work is checking what the groups turned out to be based on.
 
-> **In plain terms — supervised vs unsupervised.** Everything up to now has been **supervised**: the data came with an answer key (`Goal_Met`), and the model learned to reproduce it. This phase is **unsupervised** — the answer key is hidden and the algorithm is asked simply to group similar households together. Nothing tells it what to look for.
->
-> That freedom is the appeal and the danger. Unsupervised methods **always** return groups, whether or not real groups exist, and the groups they return are whatever the chosen notion of "similar" happens to reward. So the work is not in running the algorithm, it is in checking what the resulting groups are actually keyed on — which is the entire drama of this phase.
->
-> A **metric** is that notion of similarity: the rule for measuring how far apart two households are. As [Phase 1](phase1.md) established, ordinary straight-line distance is the wrong rule for budget shares, and picking the right one is what the first half of this phase is about.
+### Why "spending clusters" and not "personas"
 
----
-
-## Post-audit revision (October 2026)
-
-> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
-
-- **One representation, k chosen within it:** ILR of the six core parts. Silhouette 0.412, Davies–Bouldin 0.98 and Calinski–Harabasz all pick k = 3. The cluster-selection figure title is computed: 0.412 is *above* the 0.25 weak-structure line (the old hard-coded "far below" was wrong).
-- **Stability:** bootstrap ARI vs the reference partition, median 0.998.
-- **δ-sensitivity (zero replacement 0.1×–1× min positive):** partition ARI vs baseline 0.93–1.00; silhouette 0.39–0.48; ARI with the zero pattern 0.83–0.92. The partition is robust, its silhouette is set by an arbitrary constant, and it remains a zero-pattern partition — so the word "personas" was removed from the abstract.
-- Clusters: no transport spend (11.7%), no healthcare spend (18.6%), spends on all core parts (69.7%).
-- **Income association:** NMI with income decile 0.012 and Kruskal–Wallis ε² 0.034 (replacing ARI vs income tertiles).
-- **Persona × income decile:** logit `Goal_Met ~ decile + cluster` — LR 774 on 2 df, pseudo-R² 0.265 → 0.280; the decile × cluster interaction is significant (LR 133.5 on 18 df, p = 1e-19). This replaces the "181%" / "nearly doubles" spread ratio, which was not a test. Income-adjusted OR vs the no-transport cluster: 0.34 (everything), 0.54 (no healthcare). Mechanism: an empty category means a smaller budget at a given income — the A1 route again.
+A persona implies a style of managing a budget: a group of households that choose to allocate money in a recognisable way. Two of the three clusters here are defined by a category the household reports no spending on at all (transport in one, healthcare in the other), and the clusters agree with the raw pattern of zeros at an adjusted Rand index of 0.858. A zero for healthcare can mean no one fell ill that year; a zero for transport can mean no one commutes. Those are circumstances and survey recall, not budgeting styles, so this walkthrough calls the groups spending clusters. File and function names in the code (`personas.json`, `persona_income_interaction`) still use the word persona.
 
 ---
 
@@ -34,188 +19,142 @@ Two predictions were made going in. **One was confirmed, one was falsified**, an
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | What spending personas emerge from clustering on expense-category proportions? | Three, and they are defined by **which core categories are absent**, not by how present categories are allocated: **Persona 0** (11.7%) records no transport spend; **Persona 2** (18.6%) records no healthcare spend; **Persona 1** (69.7%) spends on everything. The adjusted Rand index between the personas and the raw zero-pattern of the core parts is **0.858**. |
-| 2 | How many clusters are statistically justified? | **k = 3 on the 6-part ILR**, silhouette **0.4115** — the only clustering in this project ever to clear the ~0.25 "reasonable structure" threshold. But that score is largely **manufactured by the zero-replacement step**, so it overstates how much genuine structure exists. Raw shares peak at 0.2516 (k=8); ILR plus participation indicators is worst at 0.2054. |
-| 3 | Do the personas correlate meaningfully with `Goal_Met`? | **Yes, and more than the headline number suggests.** Raw association is weak (χ² = 238.8, p ≈ 1.4×10⁻⁵², **Cramér's V = 0.076**), but income *suppresses* it: the mean spread in goal attainment across personas **within** an income decile is **0.167**, versus **0.092** unconditionally — **181% of the raw effect survives the control**. At income decile 7, Persona 0 attains 78.9% versus Persona 1's 46.6%. |
+| 1 | What spending clusters emerge from clustering on expense-category proportions, and are they behavioural personas? | Three. A no-transport cluster (4,876 households, 11.7%; 95.6% record zero transport), a no-healthcare cluster (7,703, 18.6%; 86.8% record zero healthcare), and a cluster that spends on all six core categories (28,937, 69.7%). Agreement with the raw zero pattern of the core categories is ARI 0.858, and stays between 0.83 and 0.92 across the zero-replacement settings tested. They are participation patterns, not behavioural personas. |
+| 2 | How many clusters are statistically justified? | k = 3. Silhouette (0.412), Davies–Bouldin (0.976) and Calinski–Harabasz (17,244) all pick k = 3 out of k = 2 to 8. The partition is stable under bootstrap resampling (median ARI 0.998, 5th to 95th percentile 0.996 to 0.999). The silhouette value itself depends on the zero-replacement constant: it ranges from 0.39 to 0.48 as that constant changes. |
+| 3 | Do the clusters correlate meaningfully with `Goal_Met`? | Weakly on their own: on-track rates of 31.2%, 30.1% and 39.3% (spread 9.2 points; χ² 238.8, p 1.4e-52, Cramér's V 0.076). Cluster membership carries almost no information about income decile (NMI 0.012). Within income deciles the association is larger: adding cluster to a logistic model of `Goal_Met` on income decile gives a likelihood-ratio statistic of 774 on 2 df (pseudo-R² 0.265 to 0.280), and at the same income decile the all-categories cluster has 0.34 times the odds of being on track of the no-transport cluster. The likely route is budget arithmetic: an empty category means smaller total spending at a given income. |
 
 ---
 
 ## Notebook walkthrough
 
-### Cell 1 (code) — Load and drop the undefined rows
+### Cell 1: load, drop two households, build ILR coordinates
 
-The 2 households Phase 2 left with undefined CLR (they spend nothing on any core category) are dropped, leaving 41,516. Reported rather than silently filtered, because a clustering that quietly discards rows is a clustering of a different population than the one described.
+The notebook loads the engineered features (`savings_goal.io.load_features`) and takes the core sub-composition from `savings_goal.features.engineer.spec_from_frame`: Groceries, Utilities, Transport, Healthcare, Clothing & footwear, Miscellaneous. These six are the categories that are zero for fewer than 20% of training households; the other five (eating out, rent, education, entertainment, insurance) are zero for 36% to 90% and are left out of the clustering. Two households spend nothing on any core category and have no defined composition, so they are dropped and the count is printed: 41,516 remain.
 
-### Cell 3 (code) — Building and verifying the ILR basis
+`savings_goal.models.personas.ilr_coordinates` re-closes the six shares to sum to 1, replaces zeros with `savings_goal.features.transforms.multiplicative_replacement` (each zero becomes 0.65 times the smallest positive value seen in that category, from `zero_replacement_deltas`), and applies `savings_goal.features.transforms.ilr`, which multiplies the centred log-ratios by a 6 × 5 Helmert basis. `savings_goal.models.personas.standardise` then scales the five coordinates to unit variance.
 
-```python
-def helmert_basis(D):
-    V = np.zeros((D, D - 1))
-    for i in range(D - 1):
-        V[: i + 1, i] = 1.0 / (i + 1)
-        V[i + 1, i] = -1.0
-        V[:, i] *= np.sqrt((i + 1) / (i + 2))
-    return V
-```
+> **In plain terms: why ILR.** Budget shares live on a constrained space: they are non-negative and sum to 1, so ordinary straight-line distance between two households' shares is distorted (a change from 1% to 2% is a doubling; a change from 50% to 51% is not). Log-ratios measure the relative size of categories instead. The centred log-ratio has six columns that always sum to zero, so only five carry information. ILR rewrites the same information in exactly five columns using a fixed rotation, so straight-line distance in ILR space equals the correct compositional (Aitchison) distance. That lets k-means, which only knows straight-line distance, measure similarity in a way that respects the constraint.
 
-ILR coordinates are `clr(x) @ V`, where `V` is a D×(D−1) orthonormal contrast matrix. Because it drops one dimension, ILR is **full-rank** — which is precisely the defect that disqualified CLR in Phase 2 (CLR components sum to zero, so their covariance is singular).
+> **In plain terms: zero replacement.** A logarithm of zero is undefined, so zeros must be replaced with a small positive number before taking log-ratios. The choice of that number (here 0.65 times the smallest observed positive share) is a convention. Every household with a zero gets the same replacement value in that category, and that value sits far from any real share on the log scale. Cell 5 tests how much the clusters depend on it.
 
-> **In plain terms — what that code builds.** Recall from [Phase 2](phase2.md) that the CLR values always sum to zero, so six columns carry only five columns' worth of independent information — which is what made them singular. The ILR fixes this by rewriting the same information in five columns instead of six, losing nothing.
->
-> The rewriting is done by multiplying by **V**, a fixed 6×5 table of numbers. **Orthonormal** describes what makes V trustworthy: its columns are mutually at right angles and each has length exactly 1, so the multiplication rotates the data without stretching, squashing or skewing it. Distances are preserved; only the coordinate axes change — the same view, described from a different angle. The **Helmert** construction is one standard recipe for such a table, chosen because each of its columns has a readable meaning: the first contrasts part 1 against part 2, the second contrasts those two against part 3, and so on.
->
-> **D** is the number of parts (6 here), so **D−1** is 5 — the "drops one dimension" that makes the result full-rank.
+### Cell 3: choose k within the ILR representation
 
-**Three properties verified rather than assumed:**
+`savings_goal.models.personas.kmeans_sweep` fits k-means for k = 2 to 8 (10 initialisations each) and records three internal validity indices. Silhouette is computed on a 5,000-household sample.
 
-| Check | Result |
-| --- | --- |
-| `V'V = I` (orthonormal) | max error 2.22×10⁻¹⁶ |
-| Columns sum to zero (orthogonal to the constant) | exactly 0 |
-| Aitchison distance = Euclidean distance in ILR space | max error 1.78×10⁻¹⁵ |
+| k | Silhouette (higher better) | Davies–Bouldin (lower better) | Calinski–Harabasz (higher better) | Inertia |
+| --- | --- | --- | --- | --- |
+| 2 | 0.371 | 1.410 | 16,154 | 149,432 |
+| 3 | 0.412 | 0.976 | 17,244 | 113,384 |
+| 4 | 0.283 | 1.222 | 15,377 | 98,320 |
+| 5 | 0.294 | 1.286 | 13,604 | 89,826 |
+| 6 | 0.236 | 1.308 | 12,766 | 81,799 |
+| 7 | 0.251 | 1.217 | 12,416 | 74,278 |
+| 8 | 0.239 | 1.211 | 11,862 | 69,185 |
 
-> **In plain terms — the three checks.** Each converts a claimed property into a measured one, and the tiny error figures are floating-point dust rather than real disagreement.
-> - **`V'V = I`** is the algebraic test for orthonormality described above: multiply the table by its own transpose and you should get the identity matrix (1s on the diagonal, 0s elsewhere), which is the signature of a rotation that distorts nothing.
-> - **Columns sum to zero** confirms the new coordinates ignore the overall level and describe only the budget's shape — the property the whole log-ratio apparatus exists to provide.
-> - **Aitchison distance = Euclidean distance in ILR space.** The **Aitchison distance** is the correct way to measure how different two budget compositions are, respecting the simplex geometry from [Phase 1](phase1.md). It is also awkward to compute inside a clustering algorithm. This check confirms that once the data is in ILR coordinates, plain everyday straight-line distance gives exactly the same answer — so KMeans, which only knows how to do straight-line distance, is unknowingly doing the right thing.
+All three indices pick k = 3, and the silhouette of 0.412 is above the 0.25 line conventionally read as weak structure. Inertia (total within-cluster distance) falls steadily with k, as it always does, and shows no sharp elbow, so it is not used to choose k.
 
-The third is the one that matters for this phase: it is the formal statement that **KMeans in ILR space is doing legitimate geometry on the simplex**, which it is not doing on raw shares. Checking it costs three lines and converts an assumption into a fact.
+`savings_goal.models.personas.bootstrap_stability` then refits k = 3 on 30 bootstrap resamples and compares each resulting partition with the reference partition on the full data. Median ARI is 0.998 (5th to 95th percentile 0.996 to 0.999): the same three groups come back every time.
 
-### Cell 5 (code) — Choosing the representation and k (Q2)
+`cluster_selection.png` plots the three indices against k, with the 0.25 silhouette line marked.
 
-| k | ILR (6 core) | ILR + indicators | Raw shares (11) |
+> **In plain terms: k and the validity indices.** k-means needs the number of groups, k, in advance and will produce any k it is given. The indices score how well a grouping separates the data. Silhouette asks, for each household, whether it is closer to its own group than to the nearest other group, averaged over households on a scale from −1 to +1. Davies–Bouldin compares how spread out each group is with how far apart the groups are (lower is better). Calinski–Harabasz is the ratio of between-group to within-group spread (higher is better). None of them can tell whether the separation reflects behaviour or an artefact of preprocessing.
+
+> **In plain terms: bootstrap stability.** Draw a new sample of the same size from the households, with replacement, re-run the clustering, and see whether it finds the same groups. Repeating this 30 times shows whether the grouping depends on which particular households happened to be in the data.
+
+### Cell 5: is the partition real structure, or the zero pattern?
+
+The cell fits the final k = 3 model with `savings_goal.models.personas.fit_kmeans` (20 initialisations). `savings_goal.models.personas.zero_pattern` labels each household by which of the six core categories it records as zero (for example "transport zero, everything else positive"), and the ARI between that labelling and the clusters is 0.858.
+
+`savings_goal.models.personas.delta_sensitivity` then reruns the whole clustering with the zero-replacement constant at five multiples of the smallest positive share:
+
+| Replacement factor | Silhouette | ARI vs the 0.65 partition | ARI vs zero pattern |
 | --- | --- | --- | --- |
-| 2 | 0.3705 | 0.1890 | 0.1988 |
-| **3** | **0.4115** | 0.2054 | 0.1756 |
-| 4 | 0.2829 | 0.1907 | 0.1999 |
-| 6 | 0.2358 | 0.1857 | 0.2321 |
-| 8 | 0.2385 | 0.2026 | 0.2516 |
+| 0.10 | 0.477 | 0.932 | 0.922 |
+| 0.25 | 0.447 | 0.955 | 0.899 |
+| 0.50 | 0.422 | 0.985 | 0.872 |
+| 0.65 | 0.412 | 1.000 | 0.858 |
+| 1.00 | 0.392 | 0.966 | 0.828 |
 
-> **In plain terms — k, and the silhouette score.** **KMeans** requires you to state up front how many groups you want — that number is **k**. It will happily produce 2 or 8 whether or not the data contains 2 or 8 real groups, so k has to be chosen by evidence.
->
-> The **silhouette score** is the usual evidence. For each household it asks: how close am I to my own group's members, compared with the nearest *other* group's members? Averaged over everyone, it runs from −1 to +1. Around 0 means the groups overlap so heavily they are arbitrary; **above roughly 0.25 is conventionally read as "there is some real structure here"**; above 0.5 is strong separation. The sweep runs every combination of representation and k, and picks the peak.
->
-> Note the caution the rest of this phase develops: silhouette rewards groups that are **tight and well-separated**, and it cannot tell whether that separation reflects genuine behaviour or an artefact the preprocessing manufactured. Here it turns out to be the latter.
+Three things follow. The partition itself barely moves (ARI 0.93 to 1.00 against the baseline). The silhouette that makes k = 3 look well separated moves from 0.39 to 0.48 with a constant that has no substantive meaning: smaller replacement values push zero households further from everyone else and make their cluster look tighter. And at every setting the clusters stay keyed on the zero pattern (ARI 0.83 to 0.92), more so as the replacement value shrinks.
 
-**The ILR transform is vindicated on the metric it was proposed for.** Silhouette 0.4115 versus 0.2516 for raw shares is a large margin, and it is the only representation tested here that clears the ~0.25 mark conventionally taken to indicate reasonable structure.
+> **In plain terms: the adjusted Rand index (ARI).** ARI measures how much two groupings of the same households agree. For every pair of households it checks whether both groupings put them together, both put them apart, or disagree, then subtracts the agreement two random groupings would reach by chance. 1 means identical, 0 means no better than chance. An ARI of 0.858 with the zero pattern means the ILR and k-means pipeline has mostly reproduced a grouping you could get by asking each household which categories it reported no spending on.
 
-**A design error worth recording.** The first version of this notebook **hardcoded** `BEST_REP = "ILR + participation indicators"` — the representation that scored *worst* (0.2054). The sweep existed to make that choice and was then overridden by an assumption. The notebook now selects `argmax(silhouette)` from the sweep itself. This is exactly the failure mode a selection step is supposed to prevent, and it was caught only because the sweep's output was read rather than skimmed.
+### Cell 7: what the clusters look like
 
-**Why adding participation indicators hurt.** The five binary indicators contribute variance that is unrelated to the ILR geometry, and after standardisation each binary column carries as much weight as a continuous ILR coordinate. They dilute a well-formed metric with five axes that KMeans cannot use coherently.
+The cell profiles each cluster: size, median income, median household size, on-track rate (unweighted and survey-weighted with `savings_goal.evaluation.metrics.weighted_mean`), median savings rate, share of the sample and of the weighted population, mean expense shares, and the share of households with zero spend in each core category. A cluster is labelled by the core categories that more than half its households report as zero.
 
-> **In plain terms — why adding information made it worse.** More features normally helps a supervised model, which can learn to ignore useless ones. Clustering has no such defence: **every column feeds into the distance calculation with equal weight**, and nothing tells the algorithm which ones matter.
->
-> A yes/no column can only ever take two values, 0 and 1. After standardisation it contributes as much to the distance between two households as a full continuous coordinate does — but it can only say "same" or "different", never "a bit further". Adding five of these to five carefully constructed geometric coordinates half-drowns a well-formed measure of similarity in coarse ones. Hence the worst score in the sweep.
+| Cluster | Households | % of sample | % of population (weighted) | Median income (Rs) | Median size | On track | On track (weighted) | Median savings rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| No transport spend | 4,876 | 11.7 | 12.2 | 48,820 | 4 | 31.2% | 29.9% | −0.119 |
+| Spends on all core categories | 28,937 | 69.7 | 71.6 | 78,700 | 5 | 30.1% | 28.8% | −0.145 |
+| No healthcare spend | 7,703 | 18.6 | 16.2 | 84,340 | 4 | 39.3% | 38.3% | +0.035 |
 
-### Cell 8 (code) — The personas (Q1)
+Mean shares and zero rates in the categories that separate them:
 
-| Persona | n | % | Median income | Goal_Met | Median savings rate |
-| --- | --- | --- | --- | --- | --- |
-| 0 | 4,876 | 11.7% | ₹48,820 | 0.3123 | −0.119 |
-| 1 | 28,937 | 69.7% | ₹78,700 | 0.3008 | −0.145 |
-| 2 | 7,703 | 18.6% | ₹84,340 | **0.3930** | **+0.035** |
+| Category | No transport: mean share | No transport: % zero | All core: mean share | All core: % zero | No healthcare: mean share | No healthcare: % zero |
+| --- | --- | --- | --- | --- | --- | --- |
+| Groceries | 0.540 | 0.1 | 0.448 | 0.0 | 0.470 | 0.1 |
+| Transport | 0.000 | 95.6 | 0.073 | 0.3 | 0.083 | 0.0 |
+| Healthcare | 0.099 | 24.6 | 0.117 | 0.2 | 0.001 | 86.8 |
+| Miscellaneous | 0.148 | 0.0 | 0.135 | 0.1 | 0.187 | 0.0 |
+| Utilities | 0.112 | 0.4 | 0.097 | 0.1 | 0.107 | 0.2 |
+| Clothing & footwear | 0.044 | 3.0 | 0.042 | 1.4 | 0.052 | 0.4 |
 
-Spending signatures (mean share):
+Outside the zero columns the clusters differ modestly: the no-transport cluster puts more of its budget on groceries (54% against 45% to 47%), and the no-healthcare cluster more on miscellaneous items (19% against 14% to 15%). The full 11-category profile is in `results/persona_profiles.csv`.
 
-| Category | P0 | P1 | P2 |
+### Cell 9: do the clusters relate to `Goal_Met`, and is that just income?
+
+Unconditionally the link is weak. On-track rates span 9.2 points (30.1% to 39.3%); a chi-squared test gives χ² 238.8 and p 1.4e-52, with Cramér's V 0.076.
+
+> **In plain terms: significance and size.** The chi-squared test asks whether cluster and on-track status are related at all; the p-value is the chance of a pattern this strong if they were unrelated, and 1.4e-52 rules chance out. Cramér's V measures how strong the relation is, from 0 to 1, and 0.076 is very small. With 41,516 households even a small difference is detected with near certainty, so the size figure is the one to read.
+
+`savings_goal.models.personas.income_association` checks whether the clusters are income bands in disguise. The normalised mutual information between cluster and income decile is 0.012, so knowing a household's cluster says almost nothing about its income decile. A Kruskal–Wallis test finds that income distributions do differ across clusters (H = 1,391, p 7.5e-303), but the effect size ε² is 0.033: cluster explains about 3% of the variation in income ranks. The no-transport cluster is the poorest (median Rs 48,820).
+
+> **In plain terms: NMI and ε².** Normalised mutual information measures how much knowing one grouping tells you about another, from 0 (nothing) to 1 (one determines the other). The Kruskal–Wallis test compares groups by the ranks of their incomes rather than the incomes themselves, which suits a skewed variable like income; ε² is its effect size, the share of rank variation explained by the grouping.
+
+The notebook then compares clusters within income deciles:
+
+| Income decile | No transport | All core | No healthcare |
 | --- | --- | --- | --- |
-| Groceries | 0.540 | 0.448 | 0.470 |
-| **Transport** | **0.000** | 0.073 | 0.083 |
-| **Healthcare** | 0.099 | 0.117 | **0.001** |
-| Miscellaneous | 0.148 | 0.135 | 0.187 |
-| Utilities | 0.112 | 0.097 | 0.107 |
+| 0 (lowest) | 5.1% | 0.9% | 3.0% |
+| 1 | 12.9% | 3.1% | 7.8% |
+| 2 | 17.5% | 5.1% | 12.3% |
+| 3 | 26.1% | 10.5% | 23.1% |
+| 4 | 36.2% | 16.9% | 30.9% |
+| 5 | 47.2% | 24.9% | 36.8% |
+| 6 | 57.2% | 34.5% | 43.1% |
+| 7 | 78.9% | 46.6% | 56.9% |
+| 8 | 81.6% | 63.6% | 68.3% |
+| 9 (highest) | 91.1% | 83.5% | 81.1% |
 
-Two cells are exactly zero, and they are the whole story.
+In every decile the no-transport cluster has the highest on-track rate, and in deciles 0 to 8 the all-core cluster has the lowest. The unconditional comparison hides this because the no-transport cluster is the poorest: its low income pulls its overall rate down to about the level of the all-core cluster.
 
-### Cell 9 (code) — What the clusters are actually keyed on
+`savings_goal.models.personas.persona_income_interaction` tests this formally with three nested logistic regressions of `Goal_Met`: on income decile alone, on decile plus cluster, and with a decile × cluster interaction.
 
-**This is the cell that reframes the phase.** The core parts include Transport (11.4% zero) and Healthcare (19.2% zero), and Phase 2 replaced those zeros with a small δ before taking logs — which places them far out in log-ratio space. So the question is whether the personas are allocation patterns or just zero patterns.
-
-**Share of households recording zero spend:**
-
-| Core part | P0 | P1 | P2 |
+| Comparison | LR statistic | df | p |
 | --- | --- | --- | --- |
-| Transport | **0.956** | 0.003 | 0.000 |
-| Healthcare | 0.246 | 0.002 | **0.868** |
-| Groceries | 0.001 | 0.000 | 0.001 |
-| Utilities | 0.004 | 0.001 | 0.002 |
+| Adding cluster to income decile | 774.1 | 2 | 8.2e-169 |
+| Adding decile × cluster interaction | 133.5 | 18 | 1.1e-19 |
 
-Zero-pattern signatures: Persona 0 = `001000` (transport absent), Persona 1 = `000000` (all present), Persona 2 = `000100` (healthcare absent).
+McFadden pseudo-R² rises from 0.265 (decile only) to 0.280 with cluster added. At the same income decile, the odds of being on track are 0.34 times as high in the all-core cluster and 0.54 times as high in the no-healthcare cluster as in the no-transport cluster. The significant interaction means the size of the gaps varies across deciles (at decile 9 the all-core and no-healthcare clusters swap order).
 
-**Adjusted Rand index between the personas and the raw zero-pattern of the core parts: 0.858.**
+> **In plain terms: the likelihood-ratio test.** Fit a model without the cluster, fit it again with the cluster, and compare how well each explains the observed outcomes. The likelihood-ratio statistic is twice the improvement in log-likelihood; if cluster added nothing, it would follow a chi-squared distribution with as many degrees of freedom as the parameters added (2 here). A statistic of 774 on 2 df is far beyond chance. Pseudo-R² is a rough analogue of R² for logistic models; a rise from 0.265 to 0.280 shows the gain is real but small next to income.
 
-> **In plain terms — the adjusted Rand index.** The **ARI** measures how much two different groupings of the same households agree. Take every pair of households and ask whether the two schemes both put them together, both apart, or disagree. **1.0 means the groupings are identical; 0 means they agree no more than two random groupings would; negative means worse than random.** The "adjusted" part is what subtracts off the agreement you would get by luck alone — without it, any two groupings look somewhat similar simply because most pairs of households are apart in both.
->
-> **0.858 is very high agreement.** The elaborate ILR-plus-KMeans machinery has almost exactly reproduced a grouping you could have obtained by asking "which of these categories does this household record as zero?" — no transform, no clustering, one glance at the raw data.
+> **In plain terms: odds ratio.** The odds of being on track are the on-track probability divided by the at-risk probability. An odds ratio of 0.34 means that, comparing households in the same income decile, the all-core cluster's odds are about a third of the no-transport cluster's.
 
-**So the silhouette of 0.4115 is largely manufactured, not discovered.** The multiplicative zero replacement assigns every transport-less household the *same* imputed value, and δ sits far from any genuine share. Those households therefore form a tight, well-separated blob in ILR space — and silhouette rewards exactly that. The clustering has mostly rediscovered which categories the survey recorded as zero.
+The most likely mechanism is arithmetic about the label. The target is a savings rate of at least 20%, that is total spending at most 80% of income. At a given income, a household that reports no transport or no healthcare spending has, other things equal, a smaller total, and so a higher savings rate. This is the same route Phase 5 found behind the food-share attribution: a share pattern that implies a smaller budget relative to income predicts being on track. Part of it is also measurement: a zero in a recall-based category can reflect no health event or no commute in that year. Neither is something a household could be advised to change.
 
-**This does not make the result worthless, but it changes what it is.** "Persona" implies a style of allocating a budget. What the algorithm found is a **participation pattern**: which categories a household spends on at all. That is a real and interpretable distinction — it just is not the question Phase 6 was posed to answer, and calling these "spending personas" without the qualifier would oversell them.
+### Cell 10: figure and results
 
-**The honest methodological conclusion:** ILR is the correct transform for clustering compositional data, and it beat the alternatives on the intended metric. But **zero replacement and silhouette interact badly** — any log-ratio clustering of zero-inflated compositions will tend to find the zero pattern first, and a good silhouette is weak evidence against that. The zero-pattern ARI is the check that distinguishes the two, and it should accompany any log-ratio clustering of data like this.
+`personas.png` has three panels: a heatmap of mean expense shares by cluster (the near-zero transport and healthcare cells stand out), the on-track rate per cluster against the overall rate with Cramér's V in the title, and the on-track rate by income decile with one line per cluster, titled with the likelihood-ratio p-value and NMI.
 
-### Cell 11 (code) — Association with `Goal_Met` (Q3, unconditional)
-
-χ² = 238.8, p ≈ 1.4×10⁻⁵², **Cramér's V = 0.0758**. Highly significant and substantively weak — at n = 41,516 significance is close to guaranteed, so the effect size is the number that matters, and 0.076 is below the conventional 0.1 "weak" mark.
-
-> **In plain terms — significance is not size, and this line shows why.**
-> - **χ² (chi-squared)** tests whether two categorical things are related at all — here, persona and goal attainment. It compares the counts observed against the counts you would expect if the two were completely unrelated.
-> - The **p-value** is the probability of seeing a pattern this strong purely by chance if there were genuinely no relationship. **1.4×10⁻⁵²** is a decimal point followed by 51 zeros — chance is ruled out about as thoroughly as a number can rule it out.
-> - **Cramér's V** answers the entirely different question of *how big* the relationship is, on a 0-to-1 scale. **0.076 is very small.**
->
-> Both statements are true at once, and reconciling them is the point. With 41,516 households, even a trivial relationship will register as overwhelmingly "significant" — a large enough sample can detect a nudge. **A p-value tells you the effect is real; it says nothing about whether it is big enough to act on.** Quoting the p-value alone here would imply a strong finding where there is a faint one, which is why the effect size is reported alongside — and why the next cell goes looking for what is hiding it.
-
-Persona 2 attains 39.3% against Persona 1's 30.1% — a 9.2-point spread around a 31.9% base rate.
-
-**This is where the phase would have stopped if it took the headline number at face value**, and it would have concluded that spending personas barely relate to the outcome.
-
-### Cell 12 (code) — Conditioning on income, and the falsified prediction
-
-**The prediction going in (from Phase 5) was that the personas would largely be an income split**, since income is 38.4% of model attribution and spending mix only 26.7%. Two measurements say that is wrong:
-
-**Adjusted Rand index between personas and income tertiles: 0.0057** — essentially independent. The personas are not income groups in disguise.
-
-> **In plain terms — tertiles, deciles, and what this test rules out.** **Tertiles** split households into three equal-sized income groups (poorest third, middle third, richest third); **deciles** split them into ten. Sorting by a value and cutting into equal-sized bands is the standard way to compare like with like.
->
-> The worry being tested: the personas might just be income brackets under another name — a real risk, since [Phase 5](phase5.md) found income dominates everything. If so, the ARI against income tertiles would be high. **At 0.0057 it is indistinguishable from zero**, so the personas are genuinely capturing something other than how much money a household has. That matters for the next result, because it means the persona effect and the income effect are separate things that can be disentangled.
-
-**And the association with the outcome is *suppressed* by income, not driven by it:**
-
-| Income decile | Persona 0 | Persona 1 | Persona 2 |
-| --- | --- | --- | --- |
-| 0 | 0.051 | 0.009 | 0.030 |
-| 3 | 0.261 | 0.105 | 0.231 |
-| 5 | 0.472 | 0.249 | 0.368 |
-| **7** | **0.789** | 0.466 | 0.569 |
-| 9 | 0.911 | 0.835 | 0.811 |
-
-| | |
-| --- | --- |
-| Raw spread across personas | 0.0921 |
-| Mean spread **within** income decile | **0.1668** |
-| Proportion of the effect surviving the control | **181%** |
-
-**The persona effect nearly doubles once income is held constant.** This is classic suppression: Persona 0 has the *lowest* median income (₹48,820) but the *highest* within-decile attainment, so in the unconditional comparison its low income cancels its behavioural advantage. At decile 7 the gap between Persona 0 and Persona 1 is **32 percentage points** — far from the 9-point unconditional spread.
-
-> **In plain terms — suppression, and how an effect can hide.** Persona 0 has two things going on that pull in **opposite** directions: its households are poorer than average (which lowers goal attainment) and they spend on fewer categories (which raises it). Compare the personas without accounting for income and the two cancel, leaving a modest 9-point gap that badly understates both.
->
-> Compare households **within the same income decile** — like with like — and the income disadvantage is removed from the comparison, leaving the behavioural effect standing alone: 32 points at decile 7. A third variable that masks a relationship this way is called a **suppressor**, and it is the mirror image of the more familiar confounder, where a third variable manufactures a relationship that is not really there.
->
-> "**181% of the effect survives the control**" is the odd-looking way of stating this: rather than shrinking when income was accounted for, as most effects do, the gap grew to nearly twice its original size. That is why the phase reports the falsified prediction so prominently — the expectation was that controlling for income would make the personas *less* interesting, and the opposite happened.
-
-**Why this makes mechanical sense.** Personas 0 and 2 are defined by *not spending* on a whole category. Fewer active expense categories means lower total consumption at a given income, and the target is `1 − COTOTAL/INCOME`. Households that record no transport or no healthcare spending are, other things equal, spending less overall — so they save more. This is the same mechanism Phase 5 found behind the grocery-share result: a budget concentrated in fewer categories signals the absence of the outlays that push consumption above income.
-
-**A necessary caveat.** Some of this is measurement, not behaviour. A household recording zero healthcare spend may have had no health event that year rather than a savings strategy, and zero transport spend plausibly marks a household that does not commute. These are not levers a savings-product team can pull — nobody should be advised to stop spending on healthcare. Phase 7 must treat these personas as **descriptive segments, not as interventions.**
-
-### Cell 14 (code) — Figure and artifacts
-
-Three panels: the spending-signature heatmap (where the two exact zeros are visible at a glance), goal attainment by persona with Cramér's V in the title, and income distribution by persona labelled with the ARI. The third panel's caption originally asserted that "the segmentation is largely an income split" — the ARI of 0.006 contradicted it, and the caption now states the measured result instead.
+The cell writes `results/persona_profiles.csv` (cluster profile joined with mean shares) and `results/personas.json` via `savings_goal.io.write_result`: chosen k, the k sweep, the index votes, the 30 bootstrap ARIs, ARI with the zero pattern, the replacement-constant sweep, cluster labels, chi-squared and Cramér's V, income-association statistics, the logistic-regression tests and odds ratios, the within-decile table, and zero rates by cluster.
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **7 — Business translation** | The personas are **descriptive, not actionable** — they are defined by category absence, some of which is measurement (no health event) rather than choice. Report the within-income spread (0.167), never the unconditional 0.092, and never Cramér's V alone. |
-| **8 — Reporting** | `results/personas.png` is the persona figure. The headline is that spending structure matters **more** than it first appears, once income is controlled — the opposite of the naive read of Cramér's V. |
+| 7: Business translation | Treat the three spending clusters as descriptive segments. They are defined by absent categories, and the gap in on-track rates between them at a given income follows from smaller budgets, not from a habit that could be taught. Report the income-adjusted comparison (odds ratios 0.34 and 0.54, LR 774 on 2 df) rather than Cramér's V alone, and do not recommend cutting healthcare or transport spending. |
+| 8: Reporting | `personas.png` is the cluster figure. The main points for a reader: the clusters are stable, they are mostly a zero-spend pattern, and their link to `Goal_Met` appears within income deciles. |

@@ -1,39 +1,19 @@
-# Phase 3 — Baseline
+# Phase 3: Baseline
 
-**Source:** [README § Phase 3 — Baseline](../README.md#phase-3--baseline)
+**Source:** [README § Phase 3: Baseline](../README.md#phase-3-baseline)
 **Notebook:** [`notebooks/03_baseline.ipynb`](../notebooks/03_baseline.ipynb)
 **Builds on:** [Phase 2](phase2.md)
-**Artifacts:** `results/baseline.csv`, `results/baseline.png`
+**Artifacts:** `results/baseline.csv`, `results/baseline.json`, `results/baseline.png`
 
-A baseline exists to answer one question before any modelling effort is justified: **how much of this problem is solved by doing almost nothing?** The answer here sets a far higher bar for Phase 4 than the majority class alone would suggest — a single threshold on income recovers most of the achievable performance.
+This phase measures how much of the problem is solved by very simple predictors before any tuned model is built. Everything runs on the training split (33,219 households, 1,989 PSUs; Goal_Met rate 0.3192) under PSU-grouped 5-fold cross-validation. The held-out fold is not touched.
 
-> **In plain terms — what a baseline is and why it comes first.** A score means nothing on its own. "Macro-F1 0.84" is only impressive relative to something, and the something has to be established *before* the real model is built — otherwise the comparison gets chosen after the fact to flatter the result.
+The short answer: a single cut-off on income reaches macro-F1 0.742. That number, not the majority class, is the bar [Phase 4](phase4.md) has to clear.
+
+> **In plain terms: what a baseline is for.** A score means little on its own. "Macro-F1 0.78" is only good or bad relative to something, and that something has to be fixed before the real model is built, so the comparison cannot be picked afterwards to flatter the result.
 >
-> A **baseline** is a deliberately stupid predictor used as that yardstick. This phase builds two kinds:
-> - **Chance baselines**, which use no information whatsoever — always answer with the most common class, or guess randomly in the right proportions. These set the floor below which a model is worthless.
-> - A **simple-rule baseline**, which uses one obvious piece of information in the crudest possible way — here, one cut-off on income. This is the far more demanding comparison, because it represents what a competent person could do in an afternoon with a spreadsheet and no machine learning at all.
->
-> The gap between the sophisticated model and *that* rule is the project's honest contribution.
-
----
-
-## Post-audit revision (October 2026)
-
-> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
-
-Training split, PSU-grouped 5-fold CV; the income threshold is re-learned in every fold (Rs 110,377–126,545, mean Rs 122,249).
-
-| Baseline | Accuracy | Macro-F1 | ROC-AUC |
-| --- | --- | --- | --- |
-| Majority class | 0.681 | 0.405 | 0.500 |
-| Single income threshold | 0.778 | 0.742 | 0.739 |
-| LR income only | 0.752 | 0.732 | 0.835 |
-| LR income + groceries share | 0.788 | 0.770 | 0.875 |
-| LR income + size + groceries share | 0.806 | 0.789 | 0.894 |
-| LR deployable (income, demographics, debt) | 0.791 | 0.773 | 0.876 |
-| LR all 29 | 0.835 | 0.819 | 0.920 |
-
-The jump from adding the food share once household size is present (+0.044 AUC) is the A1 reconstruction route.
+> A baseline is a deliberately simple predictor used as that yardstick. This phase builds two kinds:
+> - Chance baselines use no information about the household: always give the most common answer, or guess at random in the right proportions. They set the floor.
+> - Simple-rule baselines use one obvious variable in the crudest way, here a single cut-off on income. This is the harder comparison, because it is what someone with a spreadsheet could do in an afternoon.
 
 ---
 
@@ -41,93 +21,84 @@ The jump from adding the food share once household size is present (+0.044 AUC) 
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | What accuracy/F1 does a majority-class or simple single-rule baseline achieve? | Majority class: **0.6807 accuracy but 0.4050 macro-F1** — it never predicts the positive class at all, so precision and recall on "on track" are both exactly 0. The interesting result is the single-rule baseline: **one threshold on income** (predict "on track" if annual income > **₹121,685**) reaches **0.7753 accuracy and 0.7425 macro-F1**. |
-| 2 | What does plain logistic regression achieve using only income and 1–2 expense shares? | Income alone: ROC-AUC **0.8348**. Adding `Groceries_Share` — a single feature — lifts it to **0.8756** (+0.041). Adding `Spends_On_Insurance` adds almost nothing (+0.0015). The full 28-feature set reaches **0.9212** (+0.044 over the three-feature model). |
+| 1 | What accuracy/F1 does a majority-class or simple single-rule baseline achieve? | Majority class: accuracy 0.681, macro-F1 0.405, and precision and recall on "on track" both 0. Stratified random guessing: accuracy 0.570, macro-F1 0.502. A single income threshold (re-learned in each fold, mean Rs 122,249 per year, range Rs 110,377 to 126,545): accuracy 0.778, macro-F1 0.742, ROC-AUC 0.739. |
+| 2 | What does plain logistic regression achieve using only income and 1-2 expense shares? | Income alone: ROC-AUC 0.835, macro-F1 0.732. Adding `Groceries_Share`: ROC-AUC 0.875 (+0.041). Income + household size + `Groceries_Share`: 0.894, higher than the 13-feature deployable set (0.876). All 29 features: 0.920. The food share adds +0.044 once household size is present, which is the food-size reconstruction of total spend found by the leakage check in [Phase 1](phase1.md), so the share-based rows are diagnostic, not deployable. |
 
 ---
 
 ## Notebook walkthrough
 
-### Cell 1 (code) — Load and define the feature split
+### Cell 1: load, metrics and the shared evaluation helper
 
-Loads `dataset/features.csv` from Phase 2 rather than rebuilding features from the raw household file. **This breaks the repo's usual self-contained-notebook convention deliberately:** Phase 2's feature set was the product of four tested decisions (participation indicators, winsorisation, the rejected CLR transform), and re-deriving that chain in every later notebook would invite the phases to drift apart. The 6 `*_CLR` columns exported by Phase 2 are explicitly dropped here — Phase 2 rejected them for classification and they are reserved for Phase 6.
+Loads the engineered feature table with `savings_goal.io.load_features` and recovers the column lists with `savings_goal.features.engineer.spec_from_frame`. Only rows with `Is_Test == False` are kept. The grouping column is `IDPSU` (`savings_goal.config.GROUP_COL`).
 
-### Cell 3 (code) — Chance baselines (Q1, part 1)
+The metric set comes from `savings_goal.evaluation.metrics.fold_metrics(with_proba=False)` (accuracy, macro-F1, ROC-AUC, at-risk PR-AUC) plus precision and recall for the positive class, `Goal_Met = 1` ("on track"). The helper `evaluate` passes a model and its columns to `savings_goal.evaluation.cv.cross_validate_grouped` with the folds from `savings_goal.evaluation.cv.grouped_cv` (`StratifiedGroupKFold(5, shuffle=True, random_state=42)`), and returns the fold means plus the standard deviation of macro-F1.
 
-| Baseline | Accuracy | Macro-F1 | ROC-AUC | Precision | Recall |
-| --- | --- | --- | --- | --- | --- |
-| Majority class | 0.6807 | 0.4050 | 0.5000 | **0.0000** | **0.0000** |
-| Stratified random | 0.5649 | 0.4948 | 0.4949 | 0.3122 | 0.3013 |
-| Prior probability | 0.6807 | 0.4050 | 0.5000 | 0.0000 | 0.0000 |
+Every baseline in this notebook uses the same folds as the model comparison in Phase 4, so the rows in both phases are directly comparable.
 
-> **In plain terms — the three dummies.** A **dummy classifier** ignores the features entirely and answers by a fixed recipe. **Majority class**: always say "not on track", since that is the more common answer. **Stratified random**: roll a weighted die, saying "on track" about 32% of the time to match the real proportion, but with no regard to which household it is. **Prior probability**: always predict using the overall base rate, which here collapses to the same behaviour as the majority rule.
+> **In plain terms: grouped cross-validation.** Cross-validation estimates how a model does on households it has not seen. The training households are split into 5 parts; the model is trained on 4 and scored on the fifth, five times over, and the scores are averaged. IHDS samples households in clusters (a village or an urban block, a PSU). Neighbours share prices, jobs and interviewers, so a household's neighbours can give away its answer. Grouping keeps every household of a PSU in the same fold, so the model is always scored on villages and blocks it never trained on. "Stratified" means each fold keeps roughly the same 32% / 68% class mix.
+
+### Cell 3: chance baselines and the single income threshold (Q1)
+
+Four rows, all under grouped CV:
+
+| Baseline | Accuracy | Macro-F1 | ROC-AUC | At-risk PR-AUC | Precision (on track) | Recall (on track) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Majority class (always "not met") | 0.681 | 0.405 | 0.500 | 0.681 | 0.000 | 0.000 |
+| Stratified random | 0.570 | 0.502 | 0.502 | 0.682 | 0.322 | 0.316 |
+| Single income threshold (depth-1 tree) | 0.778 | 0.742 | 0.739 | 0.808 | 0.660 | 0.632 |
+| Income only (depth-3 tree) | 0.781 | 0.727 | 0.827 | 0.887 | 0.717 | 0.526 |
+
+The two chance baselines are scikit-learn `DummyClassifier`s. The majority classifier always answers "not met", so it reaches 0.681 accuracy while never identifying a single on-track household. The stratified dummy has lower accuracy (0.570) but higher macro-F1 (0.502), because it at least predicts both classes. Quoting only one of them would flatter a real model on whichever metric that dummy is weak on, so both are reported.
+
+> **In plain terms: macro-F1, and why accuracy is not the headline.** For one class, precision is "of the households I flagged, how many were right" and recall is "of the households that really are in this class, how many did I find". F1 combines the two into one number. Macro-F1 computes F1 separately for "on track" and "at risk" and averages them, so a model that ignores one class scores badly. Accuracy has no such protection: 68% of households are at risk, so a constant answer gets 0.68 accuracy and learns nothing.
+
+The single-rule baseline is a depth-1 decision tree on `Log_Income` alone, with a median imputer in front. A callback (`record_threshold`) reads the split point from each fitted fold and converts it back to rupees. The cut-off is re-learned inside every training fold, so no fold is scored with a threshold that saw it: across the five folds it lands between Rs 110,377 and Rs 126,545 a year (mean Rs 122,249).
+
+> **In plain terms: a depth-1 decision tree.** A decision tree is a flowchart of yes/no questions that ends in a prediction. Depth 1 allows one question, so the whole model is a single line on the income axis: households above it are called on track, households below it at risk. The only thing learned is where to draw the line. A depth-3 tree asks three nested questions and can cut income into up to eight bands.
+
+The depth-3 tree ranks households better (ROC-AUC 0.827 against 0.739) but has lower macro-F1 (0.727 against 0.742). Its finer bands give a better ordering, while its default 0.5 decision line sits further toward the majority class, so on-track recall drops to 0.526.
+
+> **In plain terms: ranking versus deciding.** A classifier does two jobs, scored by different numbers.
+> - Ranking: put households in order, most likely to save first. ROC-AUC measures only this. It is threshold-free: wherever you put the cut-off, ROC-AUC does not change. 0.5 is a coin flip; 1.0 is a perfect ordering.
+> - Deciding: turn that order into yes/no by drawing a line (by default at probability 0.5). Macro-F1 and accuracy measure this and depend on where the line sits.
 >
-> Notice the columns of zeros. The majority classifier's precision and recall on "on track" are exactly **0.0000** — it never once identifies an on-track household, because it never predicts that class at all. Yet its accuracy is 0.6807. That single row is the argument for everything that follows.
+> A model can order households better and still make worse calls if its line is in the wrong place. When the two metrics disagree, the usual cause is the threshold. [Phase 4](phase4.md) tunes that threshold on purpose.
 
-**Why three dummies rather than one:** they fail differently, and quoting only one flatters a real model on whichever metric that dummy happens to be weak on. The majority classifier scores a respectable-looking 0.68 accuracy while being completely useless — it never identifies a single on-track household. The stratified dummy has *worse* accuracy (0.56) but much better macro-F1 (0.49), because it at least predicts both classes. A model has to beat the harder of the two on each metric to have learned anything.
+> **In plain terms: at-risk PR-AUC.** Precision-recall AUC summarises, across every possible cut-off, how precise the flagged list stays as you try to find more of the at-risk households. A random ordering scores the at-risk share itself, 0.681 here, so that is the floor to compare against, not 0.
 
-**The reason accuracy is retired as the headline metric from here on:** 0.68 accuracy is obtainable with a constant. The gap between 0.4050 and 0.4948 macro-F1 between two *equally worthless* predictors shows how much room there is to look good on one number while doing nothing.
+### Cell 5: logistic regression on income plus a few features (Q2)
 
-### Cell 4 (code) — The single-rule baseline (Q1, part 2)
+Fits logistic regression (`savings_goal.models.pipeline.logistic`, with `class_weight="balanced"`) behind `savings_goal.models.pipeline.preprocessor(..., linear=True)`, which imputes medians, winsorises `Debt_To_Income` at the 99th percentile inside each training fold, and standardises. The four categoricals (occupation, area type, caste group, religion) are one-hot encoded only for the two larger sets. In the 29-feature set the preprocessor drops `Groceries_Share` as the reference share, because the 11 shares sum to one.
 
-A depth-1 decision tree on `Log_Income` alone, which is the simplest non-trivial rule the data supports.
-
-> **In plain terms — a depth-1 decision tree.** A **decision tree** is a flowchart of yes/no questions ending in a prediction. Its **depth** is how many questions deep it is allowed to go. Depth 1 permits exactly *one* question — so the entire "model" is a single line drawn on the income axis, with everyone above it called on track and everyone below called at risk. The only thing that was learned is where to draw the line, and the algorithm places it wherever it separates the two groups best. A **depth-3** tree, shown for comparison, gets to ask three nested questions and so can carve income into eight bands instead of two.
-
-**The learned rule:** predict "on track" if annual income exceeds **₹121,685**. 30.9% of households sit above that line — almost exactly the 31.9% base rate of the positive class, which is what a well-placed single split should produce.
-
-> **In plain terms — base rate.** The **base rate** is simply how common the outcome is overall: 31.9% of households meet the goal. It is the number any prediction has to be judged against — being right 31.9% of the time about who saves is achievable by guessing. Here it doubles as a sanity check: a well-placed single cut should flag roughly as many households as there really are, and 30.9% against 31.9% says the line landed sensibly rather than in some lopsided corner.
-
-| Baseline | Accuracy | Macro-F1 | ROC-AUC |
-| --- | --- | --- | --- |
-| Single rule: income only (depth 1) | 0.7753 | **0.7425** | 0.7438 |
-| Income only (depth 3) | 0.7823 | 0.7281 | 0.8279 |
-
-**This is the number Phase 4 has to justify itself against, not the majority baseline.** One threshold on one variable recovers macro-F1 0.7425. The full 28-feature engineered model from Phase 2 reaches 0.8202. Everything the project does beyond "ask how much they earn" is worth **+0.078 macro-F1** — real, but far from the whole story, and it should be reported that way rather than as "the model achieves 0.82."
-
-**Why the depth-3 tree has better ROC-AUC but worse macro-F1:** deeper splits give a finer-grained ranking (helping AUC, which is threshold-free) while shifting the default 0.5 decision boundary toward the majority class (hurting recall, and so macro-F1, at that specific threshold). This is an early, concrete instance of a distinction Phase 4 has to handle explicitly: **ranking quality and decision quality are different things**, and a model can improve on one while losing on the other.
-
-> **In plain terms — ranking vs deciding.** A classifier really does two jobs, and they are scored by different numbers.
-> - **Ranking**: put households in order, most likely to save first. **ROC-AUC** measures only this. It is called **threshold-free** because it never asks where you draw the line — shuffle the cut-off anywhere you like and the ROC-AUC is unchanged.
-> - **Deciding**: convert that order into an actual yes/no by drawing a line somewhere (by default, probability 0.5). **Macro-F1 and accuracy** measure this, and they depend entirely on where the line sits.
->
-> So a model can order households better while making worse calls, simply because its probabilities cluster on one side of the default cut-off. That is exactly the depth-3 tree's situation, and it is fixable — you move the line, which [Phase 4](phase4.md) does deliberately. The lesson is that a disagreement between these two metrics is usually a statement about the **threshold**, not about which model understands the data better.
-
-### Cell 6 (code) — Feature-by-feature progression (Q2)
-
-| Feature set | Accuracy | Macro-F1 | ROC-AUC | ΔAUC |
+| Feature set | Accuracy | Macro-F1 | ROC-AUC | At-risk PR-AUC |
 | --- | --- | --- | --- | --- |
-| Income only | 0.7528 | 0.7329 | 0.8348 | — |
-| \+ `Groceries_Share` | 0.7880 | 0.7705 | 0.8756 | **+0.0408** |
-| \+ `Spends_On_Insurance` | 0.7902 | 0.7728 | 0.8771 | +0.0015 |
-| All 28 engineered features | 0.8357 | 0.8202 | 0.9212 | +0.0441 |
+| Income only | 0.752 | 0.732 | 0.835 | 0.910 |
+| Income + groceries share | 0.788 | 0.770 | 0.875 | 0.931 |
+| Income + household size | 0.770 | 0.750 | 0.850 | 0.922 |
+| Income + size + groceries share | 0.806 | 0.789 | 0.894 | 0.944 |
+| Deployable (income, demographics, debt; 13 features) | 0.791 | 0.773 | 0.876 | 0.938 |
+| All 29 features | 0.835 | 0.819 | 0.920 | 0.960 |
 
-> **In plain terms — reading a progression table.** Each row adds one thing to the row above, so the last column (**ΔAUC**, "delta AUC", meaning *change in* ROC-AUC) shows what each addition bought. The Greek delta always means "the change in" in this project.
->
-> This is the incremental test described in [Phase 0](phase0.md), run for real. Grocery share buys +0.041, which is substantial. The insurance indicator buys +0.0015, which is nothing — despite looking strong on its own in [Phase 2](phase2.md). And *twenty-five further features* together buy +0.044, roughly what the first single share bought. That final row is the shape of **diminishing returns**: each addition helps less than the last, and the curve flattens long before the feature list runs out.
+Three readings:
 
-**Why `Groceries_Share` was chosen as the "1–2 expense shares" to test:** Phase 1 found it was the share most correlated with log income (r = −0.266) and identified that relationship as Engel's law — food's budget share falls as households get richer. A baseline should test the feature with the strongest prior justification, not an arbitrary one.
+1. Income-only logistic regression has a much better ranking than the income threshold (ROC-AUC 0.835 against 0.739) but slightly lower macro-F1 (0.732 against 0.742). The balanced class weights move its decision line toward "on track" (recall 0.750, precision 0.587). This is the ranking-versus-deciding gap again.
+2. `Groceries_Share` adds +0.041 ROC-AUC on top of income alone and +0.044 on top of income and household size. A naive reading would treat this as an independent behavioural signal. The leakage check in Phase 1 shows why it is larger with size present: food spending in rupees grows with household size (R² 0.29, elasticity 0.63), so size divided by food share approximates total spending, and income minus total spending is the savings rate the label is built from. A three-variable model with the food share (0.894) outranks the full 13-feature deployable set (0.876) for that reason.
+3. The deployable set, which uses only what is known about a household at onboarding (income, demographics, debt and the four categoricals), reaches ROC-AUC 0.876 and macro-F1 0.773 with a linear model. That is the realistic starting point for Phase 4. The 29-feature row (0.920) includes the spending shares and is kept as a diagnostic upper bound.
 
-**The result confirms it carries independent signal.** Note that `Groceries_Share` adds +0.041 AUC *on top of income*, despite being correlated with income. If it were merely a proxy for income it would add nothing here. It is measuring something income does not: two households earning the same amount but spending 35% versus 70% of their budget on food are in materially different positions, and the second is far less likely to be saving.
+> **In plain terms: reading a progression table.** Each row adds something to a simpler row, so the change in ROC-AUC between rows shows what that addition bought. The comparisons that matter here are "income only" to "income + groceries share" (+0.041) and "income + household size" to "income + size + groceries share" (+0.044). The same column adds more when size is already in the model. That is a sign of two features working together to rebuild a quantity, not of one feature carrying its own information.
 
-**Why `Spends_On_Insurance` adds almost nothing (+0.0015) despite a +9.7pp univariate lift in Phase 2:** its Phase 2 lift was largely a proxy for income — richer households buy insurance. Once income and grocery share are already in the model, the independent contribution is nearly exhausted. This is a useful caution for Phase 7: **univariate lifts are not additive, and the Phase 2 indicator table should not be read as a list of independent levers.**
+### Cell 6: save and plot
 
-> **In plain terms — "univariate", and why lifts don't add up.** **Univariate** means looked at one at a time, in isolation. [Phase 2](phase2.md)'s table showed that households paying insurance premiums meet the goal 9.7 points more often — measured on its own, with nothing else accounted for.
->
-> The trap is treating a column of such numbers as a menu of separate effects to be summed. They overlap heavily: buying insurance is largely a symptom of having money, so once income is in the model the insurance indicator has almost nothing left to say. It was never contributing 9.7 points of its own; it was reflecting income's contribution back at us. This is the single most common way a business recommendation goes wrong — reading an isolated comparison as though it were an independent lever someone could pull.
-
-**The remaining +0.044 from the other 25 features** is roughly the same size as the single-feature gain from `Groceries_Share`. Diminishing returns are steep here, which is worth knowing before Phase 4 spends compute on hyperparameter search.
-
-### Cell 7 (code) — Persist and plot
-
-Writes `results/baseline.csv` and a horizontal bar chart. The chart is deliberately drawn with all three metrics side by side and a reference line at 0.5, so the majority baseline's 0.68-accuracy / 0.40-macro-F1 split is visible as a single visual fact — that is the phase's main message to a non-technical reader.
+Concatenates both tables, writes `results/baseline.csv`, and writes `results/baseline.json` with `savings_goal.io.write_result` (the per-fold income thresholds, their mean, the full table and the split description). The figure, `results/baseline.png`, is a horizontal bar chart of accuracy, macro-F1 and ROC-AUC for every row, with a reference line at 0.5. It puts the majority class's 0.68 accuracy next to its 0.41 macro-F1 so the gap is visible at a glance.
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **4 — Model comparison** | The bar is **macro-F1 0.7425 from one income threshold**, not 0.4050 from the majority class. Report every model's margin over the single-rule baseline, not just over chance. Diminishing returns are steep, so a large hyperparameter search is unlikely to pay. |
-| **5 — Explainability** | `Log_Income` and `Groceries_Share` alone reach AUC 0.8756 of the full model's 0.9212 — any SHAP story that does not put these two at the top is contradicting the baseline. |
-| **7 — Business translation** | Two cautions: the "model" is ~90% an income threshold in AUC terms, and univariate lifts from Phase 2 are not independent levers (`Spends_On_Insurance` adds +0.0015 once income is known). |
+| 4: Model comparison | The bar is the income threshold (macro-F1 0.742, ROC-AUC 0.739) and the deployable logistic regression (macro-F1 0.773, ROC-AUC 0.876), on the same grouped folds. Report margins over these, not over the majority class. |
+| 4: Feature sets | Share-based rows partly rebuild total spending through household size, so the headline model uses the deployable set and the full set is reported alongside as a diagnostic. |
+| 5: Explainability | Income alone gives ROC-AUC 0.835 of the deployable logistic model's 0.876, so income should dominate the attributions of any deployable model. |
+| 7: Business translation | Any targeting result has to be compared with the income rule, not with random contact. |

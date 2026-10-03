@@ -1,27 +1,13 @@
-# Phase 0 — Framing
+# Phase 0: Framing
 
-**Source:** [README § Phase 0 — Framing](../README.md#phase-0--framing)
-**Notebook:** none — Phase 0 is a framing exercise, answered in prose.
+**Source:** [README § Phase 0: Framing](../README.md#phase-0-framing)
+**Notebook:** none. Phase 0 is answered in prose; the numbers it cites come from later phases
 **Builds on:** [Dataset construction](dataset_construction.md)
+**Artifacts:** none of its own. Cited figures come from `results/phase1_eda.json`, `results/leakage.json`, `results/baseline.json`, `results/model_final.json`, `results/model_test.json`, `results/business.json` and `results/savings_rate_regression.json`
 
-Phase 0 fixes *what* we are predicting and *why*, before any modelling. One constraint shapes everything that follows: **a household survey does not record what its respondents intend to save.** IHDS-II measures income and consumption, not aspirations, so the target has to be an externally imposed benchmark rather than a personal goal. This document sets that benchmark, states what it can and cannot support, and fixes the constraints later phases inherit.
+Phase 0 fixes what is predicted and why, before any modelling. One constraint shapes the rest: a household survey does not record what its respondents intend to save. IHDS-II measures income and consumption, not aspirations, so the target is an external benchmark rather than a personal goal. This document sets that benchmark, says what it can and cannot support, and lists the constraints later phases inherit. Where results from later phases bear on the framing, they are cited.
 
-Where the analysis later constrained the framing, this document says so rather than presenting the outcome as foresight.
-
-> **In plain terms — normative vs customer-relative.** A **normative** benchmark is a standard set from outside and applied identically to everyone: *save at least 20%, whoever you are.* A **customer-relative** benchmark would compare each household against its own stated intention: *are you on track for the goal you personally set?* The second is what a savings app would want and what the project's title suggests — but no survey asks households what they intend to save, so only the first is buildable here. Nearly every caveat in this document flows from that substitution.
-
----
-
-## Post-audit revision (October 2026)
-
-> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
-
-| Question | Current answer |
-| --- | --- |
-| Business decision | Unchanged: on-track / at-risk triage for outreach. |
-| Target definition | Unchanged: `Goal_Met = 1` if the savings rate is at least 20%. |
-| Classification or regression? | Classification remains primary. The robust regression this phase called the clearest follow-up now exists: notebook 08 fits a median (quantile) model of `Savings_Rate` from the deployable features and ranks by predicted rupee shortfall, reaching 45.5% of the total rupee gap at a 25% budget against 37.0% for the classifier. |
-| What leakage means here | Wider than first stated: spending shares leak jointly with household size and income (Phase 1, A1). The headline model uses income, demographics and debt only. |
+> **In plain terms: normative vs customer-relative.** A **normative** benchmark is set from outside and applied to everyone the same way: save at least 20%, whoever you are. A **customer-relative** benchmark would compare each household with its own stated intention: are you on track for the goal you set? A savings app would want the second, but no survey asks households what they intend to save, so only the first can be built here. Most caveats in this document follow from that substitution.
 
 ---
 
@@ -29,44 +15,50 @@ Where the analysis later constrained the framing, this document says so rather t
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | What real business decision does this project inform? | Whether a savings-product or financial-inclusion team should treat a **household** as on-track or at-risk against a **normative** savings adequacy benchmark, and therefore which households to prioritise for outreach. The decision is a triage/prioritisation call, not a savings forecast. |
-| 2 | What is the precise definition of the target variable? | `Goal_Met = 1` if `(INCOME − COTOTAL) / INCOME >= 0.20`, else `0`, where both are annual rupees from IHDS-II. In words: a household is on track if it retains at least 20% of its annual income after all recorded consumption. |
-| 3 | Is the primary task classification or regression, and why? | **Binary classification** — but this is a closer call than it looks. The target is a *thresholded continuous quantity*, so a robust regression on `Savings_Rate` is a genuinely defensible alternative. The reasoning is set out honestly below. |
+| 1 | What business decision does this project inform? | Whether a savings-product or financial-inclusion team should treat a household as on track or at risk against a normative 20% savings benchmark, and so which households to contact first. It is a triage decision, not a savings forecast. At a 25% contact budget the headline model reaches 98.5% of the best possible at-risk capture, against 95.4% for a poorest-first income rule. |
+| 2 | What is the precise definition of the target? | `Goal_Met = 1` if `(INCOME − COTOTAL) / INCOME >= 0.20`, else 0, both in annual rupees from IHDS-II. 31.93% of 41,518 households meet it (30.47% survey-weighted). |
+| 3 | Classification or regression? | Binary classification is the primary framing, because the decision is binary and the continuous savings rate has an extreme left tail (minimum −1,647, standard deviation 13.08). Notebook 08 adds a median (quantile) regression on the savings rate: ranked by predicted rupee shortfall, it reaches 45.5% of the total rupee gap at a 25% budget, against 37.0% for the classifier and 28.7% for the income rule. |
 
 ---
 
-## Q1. What real business decision does this project inform?
+## Q1. What business decision does this project inform?
 
-**Answer:** whether a savings-product team, financial-inclusion programme, or microfinance lender should treat a household as **on-track** or **at-risk** against a normative savings-adequacy benchmark, and therefore which households to prioritise for a low-cost intervention — a savings nudge, a commitment-savings product, or a budgeting tool.
+The decision is whether a savings-product team, financial-inclusion programme or microfinance lender should treat a household as on track or at risk against a normative savings benchmark, and therefore which households to prioritise for a low-cost intervention such as a savings nudge, a commitment-savings product or a budgeting tool.
 
-**The benchmark is normative, and that choice has consequences.** A **customer-relative** framing — is this household on track for the goal *it* set — would respect each household's own intention, and a household saving 5% would be "on track" if 5% was all it wanted. IHDS records no such intention, so the benchmark is imposed from outside and is identical for every household.
+The benchmark is normative, and that changes who gets flagged. Under a customer-relative rule, a household that wanted to save 5% and did would be on track. Under this one, the same household is at risk. The model therefore measures something closer to savings capacity than goal alignment, and later phases show it:
 
-That changes who gets flagged. A low-income household with modest ambitions is on-track under a customer-relative rule and at-risk under this one. The model is therefore measuring something closer to *savings capacity* than *goal alignment* — and Phases 3 and 4 confirmed that empirically. A single threshold on income alone recovers macro-F1 0.7425 (Phase 3), and `Log_Income` carries the largest share of model importance. **A large part of what this classifier does is identify households that are not poor.**
+- A single income threshold, re-learned in each fold (mean Rs 122,249), reaches macro-F1 0.742 ([Phase 3](phase3.md)).
+- The headline model reaches CV macro-F1 0.782 and held-out macro-F1 0.781 ([Phase 4](phase4.md)), a gain of about 0.04 over the income rule.
+- Income accounts for 58.0% of the headline model's grouped SHAP attribution and 82% of its permutation importance ([Phase 5](phase5.md)).
 
-> **In plain terms — macro-F1, and why it is the headline number.** Start with two ideas about a yes/no prediction:
-> - **Precision** — of the households we flagged, what fraction really were what we said? (How much of our shouting was wasted?)
-> - **Recall** — of the households that really were, what fraction did we flag? (How many did we miss?)
+Most of what the classifier does is separate households that are not poor from households that are.
+
+> **In plain terms: macro-F1.** Two ideas about a yes/no prediction:
+> - Precision: of the households flagged, what fraction really were what we said?
+> - Recall: of the households that really were, what fraction did we flag?
 >
-> These trade off: flag everybody and recall is perfect while precision is terrible. **F1** combines them into one number that stays low unless *both* are decent. **Macro-F1** then computes F1 separately for the "on track" households and for the "at risk" households and averages the two, giving each class equal say regardless of how many households are in it.
+> Flag everybody and recall is perfect while precision is poor. F1 combines the two into one number that stays low unless both are decent. Macro-F1 computes F1 separately for on-track and at-risk households and averages the two, so each class counts equally however many households it has.
 >
-> That last part is the whole point. Because 68% of households are at risk, a model that predicts "at risk" for everyone, always, is right 68% of the time — 0.68 **accuracy**, which sounds respectable and is worth nothing. Macro-F1 refuses to be fooled: that same do-nothing model scores 0.405, because it is hopeless on the class it never predicts. Scores run 0 to 1, higher is better. [Phase 3](phase3.md) demonstrates this on real baselines.
->
-> **`Log_Income`** is simply annual income with a logarithm applied — a rescaling that pulls in the long tail of very high incomes so that the step from ₹20,000 to ₹40,000 counts the same as the step from ₹200,000 to ₹400,000. Models handle that shape far better than raw rupees.
+> That matters here because 68% of households are at risk. A model that always says "at risk" is right 68% of the time (accuracy 0.681) and is useless. Its macro-F1 is 0.405, because it scores zero on the class it never predicts. [Phase 3](phase3.md) shows this on the baselines.
 
-**Why the decision is still worth supporting despite that.** Two honest defences, and one thing this project cannot claim:
+> **In plain terms: `Log_Income`.** Annual income with a logarithm applied. It pulls in the long tail of very high incomes so that going from Rs 20,000 to Rs 40,000 counts the same as going from Rs 200,000 to Rs 400,000.
 
-1. Identifying households with structurally inadequate savings *is* the actual question for a financial-inclusion programme, even if income is most of the answer. The model adds +0.095 macro-F1 over the income-only rule (Phase 4) — real incremental value in identifying which similar-income households are and are not saving.
-2. The spending-mix features carry independent signal on top of income: `Groceries_Share` alone adds +0.041 ROC-AUC *after* income is known (Phase 3), because two households with identical income and very different budget shapes are in materially different positions.
+### Why the decision is still worth supporting
 
-> **In plain terms — "independent signal", and why *after* is the word doing the work.** A feature carries **signal** if it helps predict the target. It carries *independent* signal if it still helps **once the model already knows income** — that is, it tells you something income was not already telling you. The test is incremental: measure the model on income alone, add the new feature, and see whether the score moves. Plenty of features look predictive on their own purely because rich households differ from poor ones; those add nothing here and are exposed as redundant. Grocery share survives the test, which is why it earns a place in the story. [Phase 3](phase3.md) runs exactly this progression, and finds features that fail it.
+1. Finding households with structurally inadequate savings is the question a financial-inclusion programme asks, even when income is most of the answer. The model adds to income: at a 25% contact budget it reaches 98.5% of the at-risk capture ceiling against 95.4% for the poorest-first rule, a gain of 1.1 percentage points (95% CI 1.0 to 1.3) ([Phase 7](phase7.md)). The gap is small because the income rule is already close to the ceiling.
+2. Household size, debt, education and location carry information beyond income. Interactions account for 31.6% of the headline model's SHAP attribution, the largest being income × household size ([Phase 5](phase5.md)): the same income means something different for a household of two and a household of eight.
 
-**What it cannot claim:** that it identifies households failing at a goal *they* set. Nothing in IHDS-II records household intentions, so any write-up using customer-goal language would be misrepresenting the target.
+> **In plain terms: "beyond income".** A feature carries independent signal if it still helps once the model already knows income. The test is incremental: score a model on income alone, add the feature, and see whether the score moves. Many features look predictive on their own only because rich and poor households differ in them; those add nothing once income is in.
 
-**The constraint this places on every later phase.** Phase 1 found that **55.9% of IHDS households report consumption exceeding income**, a documented consequence of income being under-reported relative to item-by-item consumption. So `Goal_Met` is biased downward at every threshold. The decision this project informs must therefore be a **relative prioritisation** ("which households first"), never an absolute claim ("X% of Indian households save inadequately"). Ranking is defensible; levels are not.
+What the project cannot claim is that it identifies households failing at a goal they set. Nothing in IHDS-II records intentions, so customer-goal language in any write-up would misdescribe the target.
+
+### The constraint this places on later phases
+
+55.9% of IHDS households report consumption above income (57.7% weighted), a known effect of income being under-reported relative to item-by-item consumption ([Phase 1](phase1.md)). `Goal_Met` is therefore biased downward at every threshold. The project supports relative prioritisation ("which households first") and not absolute prevalence ("X% of Indian households save too little").
 
 ---
 
-## Q2. What is the precise, one-sentence definition of the target variable?
+## Q2. What is the precise definition of the target?
 
 ```text
 Savings      = INCOME − COTOTAL                   (annual rupees)
@@ -74,76 +66,99 @@ Savings_Rate = Savings / INCOME
 Goal_Met     = 1 if Savings_Rate >= 0.20 else 0
 ```
 
-**`Goal_Met = 1` when a household retains at least 20% of its annual income after all recorded consumption expenditure.**
+`Goal_Met = 1` when a household keeps at least 20% of its annual income after all recorded consumption.
 
-**Why 20%.** It is a convention, not a measurement — roughly the savings rate implied by common personal-finance guidance and close to India's household savings rate in the survey period. **It was chosen before the results were seen, and it is configurable** (`--threshold` in `src/build_dataset.py`). Phase 1 published the full sensitivity curve precisely so no reader has to take the choice on trust:
+The 20% is a convention, roughly the rate implied by common personal-finance guidance and close to India's household savings rate in the survey period. It is the default of `uv run sgc build --threshold` and can be changed. [Phase 1](phase1.md) publishes the sensitivity curve:
 
-| Threshold | Goal_Met rate | Imbalance |
-| --- | --- | --- |
-| 0% | 0.4411 | 1.27 : 1 |
-| 10% | 0.3833 | 1.61 : 1 |
-| **20%** | **0.3193** | **2.13 : 1** |
-| 30% | 0.2532 | 2.95 : 1 |
+| Threshold | Goal_Met rate | Survey-weighted | Imbalance (at risk : on track) |
+| --- | --- | --- | --- |
+| 0% | 0.4411 | 0.4231 | 1.27 : 1 |
+| 10% | 0.3833 | 0.3669 | 1.61 : 1 |
+| 20% | 0.3193 | 0.3047 | 2.13 : 1 |
+| 30% | 0.2532 | 0.2396 | 2.95 : 1 |
 
-> **In plain terms — imbalance.** The **imbalance ratio** counts how many households fall in the larger class for each one in the smaller. At the 20% threshold, 31.93% of households meet the goal, so there are 2.13 "not met" for every "met" — written 2.13 : 1. This number matters because it decides how much special handling a classification problem needs. Ratios like 100 : 1 (fraud, rare disease) force resampling, reweighting and unusual metrics. **2.13 : 1 is mild**, which is why [Phase 4](phase4.md) can use ordinary methods and ordinary metrics — but notice how quickly the ratio worsens as the threshold rises, which is itself an argument for not over-trusting one threshold.
+> **In plain terms: imbalance.** The imbalance ratio counts how many households are in the larger class for each one in the smaller. At 20%, there are 2.13 at-risk households for every on-track one. Ratios like 100 : 1 (fraud, rare disease) need resampling and special metrics; 2.13 : 1 does not. The ratio worsens quickly as the threshold rises, which is one reason not to lean on a single threshold.
 
-Any finding that holds only at 20% is a finding about the threshold, not about households, and Phase 7 must check its headline claims at 10% and 30% before resting on them.
+A finding that holds only at 20% is a finding about the threshold, not about households.
 
-**Two definitional consequences that are easy to miss:**
+Two consequences of the definition:
 
-- **The unit is a household, not an individual.** Every claim is about households; per-person statements require `INCOMEPC`/`COPC` and are not what this model predicts.
-- **The target is an exact accounting identity** over the expense columns (Phase 1 verified `Savings = INCOME − COTOTAL` to 5.8×10⁻¹¹). This is the source of the leakage constraint below, and it is why the feature set uses composition shares rather than expense-to-income ratios.
+- The unit is a household. Per-person statements would need `INCOMEPC` or `COPC` and are not what the model predicts.
+- `Savings` is an exact identity over `INCOME` and `COTOTAL`, and an approximate one over the 11 rebuilt expense categories, which match `COTOTAL` within 1% for 97.72% of households ([Dataset construction](dataset_construction.md)). Anything from which spending relative to income can be computed is the answer in disguise.
 
-  > **In plain terms — "identity", and that tiny number.** An **identity** is an equation that is true by definition rather than by discovery — savings *is* income minus spending, in the same way that a bachelor *is* an unmarried man. Nothing was estimated. **5.8×10⁻¹¹** is scientific notation for 0.000000000058, and it is the largest disagreement found anywhere in 41,518 households: not a real gap but the rounding dust computers leave behind when they store decimals. Quoting it is a way of saying "we checked, and the equation holds perfectly." The problem is that anything the model can compute this equation from is the answer in disguise — hence the exclusion list.
+  > **In plain terms: identity.** An identity is an equation true by definition: savings is income minus spending. Nothing is estimated. A model given the pieces of an identity reproduces it and learns nothing about households.
 
 ### The leakage constraint
 
-**Never usable as features:** the 11 raw rupee expense categories, `COTOTAL`, `Savings`, `Savings_Rate`.
+Never usable as features: the 11 raw rupee categories, `Category_Total`, `COTOTAL`, `Savings`, `Savings_Rate`. Raw categories with income, and expense-to-income ratios, each reproduce `Goal_Met` for 99.75% of households.
 
-Phase 1 measured it: raw categories reconstruct `Goal_Met` with 99.75% agreement, and expense-to-income ratios with the identical 99.75% — because they are the same quantity divided by income. Composition shares (each category over *total expenditure*) sum to exactly 1 and so carry no information about consumption relative to income; they are safe, and they are what the pipeline uses.
+The constraint reaches further than those columns. Spending shares (each category over total spending) pass every one-at-a-time test, but household size predicts food rupees well enough that size, food share and income together back out total spend. The size × food-share oracle, a formula with no model, ranks households with ROC-AUC 0.895 ([Phase 1](phase1.md)). The headline model therefore uses income, demographics and debt only (13 features, the deployable set). The 29-feature full set with spending shares reaches ROC-AUC 0.929 in CV and 0.932 held out, and is reported as a diagnostic, because part of its extra skill is a restatement of the label.
 
-**A separate reserved set:** the six `Has_*` columns (bank savings, fixed deposit, pension/LIC, securities, post office, gold) are survey-reported behaviour, outside the consumption arithmetic. They are **not features** and **not leakage** — they are held back so the normative target can be checked against real saving behaviour.
+The six `Has_*` columns (bank savings, fixed deposit, pension/LIC, securities, post office account, gold) record which savings instruments a household holds. They are outside the consumption arithmetic, so they are not leakage, and they are not features either: they are kept back to check the normative target against reported saving behaviour.
 
 ---
 
 ## Q3. Is the primary task classification or regression?
 
-**Answer: binary classification — but this is a closer call than it was, and the honest reasoning is different.**
+Binary classification is the primary framing. A median regression on the savings rate complements it in [Phase 8](phase8.md).
 
-> **In plain terms — classification vs regression.** Two ways of framing a prediction problem:
-> - **Classification** predicts which bucket something falls in. **Binary** classification means two buckets — here, on track / not on track. The output is a label, usually with a probability attached.
-> - **Regression** predicts a number on a sliding scale — here, the savings rate itself: −0.34, +0.07, +0.41.
+> **In plain terms: classification vs regression.**
+> - Classification predicts which bucket something falls in. Binary classification has two buckets, here on track and at risk, usually with a probability attached.
+> - Regression predicts a number on a sliding scale, here the savings rate itself: −0.34, +0.07, +0.41.
 >
-> Neither is "correct" in the abstract; the choice follows from what decision the output has to support. The awkwardness here is that our label was *manufactured* from a number by cutting it at 20%, so regression is genuinely available and the argument has to be made rather than assumed.
+> The choice follows from the decision the output supports. Here the label was made from a number by cutting it at 20%, so regression is available and the case for classification has to be argued.
 
-**The argument against classification, stated first.** `Savings_Rate` is a perfectly good continuous outcome, and the 20% cut is something *we* imposed rather than something the data hands us. Thresholding discards information, and here that information is real — the difference between a household at 19% and one at −150% is enormous, and the binary label erases it. Any claim that the target "is binary by construction" would be false.
+### The case against classification
 
-**The three reasons classification is still the right primary framing:**
+`Savings_Rate` is a continuous outcome and the 20% cut is imposed. Thresholding discards information: a household at 19% and one at −150% are both "not met", though their situations differ enormously. The target is not binary by nature.
 
-1. **The decision is binary.** The team either includes a household in an outreach campaign or does not. A predicted savings rate would have to be thresholded anyway, and doing that inside the model keeps the threshold explicit and auditable — which is exactly what Phase 4 used when it tuned for 95% recall on the at-risk class.
-2. **The continuous target is badly behaved.** `Savings_Rate` has a median of −0.108, a minimum of −1647, and a standard deviation of 13.08 (Phase 1). Regression on that would be dominated by a long left tail of households with tiny reported incomes — the least reliable part of the data. The binary label is *robust to exactly the measurement error that most afflicts this survey*: a household at −150% and one at −15% are both, correctly, "not on track", and the model is not penalised for failing to distinguish two numbers that are mostly noise.
+### Why classification is still the primary framing
 
-   > **In plain terms — why a −1647 breaks a regression.** A minimum of −1647 means one household reportedly consumed 1,648 times its stated income (almost certainly because the income was recorded far too low, not because it truly spent that). Regression is normally fitted by minimising **squared** error, so being wrong by 1,000 is punished a million times harder than being wrong by 1 — a single absurd row can therefore pull the whole fitted relationship toward itself. **Robust** methods (a **robust loss**, or fitting only on plausible incomes) exist precisely to blunt that. Classification sidesteps it entirely: −1647 and −0.15 are both simply "no", so the nonsense value carries no more weight than any other row.
+1. The decision is binary. A team either includes a household in an outreach campaign or does not. A predicted savings rate would be thresholded anyway; doing it inside the model keeps the threshold explicit. [Phase 4](phase4.md) tunes the operating threshold on the at-risk score: at 0.425 the held-out at-risk recall is 0.913 with precision 0.826.
+2. The continuous target is badly behaved. `Savings_Rate` has a median of −0.108, a minimum of −1,647 and a standard deviation of 13.08. A least-squares regression would be pulled toward a long left tail of households with tiny reported incomes, the least reliable part of the data. The binary label treats a household at −150% and one at −15% the same way, as at risk, and does not ask the model to separate two numbers that are mostly measurement error.
 
-3. **A binary flag is auditable.** A stakeholder can inspect the confusion matrix, the operating threshold, and the cost of a miss. A predicted savings rate would have to be converted into the same decision anyway, with the conversion happening somewhere less visible.
+   > **In plain terms: why −1,647 breaks an ordinary regression.** A savings rate of −1,647 means a household reported consuming 1,648 times its stated income, almost certainly because income was recorded far too low. Ordinary regression minimises squared error, so being wrong by 1,000 costs a million times more than being wrong by 1, and one absurd row can drag the fitted line toward itself. Classification sidesteps it: −1,647 and −0.15 are both "no".
 
-   > **In plain terms — confusion matrix and operating threshold.** A **confusion matrix** is a 2×2 tally of predictions against reality: correctly flagged, wrongly flagged, correctly cleared, wrongly cleared. It is the most honest one-glance summary of a classifier, because it shows the two kinds of mistake separately instead of blending them into a single score. The **operating threshold** is the cut-off applied to the model's probability to turn it into an action — flag everyone above 0.50, or above 0.37, or wherever. Moving it trades the two mistakes against each other, and [Phase 4](phase4.md) tunes it deliberately.
+3. A binary flag is easy to inspect. A stakeholder can read the confusion matrix, the operating threshold and the cost of a miss.
 
-**What is given up, stated plainly:** ranking households by *how far* they are from adequacy is more actionable than a yes/no flag, and this framing cannot do it. A regression on `Savings_Rate`, fitted on the subset with plausible income (or with a robust loss), is the clearest follow-up this project leaves on the table. Phase 4's threshold-tuning partially recovers the loss — the predicted probability is a usable ranking even though the label is binary — but that is a workaround, not a substitute.
+   > **In plain terms: confusion matrix and operating threshold.** A confusion matrix is a 2×2 tally of predictions against reality: correctly flagged, wrongly flagged, correctly cleared, wrongly cleared. It shows the two kinds of mistake separately. The operating threshold is the cut-off applied to the model's probability to turn it into an action; moving it trades one mistake for the other.
+
+### What classification gives up, and how Phase 8 recovers it
+
+A yes/no flag cannot say how far a household is from adequacy, and for budgeting outreach the size of the gap matters. [Phase 8](phase8.md) (notebook 08) fits a median regression of `Savings_Rate` on the 13 deployable features, using gradient boosting with a quantile loss (`savings_goal.models.regression.quantile_model`), out-of-fold under the same PSU-grouped folds. It then ranks households by predicted rupee shortfall, `max(0, 0.20 − predicted rate) × INCOME` (`savings_goal.models.regression.rupee_shortfall`).
+
+> **In plain terms: quantile regression.** Ordinary regression predicts the average outcome for households like this one. A median (quantile) regression predicts the middle outcome instead: half of similar households save more, half save less. Because the median ignores how extreme the extremes are, a household at −1,647 pulls on it no harder than one at −2. Its error measure is the pinball loss, which for the median is the average absolute miss.
+
+| Measure (out-of-fold) | Value |
+| --- | --- |
+| Pinball loss, median model | 0.474 |
+| Pinball loss, constant median | 0.739 |
+| Spearman correlation, predicted vs actual savings rate | 0.779 |
+
+Share of the total rupee gap below the 20% benchmark reached by each ranking:
+
+| Contact budget | Predicted rupee shortfall | Classifier at-risk score | Income rule (poorest first) |
+| --- | --- | --- | --- |
+| 10% | 23.7% | 17.0% | 12.4% |
+| 25% | 45.5% | 37.0% | 28.7% |
+| 50% | 69.6% | 64.6% | 54.7% |
+
+The classifier still captures slightly more at-risk households by count (36.2% vs 35.0% of at-risk households at a 25% budget), so the two answer different questions. The classifier is the better tool for "who is at risk"; the shortfall ranking is the better tool for "where is the largest rupee gap". Classification stays primary because the decision is binary, and the regression is the companion view for sizing the gap.
 
 ---
 
-## What Phase 0 fixes for the phases that follow
+## What this means for later phases
 
 | Commitment | Consequence |
 | --- | --- |
-| Normative, not self-referential target | Phase 7 may not use "their own savings goal" language. |
-| Household grain | No per-individual claims anywhere. |
-| Relative prioritisation only | No absolute prevalence claims, because of the 55.9% under-reporting. |
-| Leakage list | Raw categories, `COTOTAL`, `Savings`, `Savings_Rate` are never features. |
-| `Has_*` reserved | External validation only — never a feature. |
-| Binary classification | Metric is macro-F1 (Phase 3 showed accuracy is gameable at 0.68). |
-| At-risk class is `Goal_Met = 0` | The actionable class is the **majority** one (68%), so lift-based reasoning is structurally weak. |
+| Normative target, not self-set goals | No "their own savings goal" language anywhere. |
+| Household grain | No per-individual claims. |
+| Relative prioritisation only | No absolute prevalence claims, because 55.9% of households report consumption above income. |
+| Leakage list | Raw categories, `Category_Total`, `COTOTAL`, `Savings`, `Savings_Rate` are never features; spending shares are diagnostic only. |
+| `Has_*` reserved | External validation only, never a feature. |
+| Binary classification, macro-F1 | Accuracy is gameable at 0.681 by always predicting "at risk". |
+| At-risk class (`Goal_Met = 0`) is the majority | Lift over random contact is capped; see below. |
+| 20% is a convention | The threshold sensitivity is published in Phase 1. |
+| Distance matters for budgeting | Phase 8 adds a median regression and a rupee-shortfall ranking. |
 
-> **In plain terms — why the majority class being the actionable one is awkward.** Targeting models usually hunt for something rare: fraud, churn, a disease. In that setting, a model that concentrates the rare cases into the top slice of its ranking looks spectacular — this is called **lift**, the factor by which contacting model-selected people beats contacting people at random. But lift has a ceiling set by how rare the target is. Here the households we want to reach are 68% of everyone, so contacting a random quarter of the population already reaches roughly a quarter of them, and no model can be more than about 1.5× better. The model is not weak; the arithmetic of a majority target simply denies it the impressive-looking number. [Phase 7](phase7.md) shows this playing out.
-| 20% is a convention | Headline findings must be checked at 10% and 30%. |
+> **In plain terms: why a majority target caps lift.** Targeting models usually hunt for something rare, such as fraud or churn, and a good one concentrates the rare cases at the top of its ranking. **Lift** is the factor by which contacting model-selected households beats contacting households at random. Here the households to reach are 68% of everyone, so a random 25% of the population is already 67.8% at risk, and no ranking can do better than 100%, a lift of about 1.47. The headline model reaches 98.5% precision at that budget, close to the cap. [Phase 7](phase7.md) works through it.

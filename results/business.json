@@ -133,130 +133,130 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.1,
-      "capture": 0.162331405111751,
+      "capture": 0.14328178309375206,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 1.128713238424885,
-      "precision": 0.995356331448996
+      "pct_of_ceiling": 0.9962585199808253,
+      "precision": 0.9962906444136144
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.1,
-      "capture": 0.15931032728892983,
+      "capture": 0.14358473751460504,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 1.1077072566767283,
-      "precision": 0.9985786000171359
+      "pct_of_ceiling": 0.9983650049534695,
+      "precision": 0.9984231718873541
     },
     {
       "strategy": "Income rule (poorest first)",
       "budget": 0.1,
-      "capture": 0.16367318646661994,
+      "capture": 0.13985738704023015,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 1.1380428341199982,
-      "precision": 0.9696377149308136
+      "pct_of_ceiling": 0.97244820948324,
+      "precision": 0.9725742184332734
     },
     {
       "strategy": "Random contact",
       "budget": 0.1,
-      "capture": 0.09912806190438775,
+      "capture": 0.10019600642571759,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 0.6892514464090262,
-      "precision": 0.6965920104755519
+      "pct_of_ceiling": 0.6966770158378038,
+      "precision": 0.6969913373424206
     },
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.25,
-      "capture": 0.389950348502399,
+      "capture": 0.3541001149125467,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 1.08455198888978,
-      "precision": 0.981465169531975
+      "pct_of_ceiling": 0.9848432893300506,
+      "precision": 0.9849714610802655
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.25,
-      "capture": 0.39293657369001767,
+      "capture": 0.3580148633377206,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 1.0928574474666035,
-      "precision": 0.9940620841285175
+      "pct_of_ceiling": 0.995731209309687,
+      "precision": 0.9957364399251981
     },
     {
       "strategy": "Income rule (poorest first)",
       "budget": 0.25,
-      "capture": 0.3909267304007642,
+      "capture": 0.3419470840829547,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 1.0872675575098742,
-      "precision": 0.942474220505973
+      "pct_of_ceiling": 0.9510425918620452,
+      "precision": 0.9510817354997745
     },
     {
       "strategy": "Random contact",
       "budget": 0.25,
-      "capture": 0.2462500568553982,
+      "capture": 0.24846529200672807,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 0.6848846012125066,
-      "precision": 0.692550173504834
+      "pct_of_ceiling": 0.6910457386456703,
+      "precision": 0.6911569832440717
     },
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.5,
-      "capture": 0.7142069328949211,
+      "capture": 0.6755543012902515,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 0.9931963806736935,
-      "precision": 0.9285748452029075
+      "pct_of_ceiling": 0.9394449368762142,
+      "precision": 0.9395170405377822
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.5,
-      "capture": 0.7368249244972311,
+      "capture": 0.6946406478173788,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 1.0246496001299479,
-      "precision": 0.9592665990255115
+      "pct_of_ceiling": 0.9659869507071213,
+      "precision": 0.9660411969894491
     },
     {
       "strategy": "Income rule (poorest first)",
       "budget": 0.5,
-      "capture": 0.7012578445925631,
+      "capture": 0.6479145538230601,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 0.9751890118810159,
-      "precision": 0.8886996116303632
+      "pct_of_ceiling": 0.9010083215441865,
+      "precision": 0.9010136635007042
     },
     {
       "strategy": "Random contact",
       "budget": 0.5,
-      "capture": 0.4999018820179885,
+      "capture": 0.5003013334603189,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 0.6951777097706814,
-      "precision": 0.6958089235768663
+      "pct_of_ceiling": 0.6957331982551873,
+      "precision": 0.695763001359157
     },
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.65,
-      "capture": 0.8556400933158009,
+      "capture": 0.8286779983640459,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.9152902597268638,
-      "precision": 0.8736590462158674
+      "pct_of_ceiling": 0.8864485269890502,
+      "precision": 0.8864819421616134
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.65,
-      "capture": 0.8894962614114296,
+      "capture": 0.8599393987203032,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.9515066796114415,
-      "precision": 0.9057939696434167
+      "pct_of_ceiling": 0.9198892872748631,
+      "precision": 0.9199861656718368
     },
     {
       "strategy": "Income rule (poorest first)",
       "budget": 0.65,
-      "capture": 0.83634109547078,
+      "capture": 0.7990866022668578,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.894645849900783,
-      "precision": 0.840862534963719
+      "pct_of_ceiling": 0.8547941937815957,
+      "precision": 0.8548006180736994
     },
     {
       "strategy": "Random contact",
       "budget": 0.65,
-      "capture": 0.652776059732828,
+      "capture": 0.652835250673704,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.6982837456119769,
-      "precision": 0.6984316561326553
+      "pct_of_ceiling": 0.6983470629951513,
+      "precision": 0.6983638980424143
     }
   ],
   "edge_vs_income_rule": [

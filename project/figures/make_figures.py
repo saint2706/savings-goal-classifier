@@ -18,12 +18,10 @@ source files, and re-running this script regenerates the figures from them.
 import json
 from pathlib import Path
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.path import Path as MplPath
-from matplotlib.patches import Patch, PathPatch
+from matplotlib.patches import Patch
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "results"
@@ -33,103 +31,13 @@ OUT = Path(__file__).resolve().parent
 def result(name):
     return json.loads((RESULTS / f"{name}.json").read_text())
 
-# --- Design tokens ---------------------------------------------------------
-# Chart surface, ink and hairline chrome; categorical slots in fixed order.
-SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
-INK_2 = "#52514e"
-MUTED = "#898781"
-GRID = "#e1e0d9"
-AXIS = "#c3c2b7"
-CONTEXT = "#cfcec7"          # de-emphasised bars
+from savings_goal.viz import (  # noqa: E402  (shared palette, validated for colour-vision deficiency)
+    AQUA, AXIS, BLUE, COL, CONTEXT, INK, INK_2, MUTED, ORANGE, RED, SURFACE, WIDE, YELLOW,
+    rounded_barh, strip, use,
+)
 
-BLUE = "#2a78d6"             # slot 1
-ORANGE = "#eb6834"           # slot 2
-AQUA = "#1baf7a"             # slot 3
-YELLOW = "#eda100"           # slot 4
-MAGENTA = "#e87ba4"          # slot 5
-RED = "#e34948"              # diverging pole opposite BLUE
-
-COL = 3.45                   # IEEE single-column width, inches
-WIDE = 7.16                  # IEEE two-column width, inches
-
-mpl.rcParams.update({
-    "figure.facecolor": SURFACE,
-    "axes.facecolor": SURFACE,
-    "savefig.facecolor": SURFACE,
-    "font.family": "DejaVu Sans",
-    "font.size": 7.0,
-    "axes.labelsize": 7.0,
-    "axes.titlesize": 7.5,
-    "xtick.labelsize": 6.5,
-    "ytick.labelsize": 6.5,
-    "legend.fontsize": 6.5,
-    "axes.edgecolor": AXIS,
-    "axes.linewidth": 0.6,
-    "xtick.color": MUTED,
-    "ytick.color": MUTED,
-    "text.color": INK,
-    "axes.labelcolor": INK_2,
-    "axes.titlecolor": INK,
-    "figure.dpi": 400,
-    "savefig.dpi": 400,
-    "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.02,
-})
-
-
-def strip(ax, grid_axis="x"):
-    """Hairline grid on one axis only; no top/right spines."""
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    ax.spines["left"].set_color(AXIS)
-    ax.spines["bottom"].set_color(AXIS)
-    if grid_axis:
-        ax.grid(axis=grid_axis, color=GRID, linewidth=0.5, zorder=0)
-        ax.set_axisbelow(True)
-    ax.tick_params(length=2, width=0.5, colors=MUTED, labelcolor=INK_2)
-
-
-def _units_per_point(ax):
-    """Data units per typographic point, separately in x and y."""
-    fig = ax.figure
-    box = ax.get_position()
-    w_pt = fig.get_size_inches()[0] * box.width * 72.0
-    h_pt = fig.get_size_inches()[1] * box.height * 72.0
-    (x0, x1), (y0, y1) = ax.get_xlim(), ax.get_ylim()
-    return (x1 - x0) / w_pt, (y1 - y0) / h_pt
-
-
-def rounded_barh(ax, y, x0, x1, height, color, radius_pt=2.0, zorder=3):
-    """Horizontal bar with the data end rounded and the baseline end square.
-
-    The corner radius is given in points, so it stays a constant physical size
-    however the two axes are scaled. Call after the axis limits are set.
-    """
-    ux, uy = _units_per_point(ax)
-    sign = 1.0 if x1 >= x0 else -1.0
-    span = abs(x1 - x0)
-    rx = min(radius_pt * ux, span / 2 if span > 0 else 0.0)
-    ry = min(radius_pt * uy, height / 2)
-    y0, y1 = y - height / 2, y + height / 2
-    xe = x1 - sign * rx
-    verts = [
-        (x0, y0), (xe, y0),
-        (x1, y0), (x1, y0 + ry),         # quadratic corner
-        (x1, y1 - ry),
-        (x1, y1), (xe, y1),              # quadratic corner
-        (x0, y1), (x0, y0),
-    ]
-    codes = [
-        MplPath.MOVETO, MplPath.LINETO,
-        MplPath.CURVE3, MplPath.CURVE3,
-        MplPath.LINETO,
-        MplPath.CURVE3, MplPath.CURVE3,
-        MplPath.LINETO, MplPath.CLOSEPOLY,
-    ]
-    ax.add_patch(PathPatch(MplPath(verts, codes), facecolor=color,
-                           edgecolor="none", zorder=zorder))
-
+MAGENTA = "#e87ba4"  # categorical slot 5, used only for the five-family stacked bar in Fig. 2
+use(report=True)
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +47,7 @@ def fig_margin():
     base = pd.read_csv(RESULTS / "baseline.csv").set_index("model")["ROC-AUC"]
     comp = pd.read_csv(RESULTS / "model_comparison.csv")
     auc = comp.set_index(["feature set", "model"])["ROC-AUC"]
-    oracle = result("leakage")["t3"]["auc"]
+    oracle = result("leakage")["oracle"]["auc"]
 
     rungs = [
         ("Single income threshold", base["Single income threshold (depth-1 tree)"], CONTEXT),
@@ -166,7 +74,7 @@ def fig_margin():
     ax.text(oracle - 0.005, len(rungs) - 0.05, f"model-free oracle {oracle:.3f}\n(size × food share × income)",
             ha="right", va="center", fontsize=5.8, color=RED)
     ax.tick_params(axis="y", length=0)
-    fig.savefig(OUT / "fig1_honest_margin.png")
+    fig.savefig(OUT / "fig1_feature_ladder.png")
     plt.close(fig)
 
 

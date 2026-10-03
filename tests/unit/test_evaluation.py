@@ -113,15 +113,15 @@ def test_leakage_tests(features: pd.DataFrame, households: pd.DataFrame) -> None
             [c for c in cols if c not in CATEGORICALS], [c for c in cols if c in CATEGORICALS]
         )
 
-    t1 = leakage.t1_ablation(features, features["Goal_Met"], features[GROUP_COL], sets, make)
-    assert t1.loc["all features", "AUC retained"] == 1.0
-    t2 = leakage.t2_size_r2(households)
-    assert 0 <= t2["r2"] <= 1
+    abl = leakage.ablation(features, features["Goal_Met"], features[GROUP_COL], sets, make)
+    assert abl.loc["all features", "AUC retained"] == 1.0
+    fit = leakage.food_size_fit(households)
+    assert 0 <= fit["r2"] <= 1
     hh = households.copy()
     hh.loc[hh.index[0], "Groceries_Share"] = 0.0
-    t3 = leakage.t3_oracle(hh)
-    assert t3.n_excluded == 1 and t3.n_used == len(hh) - 1
-    assert 0 <= t3.auc <= 1
+    oracle = leakage.size_share_oracle(hh)
+    assert oracle.n_excluded == 1 and oracle.n_used == len(hh) - 1
+    assert 0 <= oracle.auc <= 1
 
 
 def test_explain_helpers(features: pd.DataFrame) -> None:
@@ -173,3 +173,14 @@ def test_business_benchmarks(households: pd.DataFrame) -> None:
     assert (bench.table["Rs CI low"] <= bench.table["Rs CI high"]).all()
     gaps = business.gap_closure(df)
     assert (gaps["gap"] > 0).all()
+
+
+def test_weighted_capture_counts_budget_in_weight() -> None:
+    at_risk = np.array([1, 1, 0, 0])
+    score = np.array([4.0, 3.0, 2.0, 1.0])
+    w = np.array([3.0, 1.0, 1.0, 1.0])
+    cap, prec = capture_at_budget(at_risk, score, 0.5, w)
+    assert cap == pytest.approx(0.75) and prec == pytest.approx(1.0)
+    table = capture_vs_ceiling(at_risk, {"s": score}, budgets=(0.5,), weights=w)
+    assert table["pct_of_ceiling"].iloc[0] <= 1.0
+    assert capture_at_budget(at_risk, score, 0.0)[0] == 0.0

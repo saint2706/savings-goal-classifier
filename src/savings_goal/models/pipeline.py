@@ -1,12 +1,11 @@
 """Preprocessing and model factories shared by every notebook.
 
-Two preprocessing rules from the audit are encoded here so no notebook can
-forget them:
+Two preprocessing rules live here so that no notebook can skip them:
 
-* K3 - zero-inflated shares are never ``RobustScaler``-ed (their IQR collapses:
-  a 90%-zero column gets scale ~0 and values in the hundreds). Linear models get
-  ``StandardScaler``; tree models get no scaling at all.
-* H1 - the 11 shares sum to one, so a linear model cannot identify all eleven
+* Zero-inflated shares are never ``RobustScaler``-ed. Their IQR collapses, so
+  a 90%-zero column gets a scale near zero and values in the hundreds. Linear
+  models get ``StandardScaler``; tree models get no scaling at all.
+* The 11 shares sum to one, so a linear model cannot identify all eleven
   coefficients. Linear pipelines drop a reference part (``Groceries_Share``);
   every other share coefficient is then read relative to food.
 """

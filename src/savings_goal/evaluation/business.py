@@ -1,4 +1,4 @@
-"""G1: peer benchmarks for "which spending is recoverable", with uncertainty.
+"""Peer benchmarks for "which spending is recoverable", with uncertainty.
 
 The original analysis compared each at-risk household with the *median*
 on-track household in its income decile, clipped negative excess to zero and

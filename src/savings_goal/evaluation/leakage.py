@@ -1,4 +1,4 @@
-"""A1: can the leakage-free feature set recover total spend, and hence the label?
+"""Can spending shares, together with household size and income, recover the label?
 
 Food rupees are close to proportional to household size. If so, then
 
@@ -8,7 +8,7 @@ Food rupees are close to proportional to household size. If so, then
 
 so ``Household_Size`` + ``Groceries_Share`` + ``INCOME`` together approximately
 reconstruct the target that the share representation was chosen to hide. The
-three tests here measure how much of the model's skill comes from that route.
+three checks here measure how much of the model's skill comes from that route.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from savings_goal.evaluation.metrics import fold_metrics
 def ablation_sets(
     features: list[str], indicators: list[str], shares: list[str]
 ) -> dict[str, list[str]]:
-    """T1 feature sets: all / no Groceries_Share / no size family / no shares+indicators."""
+    """Ablation sets: all / no Groceries_Share / no size family / no shares or indicators."""
     drop_shares = set(shares) | set(indicators)
     return {
         "all features": features,
@@ -39,7 +39,7 @@ def ablation_sets(
     }
 
 
-def t1_ablation(
+def ablation(
     df: pd.DataFrame,
     y: pd.Series,
     groups: pd.Series,
@@ -68,7 +68,7 @@ def t1_ablation(
     return out
 
 
-def t2_size_r2(households: pd.DataFrame) -> dict[str, float]:
+def food_size_fit(households: pd.DataFrame) -> dict[str, float]:
     """R^2 of log(Groceries) on log(Household_Size), households with positive food spend."""
     m = (households["Groceries"] > 0) & (households["Household_Size"] > 0)
     x = np.log(households.loc[m, "Household_Size"].to_numpy(dtype=float))
@@ -94,7 +94,7 @@ def implied_savings_rate(households: pd.DataFrame, k: float) -> pd.Series:
     return 1 - implied_spend / households["INCOME"]
 
 
-def t3_oracle(households: pd.DataFrame, threshold: float = 0.20) -> OracleResult:
+def size_share_oracle(households: pd.DataFrame, threshold: float = 0.20) -> OracleResult:
     """Model-free oracle: rank households by the savings rate implied by size, share, income.
 
     ``k`` is the median food spend per person. Rows with ``Groceries_Share == 0``
