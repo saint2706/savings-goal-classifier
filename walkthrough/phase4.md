@@ -1,11 +1,18 @@
-# Phase 4 — Model Comparison
+# Phase 4: Model Comparison
 
-**Source:** [README § Phase 4 — Model Comparison](../README.md#phase-4--model-comparison)
+**Source:** [README § Phase 4: Model Comparison](../README.md#phase-4-model-comparison)
 **Notebook:** [`notebooks/04_model_comparison.ipynb`](../notebooks/04_model_comparison.ipynb)
 **Builds on:** [Phase 3](phase3.md)
-**Artifacts:** `results/model_comparison.csv`, `results/model_comparison.png`
+**Artifacts:** `results/model_comparison.csv`, `results/model_final.json`, `results/model_test.json`, `results/model_comparison.png`
 
-At **2.13:1 with 13,256 minority cases** (Phase 1), this is an ordinary near-balanced classification problem. Class weighting is therefore optional rather than essential, and macro-F1 and ROC-AUC are straightforwardly usable without the contortions a severe imbalance would force.
+Seven model families are compared on two feature sets under PSU-grouped cross-validation on the training split. One configuration is tuned, chosen, and then scored once on the held-out PSUs.
+
+The two feature sets:
+
+- **Deployable (headline), 13 features**: log income, household size, age dependents, dependency ratio, head age, highest adult education, debt-to-income, has-debt, debt-missing, and the four categoricals. All of these are known when a household is onboarded.
+- **Full (diagnostic), 29 features**: the deployable set plus the 11 spending shares and 5 participation indicators. The leakage check in [Phase 1](phase1.md) showed that household size, the food share and income together approximate total spending, and the ablation showed that dropping the shares and indicators lowers grouped-CV ROC-AUC from 0.931 to 0.878. The full set is therefore an upper bound on what a model could do with spending composition, not the model to deploy.
+
+At 31.9% positive (2.13:1), the classes are imbalanced but not severely, so macro-F1 and ROC-AUC can be used directly.
 
 ---
 
@@ -13,180 +20,189 @@ At **2.13:1 with 13,256 minority cases** (Phase 1), this is an ordinary near-bal
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Which model families are appropriate given the data? | Seven: majority baseline, logistic regression, linear SVM, decision tree, random forest, histogram gradient boosting, and XGBoost. At n = 41,518 with 28 mixed features, kernel SVMs are impractical (O(n²)) and were excluded on cost, not principle. **XGBoost wins** at CV macro-F1 **0.8371** / ROC-AUC **0.9306**. |
-| 2 | What validation strategy fits the class balance found in Phase 1? | 5-fold **stratified** k-fold on an 80% training split, with a 20% test set (8,304 households) held out and touched exactly once. Stratification still matters at 2.13:1, but as insurance rather than necessity — fold-to-fold macro-F1 sd is 0.0018–0.0052, so the estimates are stable. |
-| 3 | What hyperparameter search method is used, and what parameters move performance most? | 15-iteration randomised search over 5 XGBoost parameters, plus a 5-point sweep on logistic regression's `C`. **The search is worth +0.0006 macro-F1** (0.8371 → 0.8377) — statistically nothing. `learning_rate` matters most (score sd 0.0040 across levels); `max_depth` matters least (0.0003). |
-| 4 | Is precision or recall more important given the business framing? | **Recall on the at-risk class**, because the intervention is a low-cost nudge and a missed at-risk household is a customer who silently fails their goal. The good news is the trade-off is cheap here: at the default threshold the at-risk class already gets precision 0.887 / recall 0.913, and pushing recall to **95%** costs only ~3 points of precision (0.856). |
+| 1 | Which model families are appropriate given the data? | Seven: majority baseline, logistic regression, linear SVM, decision tree, random forest, histogram gradient boosting, XGBoost, plus the single income threshold from Phase 3. On the deployable set, tuned XGBoost (depth 4, learning rate 0.08, 200 trees, subsample 0.7, min_child_weight 1) has the best CV macro-F1 (0.782) and ROC-AUC (0.882). HistGradientBoosting (0.778 / 0.880) is within one fold standard deviation. |
+| 2 | What validation strategy fits the class balance found in Phase 1? | `StratifiedGroupKFold(5, shuffle=True, random_state=42)` grouped by `IDPSU`. One grouped fold (8,299 households, 472 PSUs) is held out before any design decision; the remaining 33,219 households in 1,989 PSUs are used for every comparison and search. Fold-to-fold macro-F1 sd is 0.004 to 0.009. |
+| 3 | What hyperparameter search method is used, and what parameters move performance most? | 15-iteration randomised search over five XGBoost parameters, refit on macro-F1, plus a 5-value sweep of logistic regression's `C`. On the deployable set tuning adds +0.007 macro-F1 (0.774 to 0.782) and +0.006 ROC-AUC; `max_depth` moves the score most (sd 0.0085 across levels). On the full set tuning adds nothing (0.836 both ways). |
+| 4 | Is precision or recall more important given the business framing? | Recall on the at-risk class, because a missed at-risk household costs more than an unneeded nudge. The at-risk threshold tuned on out-of-fold training scores is 0.425 (precision 0.827, recall 0.915). Applied once to the held-out set it gives precision 0.826, recall 0.913. Reaching 95% recall costs precision 0.789 (out-of-fold). |
 
-> **In plain terms — cross-validation, the held-out set, and hyperparameters.** Three ideas run through this whole phase.
+Held-out result for the headline model: ROC-AUC 0.886, macro-F1 0.781 at the 0.5 threshold, accuracy 0.814, at-risk PR-AUC 0.944, Brier 0.127, ECE 0.009. The full model reaches ROC-AUC 0.929 in CV and 0.932 held out.
+
+> **In plain terms: cross-validation, the held-out set and hyperparameters.** Cross-validation scores a model on households it was not trained on by rotating which fifth of the training data is held back. Here the fifths are cut along survey clusters (PSUs), so whole villages or urban blocks are held back together.
 >
-> **Cross-validation** answers "how well would this model do on households it has never seen?" without wasting data. Split the training households into 5 equal parts (**folds**); train on 4 and score on the 1 held back; repeat 5 times so each fold takes a turn as the scorer; average the five scores. Every household gets predicted exactly once by a model that never saw it. **Stratified** means each fold is built to contain the same 32%/68% mix as the whole — otherwise a fold could land with an unrepresentative share of on-track households and give a misleading score.
+> The spread of the five fold scores matters as much as their average. A fold-to-fold standard deviation of 0.006 means a rerun with a different split would move the score by about that much. A gap between two models smaller than that is not evidence that one is better.
 >
-> The **spread** across those five scores is as informative as the average. A fold-to-fold standard deviation of 0.002 means that if you reran everything with a different random split, the score would wobble by about that much. **Any difference between two models smaller than that wobble is not a real difference** — a rule applied repeatedly below, and the reason several apparent improvements in this phase are called nothing.
+> The held-out set is a separate group of 8,299 households in 472 PSUs, set aside before any choice was made and scored once at the end. Cross-validation guides the choices, so its scores are slightly optimistic; the held-out score is the one measurement no choice was tuned to.
 >
-> The **held-out test set** is a further 20% of households (8,304) locked away before anything begins and looked at exactly once, at the very end. Cross-validation guides choices, so its scores are gently optimistic — after enough decisions have been steered by those folds, some tuning to their quirks has crept in. The test set is the only truly untouched measurement, and it is spent once. Peeking early and then continuing to tune quietly destroys it.
->
-> A **hyperparameter** is a setting you choose *before* training, as opposed to the coefficients the model learns *during* training — how deep the trees may grow, how large a step each round takes. They are not learned from the data, so the usual approach is to try many combinations and keep the best, which is what "hyperparameter search" means.
+> A hyperparameter is a setting chosen before training, such as how deep a tree may grow. It is not learned from the data, so the usual approach is to try many combinations and keep the best.
 
 ---
 
 ## Notebook walkthrough
 
-### Cell 1 (code) — Load, and split off the test set immediately
+### Cell 1: load the split and define the feature sets
 
-The 20% test split is made in the **first cell**, before any model is defined, and is not referenced again until the final cell.
+Loads the feature table (`savings_goal.io.load_features`), recovers the column lists (`savings_goal.features.engineer.spec_from_frame`), and separates training and held-out rows on the stored `Is_Test` flag. The held-out fold was drawn when the features were built (`savings_goal.evaluation.cv.grouped_test_mask`, the first fold of the same grouped splitter), so every phase uses the same partition and no PSU appears on both sides.
 
-**Why up front rather than at the end:** it makes accidental leakage structurally difficult. Every intermediate decision in this notebook — model choice, hyperparameter search, threshold tuning — reads `X_train` only. If the split happened later, any of those steps could have quietly seen the test data.
+`FEATURE_SETS` maps "deployable" to `spec.deployable_numeric` and "full" to `spec.numeric`; the four categoricals are added to both. The printout confirms 33,219 training households in 1,989 PSUs, 8,299 held-out households in 472 PSUs, and prevalence 0.319 on track / 0.681 at risk. Two extra metrics, precision and recall on the on-track class, are added to `savings_goal.evaluation.metrics.fold_metrics`.
 
-### Cell 3 (code) — The seven-family comparison (Q1, Q2)
+### Cell 3: seven families on both feature sets (Q1, Q2)
 
-| Model | CV accuracy | **CV macro-F1** | CV precision | CV recall | F1 sd | CV ROC-AUC |
-| --- | --- | --- | --- | --- | --- | --- |
-| **XGBoost** | 0.8614 | **0.8371** | 0.8064 | 0.7446 | 0.0018 | **0.9306** |
-| HistGradientBoosting | 0.8606 | 0.8360 | 0.8065 | 0.7412 | 0.0021 | 0.9306 |
-| Random Forest | 0.8512 | 0.8249 | 0.7914 | 0.7253 | 0.0032 | 0.9170 |
-| Logistic Regression | 0.8343 | 0.8186 | 0.6984 | **0.8466** | 0.0037 | 0.9213 |
-| Linear SVM | 0.8332 | 0.8177 | 0.6961 | 0.8479 | 0.0039 | — |
-| Decision Tree | 0.8067 | 0.7889 | 0.6614 | 0.8091 | 0.0052 | 0.8847 |
-| Majority baseline | 0.6807 | 0.4050 | 0.0000 | 0.0000 | 0.0000 | 0.5000 |
+`savings_goal.models.pipeline.model_zoo` builds each family behind the shared preprocessor (`savings_goal.models.pipeline.preprocessor`): median imputation, `Debt_To_Income` winsorised at the 99th percentile inside each training fold, one-hot categoricals, and scaling for the linear models only. Logistic regression, the linear SVM, the decision tree (depth 8) and the random forest (300 trees) use `class_weight="balanced"`; the two boosters do not. XGBoost runs at its untuned defaults (`XGB_DEFAULT`: 400 trees, depth 6, learning rate 0.08, subsample 0.9, colsample 0.9). The single income threshold from Phase 3 is added as an eighth row, fitted on `Log_Income` alone.
 
-> **In plain terms — the seven contenders.** They differ in how much structure they can express, and they are lined up roughly from simplest to most flexible:
-> - **Majority baseline** — always answers "not on track". Learns nothing; marks the floor.
-> - **Logistic regression** — weighs each feature, adds up the weights, converts the total to a probability. Straight lines only.
-> - **Linear SVM** (support vector machine) — also draws a single dividing line, but positions it to leave the widest possible margin between the two classes.
-> - **Decision tree** — one flowchart of yes/no questions, as in [Phase 3](phase3.md) but allowed to grow deep. Flexible, and prone to memorising its training data.
-> - **Random forest** — hundreds of trees, each grown on a random slice of rows and columns, all voting. The randomness cancels out any single tree's memorisation.
-> - **Histogram gradient boosting** and **XGBoost** — trees again, but built in sequence rather than in parallel: each new tree is fitted to the mistakes the current ensemble is still making, so the model corrects itself step by step. These two are different implementations of the same idea, and this family is the usual winner on tabular data like this.
+Each model goes through `savings_goal.evaluation.cv.cross_validate_grouped` on the same five grouped folds. Besides macro-F1 and ROC-AUC, every family is scored on at-risk PR-AUC, Brier score, log-loss and expected calibration error. The linear SVM has no probabilities, so those three are left blank for it.
+
+Deployable set, ranked by ROC-AUC (the tuned XGBoost row is added in cell 6):
+
+| Model | Accuracy | Macro-F1 | F1 sd | ROC-AUC | At-risk PR-AUC | Brier | ECE |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| XGBoost (tuned) | 0.815 | 0.782 | 0.006 | 0.882 | 0.942 | 0.128 | 0.011 |
+| HistGradientBoosting | 0.811 | 0.778 | 0.007 | 0.880 | 0.941 | 0.129 | 0.012 |
+| Logistic regression | 0.791 | 0.773 | 0.007 | 0.876 | 0.938 | 0.144 | 0.103 |
+| Linear SVM | 0.791 | 0.774 | 0.007 | 0.876 | 0.938 | n/a | n/a |
+| XGBoost (untuned) | 0.808 | 0.774 | 0.006 | 0.875 | 0.938 | 0.132 | 0.023 |
+| Random forest | 0.798 | 0.777 | 0.005 | 0.870 | 0.934 | 0.142 | 0.082 |
+| Decision tree | 0.768 | 0.751 | 0.009 | 0.850 | 0.913 | 0.159 | 0.104 |
+| Single income threshold | 0.778 | 0.742 | 0.004 | 0.739 | 0.808 | 0.166 | 0.003 |
+| Majority baseline | 0.681 | 0.405 | 0.000 | 0.500 | 0.681 | 0.319 | 0.319 |
+
+Full set, same models:
+
+| Model | Macro-F1 | ROC-AUC | At-risk PR-AUC | Brier | ECE |
+| --- | --- | --- | --- | --- | --- |
+| XGBoost (tuned) | 0.836 | 0.929 | 0.965 | 0.098 | 0.014 |
+| XGBoost (untuned) | 0.836 | 0.929 | 0.965 | 0.099 | 0.023 |
+| HistGradientBoosting | 0.835 | 0.928 | 0.965 | 0.099 | 0.015 |
+| Logistic regression | 0.819 | 0.920 | 0.960 | 0.115 | 0.082 |
+| Linear SVM | 0.817 | 0.920 | 0.960 | n/a | n/a |
+| Random forest | 0.823 | 0.915 | 0.957 | 0.116 | 0.088 |
+| Decision tree | 0.784 | 0.882 | 0.928 | 0.138 | 0.085 |
+
+> **In plain terms: the seven families.** Ordered roughly from least to most flexible:
+> - **Majority baseline**: always answers "not on track".
+> - **Logistic regression**: gives each feature a weight, adds them up, and turns the total into a probability. Straight-line boundaries only.
+> - **Linear SVM**: also a straight-line boundary, placed to leave the widest margin between the classes. It outputs a score, not a probability.
+> - **Decision tree**: one flowchart of yes/no questions, here up to 8 deep.
+> - **Random forest**: 300 trees, each grown on a random sample of rows and columns, voting together.
+> - **HistGradientBoosting and XGBoost**: trees built one after another, each fitted to the errors the earlier trees still make. Two implementations of the same idea, usually the strongest family on tabular data.
 >
-> **Why kernel SVMs were excluded.** A **kernel** SVM can draw curved boundaries, but it works by comparing every household against every other one. That is **O(n²)** — "order n squared", meaning the work grows with the *square* of the number of rows. At 41,518 households that is roughly 1.7 billion comparisons, so it was dropped on cost, not because it would have failed.
+> Kernel SVMs, which can draw curved boundaries, compare every household with every other one. At 33,219 training rows that is about a billion pairs per fit, so they were left out on cost.
 
-**Why macro-F1 is the ranking metric and accuracy is not:** the majority baseline scores 0.6807 accuracy while never predicting the positive class. Macro-F1 weights both classes equally and so cannot be gamed by ignoring one.
+What the tables show:
 
-**Why the linear models look worse than they are.** Logistic regression and the linear SVM have the *highest recall* in the table (0.847, 0.848) and the lowest precision (0.698, 0.696). That is `class_weight="balanced"` doing exactly what it is asked: reweighting the loss to favour the minority class, which shifts the decision boundary toward predicting "on track" more often.
+- Against the income threshold, tuned XGBoost on the deployable set gains +0.040 macro-F1 and +0.143 ROC-AUC. Against deployable logistic regression the gain is +0.009 macro-F1 and +0.006 ROC-AUC. Most of the step from the income rule to the best model is already available from a linear model on the same 13 features.
+- The deployable boosters are close together. Tuned XGBoost and HistGradientBoosting differ by 0.004 macro-F1 and 0.002 ROC-AUC, against fold standard deviations of about 0.006. XGBoost is kept because it scored highest and its tuned configuration is stored for later phases; HistGradientBoosting would be a reasonable substitute.
+- The full set adds 0.03 to 0.05 ROC-AUC to every family (tuned XGBoost 0.882 to 0.929). Phase 1's leakage check links that lift to the shares rebuilding total spending together with household size and income.
+- Calibration splits the families. The boosters have ECE 0.011 to 0.023; logistic regression (0.103), the random forest (0.082) and the decision tree (0.104) are off by 8 to 10 points on average. Those three use balanced class weights, which push predicted probabilities toward "on track" by design. Their ranking is fine (ROC-AUC 0.870 to 0.876 for the two strongest); their probabilities are not usable as stated without recalibration.
+- The income threshold has the lowest ECE in the table (0.003). A depth-1 tree predicts the observed on-track rate on each side of the cut, so its two probabilities are calibrated by construction; it just has only two of them.
 
-> **In plain terms — what "balanced" did, and why it makes this comparison unfair.** A model is fitted by minimising its **loss** — a running tally of how wrong it is, which training tries to make as small as possible. `class_weight="balanced"` tells it that mistakes on the smaller class count for more, so the model becomes readier to say "on track". That catches more genuinely on-track households (**recall** rises) at the cost of more false alarms (**precision** falls).
->
-> The two linear models were given this instruction and the boosted models were not — so they are not simply better or worse, they are **aimed differently**. Comparing them on macro-F1 partly compares the settings rather than the models. ROC-AUC is the fair column precisely because it ignores where the line is drawn (see [Phase 3](phase3.md) on ranking vs deciding), and there the gap shrinks from what macro-F1 suggests. The boosted models were fitted **without** class weighting, because at 2.13:1 they do not need it, and they land on a more even precision/recall split. The comparison is therefore between differently-calibrated models, and the fair reading is the ROC-AUC column — which is threshold-free. There, logistic regression (0.9213) sits much closer to XGBoost (0.9306) than macro-F1 suggests.
+> **In plain terms: calibration, Brier score and ECE.** A model is calibrated if, among households it gives a 30% chance of being on track, about 30% are. Expected calibration error (ECE) groups predictions into ten bins by probability and averages the gap between predicted and observed rates, weighted by bin size: 0.011 means predictions are off by about one percentage point on average. The Brier score is the mean squared difference between the predicted probability and the 0/1 outcome; lower is better, and it rewards both good ranking and good calibration. Calibration matters whenever a probability is read as a probability, for example when a team sets a budget from expected counts.
 
-**The honest margin.** Against the **single income threshold** from Phase 3 (macro-F1 0.7425), XGBoost is worth **+0.095**. Against the majority baseline it is worth +0.432, but that comparison flatters the model and Phase 3 exists to prevent it being quoted.
+### Cell 5: hyperparameter search (Q3)
 
-**Why the two boosting implementations are treated as tied:** 0.8371 vs 0.8360 is a gap of 0.0011 against a fold-to-fold sd of 0.0018–0.0021 — well inside noise, and their ROC-AUCs are identical to four decimals. XGBoost is selected because it scored marginally higher, not because it is meaningfully better; `HistGradientBoosting` would be a defensible swap and has the advantage of being a scikit-learn built-in with no extra dependency.
+`RandomizedSearchCV` draws 15 combinations from `savings_goal.models.pipeline.XGB_SEARCH_SPACE` (`max_depth` 4/6/8/10, `learning_rate` 0.03/0.08/0.15, `n_estimators` 200/400/700, `subsample` 0.7/0.9/1.0, `min_child_weight` 1/5/20), scores each on macro-F1, ROC-AUC and log-loss over the grouped folds, and refits on macro-F1. This runs once per feature set, through `savings_goal.models.pipeline.xgb_pipeline`.
 
-**Excluded families and why:** RBF-kernel SVM scales roughly quadratically in n and is impractical at 41,518 rows. A neural net (MLP) was excluded because Phase 3 showed steep diminishing returns — the marginal gain over the boosted trees would not justify the tuning surface. Both exclusions are cost decisions, and neither is likely to change the ranking.
-
-### Cell 5 (code) — Hyperparameter search (Q3)
-
-15-iteration randomised search over `max_depth`, `learning_rate`, `n_estimators`, `subsample`, `min_child_weight`, scored on macro-F1.
-
-> **In plain terms — randomised search, and the five knobs.** A **randomised search** picks 15 random combinations of settings, cross-validates each, and keeps the best. The alternative — a **grid search** trying every combination — would need thousands of fits here; random sampling finds nearly as good a combination for a fraction of the compute, because usually only one or two settings matter much.
->
-> The five knobs, all governing how the sequence of corrective trees is built:
-> - **`n_estimators`** — how many trees to build in total.
-> - **`learning_rate`** — how much of each new tree's correction to actually apply. Small values mean cautious steps, requiring more trees but overfitting less.
-> - **`max_depth`** — how many questions deep each tree may go. Deeper trees can capture combinations of features ("high food share *and* low income"); shallow ones mostly capture features acting separately.
-> - **`subsample`** — what fraction of households each tree sees. Below 1 it injects deliberate randomness, which helps the ensemble generalise.
-> - **`min_child_weight`** — how much data a branch must contain before the tree is allowed to split it further. Higher values stop the tree from carving out tiny groups that are really noise.
->
-> **Overfitting**, referred to throughout: learning the training households' quirks so precisely that performance on new households gets worse. It is the failure these last three knobs exist to prevent.
-
-**Best parameters:** `learning_rate=0.15`, `n_estimators=200`, `max_depth=4`, `min_child_weight=5`, `subsample=0.9`
-**Best score: 0.8377** — against **0.8371** for the untuned defaults.
-
-**The search bought +0.0006 macro-F1, which is a third of one fold's standard deviation.** This is the phase's most useful negative result, and it confirms the prediction Phase 3 made from the feature-progression curve: the problem's difficulty lives in the data, not in the model configuration. A larger search would have been compute spent to move a number that does not move.
-
-> **In plain terms — "a third of one fold's standard deviation".** The tuned model beat the default by 0.0006, while the score already wobbles by about 0.002 just from which households land in which fold. The improvement is smaller than the measurement's own jitter — so it is not an improvement that was detected, it is noise that happened to point upward. Rerun with a different random seed and it could as easily point down. This is the same "smaller than the wobble" rule from the top of this phase, and it is why more search would have been wasted compute.
-
-**Which parameters matter, by sd of mean score across each level:**
-
-| Parameter | Sensitivity |
-| --- | --- |
-| `learning_rate` | 0.00397 |
-| `subsample` | 0.00090 |
-| `n_estimators` | 0.00082 |
-| `min_child_weight` | 0.00054 |
-| `max_depth` | 0.00033 |
-
-`learning_rate` dominates by 4×, which is the standard result for gradient boosting — it is the one parameter that trades directly against `n_estimators` and controls how much the ensemble can overfit. That **`max_depth` matters least** is more telling: the model does not need deep interactions, which is consistent with Phase 3's finding that two features (income and grocery share) already reach AUC 0.876 of the final 0.931.
-
-**Note that the tuned model chose `max_depth=4`, shallower than the default 6.** Combined with the flat sensitivity, this says the signal is close to additive.
-
-> **In plain terms — "additive", and the sensitivity numbers.** The sensitivity column asks: as this one knob is varied while the others move around it, how much does the score swing? A big swing means the setting matters; 0.0003 for `max_depth` means it barely does.
->
-> A signal is **additive** when the features mostly contribute independently — income pushes the prediction one way, family size another, and you can add up the pushes. It is **interactive** when a feature's meaning depends on another's value: a high food share might mean one thing for a poor household and the opposite for a rich one. Depth is what lets a tree capture interactions, so a model that gains nothing from depth is telling you the interactions it needs are shallow. Worth flagging now, because [Phase 5](phase5.md) measures interactions directly and finds them to be 41.9% of the model's behaviour — a genuine tension with this reading, which Phase 5 addresses head-on.
-
-### Cell 6 (code) — Logistic regression's regularisation sweep
-
-`C` from 0.01 to 100: macro-F1 moves from 0.8159 to **0.8190** — a range of 0.003 across four orders of magnitude, monotonically increasing.
-
-> **In plain terms — `C`.** `C` sets how hard the L2 penalty from [Phase 2](phase2.md) pushes: **small `C` = strong penalty** (coefficients forced small, model kept simple), **large `C` = weak penalty** (coefficients free to grow, model follows the data more closely). "Four **orders of magnitude**" means the setting was varied by a factor of 10,000 — from 0.01 to 100. That the score moved by only 0.003 across that entire range is the finding: the model is essentially indifferent to the penalty's strength, which is exactly what the next paragraph interprets.
-
-**Why this is worth reporting rather than skipping:** Phase 2 found the 11 shares are **exactly singular** (VIF = ∞, they sum to 1), which means the model is only identifiable because of the L2 penalty. If the fit were badly conditioned, performance would be sharply sensitive to `C`. It is not — and that the best `C` is the *weakest* regularisation tested (100.0) says the penalty is doing structural work (making the solution unique) rather than being needed to control variance. The singularity is real but benign for prediction, exactly as Phase 2 predicted. **It remains fatal for coefficient interpretation**, which is Phase 5's problem.
-
-### Cell 8 (code) — Precision vs recall for the business decision (Q4)
-
-**The framing correction this cell makes:** the positive class is `Goal_Met = 1` ("on track"), but the class the business acts on is `Goal_Met = 0` — the at-risk households a savings nudge would target. Every precision/recall figure in the comparison table is for the *wrong class* for decision-making purposes, so the at-risk view is computed explicitly.
-
-> **In plain terms — why "the wrong class" is a real problem.** Software has to nominate one class as the **positive** class, and that choice is arbitrary bookkeeping — here it fell to `Goal_Met = 1`, "on track". Every precision and recall figure printed so far therefore describes how well the model finds households that are *doing fine*.
->
-> But nobody acts on those. The households the team would contact are the at-risk ones. Precision and recall are **not symmetric** — they say completely different things about each class — so the at-risk view has to be computed on purpose. This is an easy and consequential mistake: reporting the wrong class's recall to a stakeholder answers a question they did not ask, in the language of the one they did.
-
-Out-of-fold, XGBoost at the default threshold:
-
-> **In plain terms — "out-of-fold".** Every figure here comes from cross-validation, so each household was scored by a model trained without it. These are honest out-of-sample numbers, not the model grading its own homework. **Support** in the last column is simply how many households are in that class.
-
-| Class | Precision | Recall | F1 | Support |
-| --- | --- | --- | --- | --- |
-| **not on track** | 0.885 | 0.916 | 0.900 | 22,609 |
-| on track | 0.807 | 0.746 | 0.775 | 10,605 |
-
-**The at-risk class is the easier one**, because it is the majority at 68% — the opposite of the usual situation, where the class you want to act on is the rare one.
-
-Tuning the threshold on the at-risk score:
-
-| Target | Precision | Recall | Threshold |
+| Feature set | Best macro-F1 | ROC-AUC | Chosen parameters |
 | --- | --- | --- | --- |
-| Max F1 | 0.873 | 0.933 | 0.440 |
-| Recall 80% | 0.941 | 0.800 | 0.757 |
-| Recall 90% | 0.896 | 0.900 | 0.554 |
-| **Recall 95%** | **0.856** | 0.950 | 0.368 |
+| Deployable | 0.781 | 0.882 | depth 4, lr 0.08, 200 trees, subsample 0.7, min_child_weight 1 |
+| Full | 0.837 | 0.930 | depth 4, lr 0.15, 200 trees, subsample 0.9, min_child_weight 5 |
 
-> **In plain terms — what threshold tuning is.** The model outputs a probability, not a verdict. The **threshold** is the cut-off that turns it into one: flag every household scoring above 0.50, or above 0.37, or wherever you choose. Lowering the threshold flags more households, so you miss fewer at-risk ones (**recall** climbs) but include more who were fine (**precision** slips).
+Sensitivity is the standard deviation, across the levels of one parameter, of the mean macro-F1 of the runs at that level:
+
+| Parameter | Deployable | Full |
+| --- | --- | --- |
+| `max_depth` | 0.0085 | 0.0015 |
+| `n_estimators` | 0.0042 | 0.0010 |
+| `subsample` | 0.0026 | 0.0014 |
+| `learning_rate` | 0.0010 | 0.0042 |
+| `min_child_weight` | 0.0009 | 0.0002 |
+
+On the deployable set, depth is the parameter that matters, and the search picks the shallowest depth in the grid (4, against the default 6). Fewer trees (200 against 400) and stronger row subsampling (0.7) point the same way: with 13 features, the default configuration has more capacity than the signal needs and gives up a little macro-F1 to overfitting. On the full set every parameter has sensitivity below 0.005.
+
+A second search sweeps logistic regression's `C` over 0.01, 0.1, 1, 10 and 100 on the deployable set. The best is `C = 0.01` at macro-F1 0.774, against 0.773 at the default `C = 1`: the linear model is insensitive to the strength of its penalty here.
+
+> **In plain terms: randomised search and the five settings.** A randomised search tries a fixed number of random combinations and keeps the best, instead of trying every combination (324 here, each needing five fits). Usually only one or two settings matter, so a random sample finds a near-best combination for a fraction of the compute.
+> - **`n_estimators`**: how many trees to build.
+> - **`learning_rate`**: how much of each new tree's correction to apply. Smaller steps need more trees but overfit less.
+> - **`max_depth`**: how many questions deep each tree may go. Deeper trees can capture combinations such as "large household and low income".
+> - **`subsample`**: the fraction of households each tree sees. Below 1 it adds randomness that helps the ensemble generalise.
+> - **`min_child_weight`**: how much data a branch needs before it may split again. Higher values stop the tree from carving out tiny, noisy groups.
 >
-> The table reads as a menu of operating points on that single dial, all from the *same model* — nothing was retrained. Want to catch 95% of at-risk households? Set the cut-off at 0.368 and accept that 14.4% of those you contact were already saving. **This is a business choice, not a modelling one**, which is why [Phase 0](phase0.md) argued that keeping the threshold visible was a reason to prefer classification: the trade-off is stated on the page rather than buried in a default.
+> Overfitting means learning the training households' quirks so closely that performance on new households gets worse. The last three settings exist to limit it.
 
-**The recommendation: optimise for recall on the at-risk class.** The asymmetry is in the costs. A false positive is one unnecessary low-cost nudge to a household that was already saving — mildly wasteful. A false negative is a household heading for a shortfall that the outreach never reaches, which is the failure the project exists to prevent (Phase 0).
+> **In plain terms: `C`.** `C` sets how strongly logistic regression is pushed to keep its weights small. Small `C` means a strong penalty and a simpler model; large `C` means a weak penalty. The sweep covers a factor of 10,000, and macro-F1 moves by about 0.001 across it.
 
-> **In plain terms — false positive, false negative.** A **false positive** here is flagging a household as at risk when it was saving fine: the cost is one wasted nudge. A **false negative** is failing to flag a household that really is heading for a shortfall: the cost is that the programme never reaches someone it exists to help, and nobody ever finds out. Because the second mistake is much more expensive than the first, the threshold is deliberately set to make many more of the cheap mistake in order to make fewer of the expensive one.
+### Cell 6: score the tuned configurations on the same folds and save
 
-**And the trade is unusually cheap here.** Moving from 80% to 95% recall costs 8.5 points of precision (0.941 → 0.856). Even at 95% recall, roughly six in seven flagged households are genuinely at risk — a direct consequence of the at-risk class being the majority.
+The search's best score comes from scikit-learn's own scorer. To put the tuned model in the same table as everything else, the cell refits each tuned configuration through `cross_validate_grouped` with the same folds and metric functions as cell 3, and appends it as "XGBoost (tuned)". On the deployable set that gives macro-F1 0.782 and ROC-AUC 0.882; the search reported 0.781. The table, the text and the held-out evaluation all describe this one configuration.
 
-**A caveat that must travel with any of these numbers:** Phase 1 established that 55.9% of IHDS households report consumption exceeding income, so `Goal_Met` is biased downward. These precision/recall figures are measured against a target that under-counts saving. They are sound for *ranking* households and for choosing an operating threshold; they should not be read as "89% of the households we flag are genuinely in financial distress."
+`savings_goal.models.pipeline.save_model_final` writes `results/model_final.json`: the headline set name, the untuned defaults, the search space, the CV description, and for each feature set the chosen parameters, search score, grouped-CV metrics, parameter sensitivity and feature count. Phases 5, 7 and 8 read the tuned parameters from this file. The full comparison, including fold standard deviations of macro-F1 and ROC-AUC, goes to `results/model_comparison.csv`.
 
-### Cell 10 (code) — The single held-out evaluation
+Tuning gain on the headline set: +0.007 macro-F1 (0.774 to 0.782), about one fold standard deviation. On the full set the tuned and untuned XGBoost are tied at 0.836.
 
-**XGBoost, 8,304 households, evaluated once:**
+### Cell 8: precision or recall, from the at-risk side (Q4)
+
+Every model treats `Goal_Met = 1` ("on track") as the positive class, so precision and recall in the tables above describe how well the model finds households that are doing fine. The households a savings nudge would target are the at-risk ones, `Goal_Met = 0`. This cell computes the at-risk view explicitly.
+
+> **In plain terms: why the class matters.** Software has to call one class "positive", and that choice is bookkeeping. Precision and recall are not symmetric between classes, so a recall figure for "on track" says nothing direct about how many at-risk households are found. Reporting the on-track figure to someone who will contact at-risk households answers a question they did not ask.
+
+`savings_goal.evaluation.cv.oof_predict_proba` produces out-of-fold probabilities for the tuned deployable model on the training split. The at-risk score is `1 - p`. From the precision-recall curve the cell takes the threshold that maximises at-risk F1, then, for recall targets of 80%, 90% and 95%, the highest threshold that still reaches each target.
+
+| Operating point (out-of-fold, training split) | At-risk threshold | Precision | Recall |
+| --- | --- | --- | --- |
+| Max F1 (F1 0.869) | 0.425 | 0.827 | 0.915 |
+| Recall at least 80% | 0.654 | 0.893 | 0.800 |
+| Recall at least 90% | 0.464 | 0.838 | 0.900 |
+| Recall at least 95% | 0.316 | 0.789 | 0.950 |
+
+> **In plain terms: out-of-fold scores.** Each training household is scored by a model trained on the other four folds, which never saw its PSU. Choosing a threshold on these scores uses only training data, so the held-out set can still check the result.
+
+> **In plain terms: threshold tuning.** The model outputs a probability. The threshold turns it into a decision: flag every household whose at-risk score is above 0.425, or 0.316, or wherever you choose. A lower threshold flags more households, so fewer at-risk ones are missed (recall rises) and more of those flagged were fine (precision falls). The table is a set of settings for the same model; nothing is retrained between rows. Which row to use depends on the cost of a contact against the cost of a miss, which is a business decision.
+
+The case for favouring at-risk recall: a false positive is one low-cost nudge to a household that was already saving, while a false negative is a household heading for a shortfall that outreach never reaches. Moving from 80% to 95% recall costs 10.4 points of precision (0.893 to 0.789). At 95% recall, about four in five flagged households are at risk. Because the at-risk class is 68% of households, even a random list would be 68% precise; Phase 7 measures capture against that floor and against the best possible list.
+
+### Cell 10: the single held-out evaluation
+
+Both tuned configurations are refit on the full training split and scored once on the 8,299 held-out households, using `savings_goal.evaluation.metrics.probability_metrics` for the threshold-free numbers.
+
+Headline model (tuned XGBoost, deployable set), threshold 0.5:
 
 | Class | Precision | Recall | F1 | Support |
 | --- | --- | --- | --- | --- |
-| not on track | 0.887 | 0.913 | 0.900 | 5,653 |
-| on track | 0.802 | 0.751 | 0.776 | 2,651 |
-| **macro avg** | 0.845 | 0.832 | **0.838** | 8,304 |
+| At risk | 0.849 | 0.883 | 0.866 | 5,648 |
+| On track | 0.727 | 0.667 | 0.696 | 2,651 |
+| Macro average | 0.788 | 0.775 | 0.781 | 8,299 |
 
-| | pred not on track | pred on track |
+| True \ predicted | At risk | On track |
 | --- | --- | --- |
-| **not on track** | 5,163 | 490 |
-| **on track** | 660 | 1,991 |
+| At risk | 4,985 | 663 |
+| On track | 884 | 1,767 |
 
-> **In plain terms — reading the confusion matrix.** Rows are the truth, columns are what the model said. The diagonal is the successes: **5,163** at-risk households correctly flagged and **1,991** on-track households correctly cleared. Off the diagonal are the two mistakes: **490** at-risk households the model wrongly cleared (the expensive miss — outreach never reaches them) and **660** on-track households it wrongly flagged (the cheap miss — a wasted nudge). Every headline metric in this project is arithmetic on these four numbers.
+> **In plain terms: the confusion matrix.** Rows are the truth, columns are the model's call. The diagonal holds the correct calls: 4,985 at-risk households flagged and 1,767 on-track households cleared. Off the diagonal, 663 at-risk households were cleared (the costly miss) and 884 on-track households were flagged (the cheap one). Precision, recall, F1 and accuracy are all arithmetic on these four counts.
 
-**Test macro-F1 is 0.838 against a cross-validated 0.838 — identical to three decimals.** No overfitting, and no optimism in the CV estimate. That is the expected outcome given the untuned and tuned models differed by 0.0006, but it is worth confirming rather than assuming: a model whose hyperparameters were selected on the same folds used to report its score would normally be slightly optimistic, and here the effect is unmeasurable because the search found nothing to overfit to.
+At the at-risk threshold chosen on out-of-fold training scores (0.425), the held-out set gives precision 0.826 and recall 0.913, with 6,243 of 8,299 households flagged. The training estimate was 0.827 / 0.915, so the threshold carries over to unseen PSUs.
+
+Threshold-free metrics on the held-out set:
+
+| Feature set | ROC-AUC | On-track PR-AUC | At-risk PR-AUC | Brier | Log-loss | ECE | Macro-F1 @0.5 | Accuracy @0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Deployable (headline) | 0.886 | 0.775 | 0.944 | 0.127 | 0.391 | 0.009 | 0.781 | 0.814 |
+| Full (diagnostic) | 0.932 | 0.873 | 0.967 | 0.097 | 0.306 | 0.013 | 0.836 | 0.861 |
+
+The held-out numbers match the grouped-CV estimates closely (deployable ROC-AUC 0.886 against 0.882, macro-F1 0.781 against 0.782), so tuning on the grouped folds did not produce a visibly optimistic estimate. `savings_goal.io.write_result` stores these metrics, the tuned at-risk threshold, the out-of-fold recall targets and the held-out size in `results/model_test.json`.
+
+One caveat travels with every figure here. Phase 1 found that 55.9% of IHDS households report consumption above income, so `Goal_Met` counts saving from a noisy income-minus-consumption difference. The precision and recall above are measured against that label. They support ranking households and choosing a threshold; they do not mean that 83% of flagged households are in financial distress.
+
+### Cell 11: plot
+
+`results/model_comparison.png` is a horizontal bar chart of grouped-CV ROC-AUC for every model on both feature sets, sorted by the deployable score, with the tuned XGBoost values (0.882 deployable, 0.929 full) in the title. It shows the gap between the two feature sets as a constant offset across families and the small spread among the strong models within each set.
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **5 — Explainability** | Use SHAP on the **XGBoost** model. Do **not** read logistic-regression coefficients on the shares — Phase 2 showed VIF = ∞, and Cell 6 confirmed the fit is only identified by the L2 penalty. Expect `Log_Income` and `Groceries_Share` to dominate; anything else on top contradicts Phase 3. |
-| **6 — Clustering** | Unaffected by model choice; still needs the ILR-vs-CLR decision from Phase 2. |
-| **7 — Business translation** | Operate at the **95% at-risk recall** threshold (0.368): precision 0.856. Report the model's margin over the single income rule (+0.095 macro-F1), not over the majority baseline. |
+| 5: Explainability | Explain the tuned XGBoost on the deployable set with SHAP, reading parameters from `results/model_final.json`. Do not read logistic-regression coefficients as effects. Expect income to dominate (Phase 3: income alone gives ROC-AUC 0.835). The full model can be explained alongside as a diagnostic. |
+| 6: Clustering | Independent of model choice. |
+| 7: Business translation | Use the deployable model's out-of-fold or held-out scores, and compare targeting with the income rule and with the ceiling at each budget. Its probabilities are well calibrated (held-out ECE 0.009), so expected counts can be read from them directly. The at-risk threshold of 0.425 (held-out precision 0.826, recall 0.913) is one available operating point. |
+| 8: Savings-rate regression | Reuses the same split, grouped folds and deployable feature set, so its results line up with this phase's. |

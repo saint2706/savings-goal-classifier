@@ -1,0 +1,86 @@
+{
+  "pinball_model": 0.47409640485486637,
+  "pinball_constant": 0.7393630443281711,
+  "spearman_rate": 0.778559299356425,
+  "spearman_shortfall_at_risk": 0.3095953895143264,
+  "ranking": [
+    {
+      "budget": 0.1,
+      "strategy": "Predicted rupee shortfall (q50)",
+      "at-risk captured": 0.1426650626282641,
+      "precision": 0.9710982658959537,
+      "share of total rupee gap reached": 0.23686551189489247
+    },
+    {
+      "budget": 0.1,
+      "strategy": "Classifier at-risk score",
+      "at-risk captured": 0.14655721463449153,
+      "precision": 0.9975915221579962,
+      "share of total rupee gap reached": 0.16977579684034103
+    },
+    {
+      "budget": 0.1,
+      "strategy": "Income rule (poorest first)",
+      "at-risk captured": 0.1436911754299059,
+      "precision": 0.978082851637765,
+      "share of total rupee gap reached": 0.12367461691783561
+    },
+    {
+      "budget": 0.25,
+      "strategy": "Predicted rupee shortfall (q50)",
+      "at-risk captured": 0.3502936805604699,
+      "precision": 0.953757225433526,
+      "share of total rupee gap reached": 0.45464943530608015
+    },
+    {
+      "budget": 0.25,
+      "strategy": "Classifier at-risk score",
+      "at-risk captured": 0.3618286037789258,
+      "precision": 0.9851637764932563,
+      "share of total rupee gap reached": 0.3703361907147395
+    },
+    {
+      "budget": 0.25,
+      "strategy": "Income rule (poorest first)",
+      "at-risk captured": 0.35043521336069633,
+      "precision": 0.9541425818882466,
+      "share of total rupee gap reached": 0.2872821559299447
+    },
+    {
+      "budget": 0.5,
+      "strategy": "Predicted rupee shortfall (q50)",
+      "at-risk captured": 0.6706885570731017,
+      "precision": 0.9130979334264656,
+      "share of total rupee gap reached": 0.6956362919150726
+    },
+    {
+      "budget": 0.5,
+      "strategy": "Classifier at-risk score",
+      "at-risk captured": 0.6853725850965962,
+      "precision": 0.9330892624885592,
+      "share of total rupee gap reached": 0.6455281916833505
+    },
+    {
+      "budget": 0.5,
+      "strategy": "Income rule (poorest first)",
+      "at-risk captured": 0.6583398202533437,
+      "precision": 0.8962859482634038,
+      "share of total rupee gap reached": 0.5469544299173503
+    }
+  ],
+  "features": [
+    "Log_Income",
+    "Household_Size",
+    "Age_Dependents",
+    "Dependency_Ratio",
+    "Head_Age",
+    "Max_Adult_Education",
+    "Debt_To_Income",
+    "Has_Debt",
+    "Debt_Missing",
+    "Occupation",
+    "Area_Type",
+    "Caste_Group",
+    "Religion"
+  ]
+}

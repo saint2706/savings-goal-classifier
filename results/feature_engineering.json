@@ -1,0 +1,269 @@
+{
+  "transfer": [
+    {
+      "representation": "expense / income",
+      "winsorised p99": false,
+      "high -> low": 0.5766746847493758,
+      "low -> high": 0.5854149419798427,
+      "mean": 0.5810448133646092
+    },
+    {
+      "representation": "expense / income",
+      "winsorised p99": true,
+      "high -> low": 0.590212965593654,
+      "low -> high": 0.6152002900369493,
+      "mean": 0.6027066278153017
+    },
+    {
+      "representation": "raw rupees",
+      "winsorised p99": false,
+      "high -> low": 0.6007334110534541,
+      "low -> high": 0.6392368952688131,
+      "mean": 0.6199851531611336
+    },
+    {
+      "representation": "raw rupees",
+      "winsorised p99": true,
+      "high -> low": 0.6064410246253713,
+      "low -> high": 0.6503130459398907,
+      "mean": 0.628377035282631
+    },
+    {
+      "representation": "share of expenditure",
+      "winsorised p99": false,
+      "high -> low": 0.6043426623908447,
+      "low -> high": 0.6237548145684654,
+      "mean": 0.614048738479655
+    },
+    {
+      "representation": "share of expenditure",
+      "winsorised p99": true,
+      "high -> low": 0.6061606864172543,
+      "low -> high": 0.6292975003806459,
+      "mean": 0.6177290933989501
+    }
+  ],
+  "indicators": [
+    {
+      "feature set": "shares only",
+      "ROC-AUC": 0.9171454025351521,
+      "F1 (macro)": 0.814302342774089
+    },
+    {
+      "feature set": "shares + indicators",
+      "ROC-AUC": 0.9193240673009153,
+      "F1 (macro)": 0.8181114698033289
+    }
+  ],
+  "debt": [
+    {
+      "variant": "log1p",
+      "logreg": 0.920362845070915,
+      "rf": 0.9129940088222945
+    },
+    {
+      "variant": "p99 per fold",
+      "logreg": 0.9199573261354537,
+      "rf": 0.9127777650562475
+    }
+  ],
+  "clr": [
+    {
+      "representation": "raw shares",
+      "logreg ROC-AUC": 0.9199573261354537
+    },
+    {
+      "representation": "CLR core + zero-inflated shares",
+      "logreg ROC-AUC": 0.9106221038933076
+    }
+  ],
+  "robust_scaler": [
+    {
+      "share": "Groceries_Share",
+      "zero rate": 0.000541858574911948,
+      "IQR": 0.2093085823144677,
+      "RobustScaler scale": 0.2093085823144677,
+      "max |scaled value|": 2.5279863762001957
+    },
+    {
+      "share": "Eating_Out_Share",
+      "zero rate": 0.7236822300490683,
+      "IQR": 0.0071765184686523095,
+      "RobustScaler scale": 0.0071765184686523095,
+      "max |scaled value|": 104.07385838515631
+    },
+    {
+      "share": "Utilities_Share",
+      "zero rate": 0.0015352659622505193,
+      "IQR": 0.06961611428539541,
+      "RobustScaler scale": 0.06961611428539541,
+      "max |scaled value|": 13.01167843764473
+    },
+    {
+      "share": "Rent_Share",
+      "zero rate": 0.9029772118365995,
+      "IQR": 0.0,
+      "RobustScaler scale": 1.0,
+      "max |scaled value|": 1.0
+    },
+    {
+      "share": "Transport_Share",
+      "zero rate": 0.11363978446070021,
+      "IQR": 0.07071871134777102,
+      "RobustScaler scale": 0.07071871134777102,
+      "max |scaled value|": 11.530650472829116
+    },
+    {
+      "share": "Healthcare_Share",
+      "zero rate": 0.19290165266865347,
+      "IQR": 0.11052135175862096,
+      "RobustScaler scale": 0.11052135175862096,
+      "max |scaled value|": 8.20213498411534
+    },
+    {
+      "share": "Education_Share",
+      "zero rate": 0.35858996357506245,
+      "IQR": 0.06235610442906073,
+      "RobustScaler scale": 0.06235610442906073,
+      "max |scaled value|": 15.572026685217438
+    },
+    {
+      "share": "Entertainment_Share",
+      "zero rate": 0.6948132093079262,
+      "IQR": 0.004206205012049741,
+      "RobustScaler scale": 0.004206205012049741,
+      "max |scaled value|": 154.51165866687757
+    },
+    {
+      "share": "Insurance_Share",
+      "zero rate": 0.7368072488636022,
+      "IQR": 0.007344554377409978,
+      "RobustScaler scale": 0.007344554377409978,
+      "max |scaled value|": 107.30564120456063
+    },
+    {
+      "share": "Clothing_Footwear_Share",
+      "zero rate": 0.013907703422739998,
+      "IQR": 0.035306238265565594,
+      "RobustScaler scale": 0.035306238265565594,
+      "max |scaled value|": 23.165510714490992
+    },
+    {
+      "share": "Miscellaneous_Share",
+      "zero rate": 0.0006321683373972727,
+      "IQR": 0.08445414527833935,
+      "RobustScaler scale": 0.08445414527833935,
+      "max |scaled value|": 10.185940979782508
+    }
+  ],
+  "scaler_comparison": [
+    {
+      "scaler (logreg)": "StandardScaler",
+      "ROC-AUC": 0.9199573261354537,
+      "Log-loss": 0.36053482202749837
+    },
+    {
+      "scaler (logreg)": "RobustScaler",
+      "ROC-AUC": 0.9199099316123854,
+      "Log-loss": 0.3606774139608494
+    }
+  ],
+  "vif_all_shares": {
+    "Groceries_Share": 1000799917193443.5,
+    "Eating_Out_Share": 1000799917193443.5,
+    "Utilities_Share": 1000799917193443.5,
+    "Rent_Share": 1000799917193443.5,
+    "Transport_Share": 1000799917193443.5,
+    "Healthcare_Share": 1000799917193443.5,
+    "Education_Share": 1000799917193443.5,
+    "Entertainment_Share": 1000799917193443.5,
+    "Insurance_Share": 1000799917193443.5,
+    "Clothing_Footwear_Share": 1000799917193443.5,
+    "Miscellaneous_Share": 1000799917193443.5,
+    "Age_Dependents": 8.924349055810115,
+    "Household_Size": 5.20389025145078,
+    "Dependency_Ratio": 4.597099543547594,
+    "Spends_On_Insurance": 1.8881005647708198,
+    "Spends_On_Rent": 1.822202997209957,
+    "Spends_On_Eating_Out": 1.8128566716232855,
+    "Log_Income": 1.5738627924882527,
+    "Spends_On_Education": 1.5459452627077253,
+    "Max_Adult_Education": 1.5135369138634045,
+    "Spends_On_Entertainment": 1.4630897176587705,
+    "Head_Age": 1.1701872413524546,
+    "Has_Debt": 1.150143670654602,
+    "Debt_Missing": 1.076012546037662,
+    "Debt_To_Income": 1.0326404349328582
+  },
+  "vif_reference_dropped": {
+    "Age_Dependents": 8.924349055810115,
+    "Household_Size": 5.20389025145078,
+    "Dependency_Ratio": 4.597099543547594,
+    "Spends_On_Insurance": 1.8881005647708198,
+    "Rent_Share": 1.853388477244414,
+    "Spends_On_Rent": 1.8222029972099567,
+    "Spends_On_Eating_Out": 1.812856671623286,
+    "Insurance_Share": 1.7791798652634057,
+    "Eating_Out_Share": 1.7122999649468171,
+    "Log_Income": 1.5738627924882527,
+    "Spends_On_Education": 1.5459452627077253,
+    "Education_Share": 1.5227310137682502,
+    "Max_Adult_Education": 1.5135369138634045,
+    "Spends_On_Entertainment": 1.4630897176587707,
+    "Healthcare_Share": 1.43845800570663,
+    "Entertainment_Share": 1.386897202721486,
+    "Miscellaneous_Share": 1.3604050691464462,
+    "Utilities_Share": 1.2975698556083473,
+    "Transport_Share": 1.2514958085312007,
+    "Head_Age": 1.1701872413524546,
+    "Has_Debt": 1.150143670654602,
+    "Clothing_Footwear_Share": 1.1122885187887417,
+    "Debt_Missing": 1.076012546037662,
+    "Debt_To_Income": 1.0326404349328584
+  },
+  "n_features": 29,
+  "numeric": [
+    "Groceries_Share",
+    "Eating_Out_Share",
+    "Utilities_Share",
+    "Rent_Share",
+    "Transport_Share",
+    "Healthcare_Share",
+    "Education_Share",
+    "Entertainment_Share",
+    "Insurance_Share",
+    "Clothing_Footwear_Share",
+    "Miscellaneous_Share",
+    "Log_Income",
+    "Household_Size",
+    "Age_Dependents",
+    "Dependency_Ratio",
+    "Head_Age",
+    "Max_Adult_Education",
+    "Spends_On_Eating_Out",
+    "Spends_On_Rent",
+    "Spends_On_Education",
+    "Spends_On_Entertainment",
+    "Spends_On_Insurance",
+    "Debt_To_Income",
+    "Has_Debt",
+    "Debt_Missing"
+  ],
+  "categorical": [
+    "Occupation",
+    "Area_Type",
+    "Caste_Group",
+    "Religion"
+  ],
+  "deployable_numeric": [
+    "Log_Income",
+    "Household_Size",
+    "Age_Dependents",
+    "Dependency_Ratio",
+    "Head_Age",
+    "Max_Adult_Education",
+    "Debt_To_Income",
+    "Has_Debt",
+    "Debt_Missing"
+  ]
+}

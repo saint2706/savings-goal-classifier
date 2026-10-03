@@ -1,8 +1,11 @@
-# Phase 8 — Reporting
+# Phase 8: Distance from Adequacy and Reporting
 
-**Source:** [README § Phase 8 — Reporting](../README.md#phase-8--reporting)
-**Builds on:** Phases 0–7
-**No notebook.** Phase 8 runs no new analysis — every figure it cites was computed and persisted by an earlier phase. Its job is to assemble them into something a non-technical stakeholder would read, and to make sure the *reasoning* survives the compression.
+**Source:** [README § Phase 8: Reporting and distance from adequacy](../README.md#phase-8-reporting-and-distance-from-adequacy)
+**Notebook:** [`notebooks/08_savings_rate_regression.ipynb`](../notebooks/08_savings_rate_regression.ipynb)
+**Builds on:** [Phase 1](phase1.md) (leakage check, deployable feature set), [Phase 4](phase4.md) (tuned headline model), [Phase 7](phase7.md) (capture at a budget, income rule)
+**Artifacts:** `results/savings_rate_regression.json`, `results/savings_rate_regression.png`; report figures `project/figures/fig1`–`fig4`
+
+Phase 8 has two parts. Part A is a short notebook that models how far each household is from the 20% benchmark rather than only whether it misses it, and asks whether ranking by the predicted rupee shortfall reaches more of the total gap than the classifier. Part B is the stakeholder write-up: every number in it was computed by Phases 1 to 8 and stored in `results/`.
 
 ---
 
@@ -10,136 +13,208 @@
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Does the write-up explain reasoning rather than just reporting numbers? | Yes — see [Why each decision was made](#why-each-decision-was-made) below, which traces every material choice to the phase that made it and the evidence that forced it, including four cases where the evidence overturned the approach we started with. |
-| 2 | Which 3–4 visualisations communicate the findings fastest? | Four: `phase1_eda.png` (what the data is really like), `shap_summary.png` (what drives the outcome), `business_translation.png` (what the model is worth), and `personas.png` (who the segments are). Rationale in [Visual appendix](#visual-appendix). |
+| 1 | Does ranking by predicted rupee shortfall (quantile regression on `Savings_Rate`) reach more of the gap than a classifier? | Yes. At a 25% contact budget, ranking by the median model's predicted shortfall reaches 45.5% of the total rupee gap, against 37.0% for the classifier and 28.7% for the income rule. It reaches about as many at-risk households as the income rule (35.0%, vs 36.2% for the classifier). |
+| 2 | Does the write-up explain reasoning rather than just reporting numbers? | Yes: [Why each decision was made](#why-each-decision-was-made) maps each material decision to the phase that made it and the evidence behind it. |
+| 3 | Which 3–4 visualisations communicate the findings fastest to a non-technical reader? | The four report figures in `project/figures/`: the ROC-AUC ladder with the model-free oracle (fig 1), SHAP for the headline model (fig 2), the campaign view (fig 3) and cluster attainment within income deciles (fig 4). See the [visual appendix](#visual-appendix). |
 
 ---
 
-## The stakeholder write-up
+## Part A: notebook walkthrough
 
-*Written for the audience Phase 0 defined: a savings-product or financial-inclusion team deciding which households to prioritise, with no assumed ML background.*
+### Cell 1: Out-of-fold median savings rate
+
+The binary label records whether a household falls short of a 20% savings rate, not by how much. This cell models the savings rate itself, using only the 13 deployable features (`spec.deployable_numeric` plus the four categoricals: income, household size and composition, head age, adult education, debt, occupation, area type, caste group, religion). Spending shares are left out for the reason Phase 1 gave: with household size and income they reconstruct total spending, and so the label.
+
+`savings_goal.models.regression.quantile_model` builds a pipeline of the shared preprocessor and a `HistGradientBoostingRegressor` with quantile loss at τ = 0.5 (300 iterations, learning rate 0.08). It is fitted inside the same PSU-grouped folds as earlier phases (`savings_goal.evaluation.cv.grouped_cv`), so each household's predicted median comes from a model that did not see its PSU. A constant benchmark, the training folds' median savings rate, is computed alongside.
+
+| Measure | Value |
+| --- | --- |
+| Out-of-fold pinball loss, model | 0.474 |
+| Out-of-fold pinball loss, constant median | 0.739 |
+| Spearman (predicted median, actual savings rate) | 0.779 |
+
+The model reduces pinball loss by 36% relative to predicting the same median for everyone, and its predictions order households by savings rate with a rank correlation of 0.78.
+
+> **In plain terms: why the median, not the mean.** The savings rate has a very long left tail: the median household's rate is −10.8%, and the bottom 1% sit below −1,573%, mostly households whose reported income is far below their recorded spending. An ordinary regression predicts the average, and a few extreme values drag the average around. Quantile regression at τ = 0.5 predicts the conditional median instead: for households like this one, the rate that half fall above and half below. The extremes barely move it.
+
+> **In plain terms: pinball loss.** Pinball loss (`savings_goal.models.regression.pinball_loss`) is the error measure that matches a median prediction: at τ = 0.5 it is half the average absolute gap between predicted and actual savings rate. Lower is better. A loss of 0.474 means the typical miss is still large in absolute terms, which is expected with a tail this long; the comparison that matters is against the 0.739 a constant median scores.
+
+> **In plain terms: Spearman correlation.** Spearman's correlation compares the order of two lists, not their values. 1 means the predicted ranking matches the actual ranking exactly, 0 means no relation. Ranking is what a contact list needs, so it is the more useful check here than how close each predicted rate is.
+
+### Cell 3: Ranking by predicted rupee shortfall vs the classifier and the income rule
+
+The predicted rate becomes a rupee figure with `savings_goal.models.regression.rupee_shortfall`: max(0, 0.20 − predicted median) × income. The actual shortfall is the same formula applied to the observed rate. The headline classifier's out-of-fold scores are recomputed with `oof_predict_proba` and the Phase 4 parameters, so the classifier rows match Phase 7. Each strategy is then scored with `savings_goal.evaluation.metrics.capture_at_budget` twice: once on the at-risk indicator (share of at-risk households reached) and once on the actual rupee shortfall (share of the total rupee gap reached).
+
+| Strategy | At-risk reached @10% | @25% | @50% | Rupee gap reached @10% | @25% | @50% |
+| --- | --- | --- | --- | --- | --- | --- |
+| Predicted rupee shortfall (median model) | 14.3% | 35.0% | 67.1% | 23.7% | 45.5% | 69.6% |
+| Classifier at-risk score | 14.7% | 36.2% | 68.5% | 17.0% | 37.0% | 64.6% |
+| Income rule (poorest first) | 14.4% | 35.0% | 65.8% | 12.4% | 28.7% | 54.7% |
+
+Precision at 25% is 95.4% for the shortfall ranking, 98.5% for the classifier and 95.4% for the income rule.
+
+The two rankings answer different questions. The classifier is best at finding households below the line; the shortfall ranking gives up about a point of at-risk capture and puts households with the largest rupee gaps first. Its advantage over the classifier is 6.7 pp of the gap at 10%, 8.5 pp at 25% and 5.0 pp at 50%.
+
+Among at-risk households only, the Spearman correlation between predicted and actual rupee shortfall is 0.31. The model orders the size of the gap far less well than it orders the savings rate across all households (0.78), so individual shortfall predictions are rough even when the ranking gains in aggregate.
+
+> **In plain terms: "share of the total rupee gap reached".** Add up, over every household, how many rupees short of 20% savings it is. A strategy that contacts 25% of households "reaches" the part of that total belonging to the households it contacted. Two households can both be at risk while one is Rs 2,000 short and the other Rs 80,000 short; capture of at-risk households counts them equally, this measure does not.
+
+One identity to keep in mind: (0.20 − savings rate) × income equals consumption − 0.8 × income. The rupee gap is therefore largest where recorded consumption is far above reported income, which is where Phase 1 found income under-reporting concentrated (22.0% of households report spending more than twice their income). A rupee-gap ranking leans further into that group than the classifier does.
+
+### Cell 4: Figure and results
+
+`results/savings_rate_regression.png` plots, for 50 contact budgets from 1% to 100%, the share of the total rupee gap each strategy reaches, with a dotted random-contact diagonal. The shortfall curve sits above the classifier's and the income rule's over the lower half of budgets, and the curves converge as the budget approaches everyone. The cell writes `results/savings_rate_regression.json` with both pinball losses, both Spearman correlations, the ranking table and the feature list.
+
+---
+
+## Part B: the stakeholder write-up
+
+Written for a savings-product or financial-inclusion team deciding which households to prioritise, with no assumed background in machine learning.
 
 ### Executive summary
 
-Across **41,518 Indian households** surveyed in 2011–12, **68% retain less than 20% of their annual income** after recorded consumption. A model can rank households by that risk with good accuracy (ROC-AUC 0.93, macro-F1 0.84) and unusually reliable probabilities.
+The survey covers 41,518 Indian households interviewed in 2011–12 (India Human Development Survey, round II). 68.1% of them (69.5% after survey weighting) keep less than 20% of their annual income after recorded consumption; we call these households at risk.
 
-> **The four numbers this report leans on, in plain terms.** This section is written for readers with no machine-learning background, so the measures are worth stating once. (Fuller explanations sit in the phase documents: [ROC-AUC](dataset_construction.md#reserved-for-validation-never-features), [macro-F1](phase0.md), [calibration](phase7.md).)
->
-> - **ROC-AUC 0.93** — take one household that really is on track and one that is not; the model gives the first a higher score 93 times out of 100. A coin flip scores 0.50. This measures the **order** the model puts households in, which is what a prioritised contact list needs.
-> - **Macro-F1 0.84** — how good the model's actual yes/no calls are, scored so that being right about at-risk households and being right about on-track households count equally. This matters because a model that simply labels *everyone* at risk would be right 68% of the time and useless; that do-nothing model scores 0.40 here.
-> - **Calibration error ≤ 0.036** — when the model says 70%, the true rate among those households is between about 66% and 74%. The probabilities are honest numbers, not just a ranking.
-> - **+0.095 macro-F1 over a single income rule** — the model's genuine contribution above simply sorting households by income, which is the comparison that matters. Against a do-nothing baseline the gain would look four times larger, and that comparison would be misleading.
+A model that uses only what a team could ask at onboarding (income, household size and composition, age and education of the head and adults, debt, occupation, area, social group) ranks households well. Shown a random on-track household and a random at-risk household from villages it never saw, it scores the on-track one higher 88.6% of the time (ROC-AUC 0.886), and its probabilities match observed rates closely (calibration error 0.009).
 
-But three findings should temper any campaign built on it:
+Its value over a simple rule is modest. Contacting the poorest households first already reaches 95.4% of the at-risk households any 25% contact list could reach; the model reaches 98.5%, a gain of 1.1 percentage points of capture (95% interval 1.0 to 1.3). Income does most of the work.
 
-1. **Income does most of the work.** A single threshold — earning more than ₹121,685/year — already recovers most of the model's performance. The full model adds real but modest value on top.
-2. **The model barely beats "contact the poorest first."** At a 25% contact budget it reaches 36.6% of at-risk households against 35.0% for a simple income rule. Its genuine advantage is precision: 99.6% of those contacted are truly at risk, against 68.3% at random.
-3. **For most at-risk households the shortfall is structural, not behavioural.** Only **28.5%** could reach the benchmark even by matching the spending of on-track households at the same income. A budgeting nudge cannot fix the other 71.5%.
+Spending patterns would appear to add a lot (ROC-AUC 0.93), but measured over the same year as the outcome they mostly restate it: with household size and income, food spending reconstructs the size of the household budget, and a formula with no model reaches 0.895 from those three facts alone.
 
-**Recommended action:** use the model to prioritise outreach *within* income bands rather than as a discovery tool; size the campaign as prioritisation rather than needle-finding; and pair any savings product with income-side support, because for seven in ten at-risk households more income — not less spending — is what closes the gap.
+If the goal is rupees rather than headcount, ranking households by predicted rupee shortfall reaches 45.5% of the total gap with a 25% contact budget, against 37.0% for the risk score and 28.7% for poorest-first.
+
+Recommended use: prioritise by income, let the onboarding model re-rank within income bands, report relative priority rather than prevalence, and do not size a budgeting product from these data.
+
+> **In plain terms: the measures used in this summary.**
+> - ROC-AUC: pick one household that is on track and one that is not; ROC-AUC is how often the model gives the first a higher score. A coin flip scores 0.50, a perfect ranking 1.00. It measures the order of the list, which is what a contact list needs.
+> - Macro-F1: how good the model's yes/no calls are, scoring "right about at-risk" and "right about on-track" equally. A model that calls everyone at risk is right 68% of the time and scores 0.405; the income rule scores 0.742 and the headline model 0.781.
+> - Calibration error (ECE): the average gap between the predicted and observed rate. At 0.009, a household scored at 70% belongs to a group where about 70% are on track.
+> - Percentage points (pp): the difference between two percentages. 98.5% vs 95.4% is a gap of 3.1 pp.
 
 ### The business question
 
-A savings-product or financial-inclusion team cannot review 41,518 households by hand to decide who needs support. This project builds a classifier that triages them, flagging households unlikely to retain an adequate share of income so outreach goes where it is most needed (Phase 0).
+A team cannot review 41,518 households by hand. The project builds a triage score that flags households unlikely to keep an adequate share of their income, so that outreach goes first to those who need it most.
 
-**One framing caveat that matters.** The original version of this project asked whether someone was on track for *their own stated savings goal*. No real household survey collects that, so the target here is **normative**: a household is "on track" if it retains at least 20% of annual income. That is a different question — closer to measuring savings *capacity* than goal alignment — and no claim in this report should be read as being about goals people set for themselves.
+The target is normative. No large household survey asks people for their own savings goal, so "on track" here means keeping at least 20% of annual income. That measures savings capacity, not whether a household meets goals it set for itself, and nothing in this report is a claim about personal goals.
 
 ### What we found
 
-**1. Who is at risk.** At-risk rates fall steadily with income, from **97.8%** in the poorest decile to **16.9%** in the richest. Geography follows the same gradient: least-developed villages 73.3%, metro urban 57.9%. Occupation matters too — households with no regular worker (75.0%) or in agricultural labour (74.9%) versus salaried households (55.9%).
+1. Income dominates. Risk falls from 97.8% in the poorest tenth of households to 16.9% in the richest. In the headline model income accounts for 58.0% of the explanation (SHAP) and 82% of permutation importance (the drop in score when a feature group is shuffled). A single income cut-off, around Rs 122,249 a year, already reaches macro-F1 0.742.
+2. The model refines an income ranking. Its edge over poorest-first is +0.3 pp of capture at a 10% budget, +1.1 at 25% and +2.7 at 50% and 65%, all with intervals above zero. Its precision edge at 25% is 3.1 pp (98.5% vs 95.4%). After survey weighting, its capture at 10% and 25% is level with the income rule (39.0% vs 39.1% at 25%); the precision edge remains.
+3. About a third of the model's behaviour comes from combinations of features (31.6% of attribution is interactions), led by income with household size. The same income means different things for a family of three and a family of eight.
+4. Spending shares cannot be used to score households in the same period as the outcome. Food spending relative to household size, divided by income, ranks households at ROC-AUC 0.895 with no model at all; the ablation shows the model loses only 0.002 without the food share but 0.053 without all shares and spending indicators. The spending model (0.929 in cross-validation, 0.932 on held-out villages) is a diagnostic, not a forecast.
+5. Peer comparisons cannot size a budgeting product. At the same income, at-risk households spend more rupees than on-track households in all 11 categories, because "at risk" means a larger budget. In budget shares they spend more on healthcare (+4.4 pp), education (+2.8), miscellaneous (+2.1) and transport (+1.8), and 9.0 pp less on food. Whether matching peers would close the gap depends on how "matching" is defined: 92.8% of at-risk households under a rupee benchmark, 22.3% under a share benchmark.
+6. The spending clusters are groups defined by which categories a household records as zero: 69.7% record spending in all core categories, 18.6% record no healthcare spending and 11.7% record no transport spending. They agree with the raw zero pattern at an adjusted Rand index of 0.858 and are nearly independent of income. They describe the data; they are not behavioural personas to target.
+7. Where the goal is rupees, a different ranking helps. Ranking by predicted rupee shortfall reaches 45.5% of the total gap at a 25% budget (risk score 37.0%, income rule 28.7%) while reaching 35.0% of at-risk households.
 
-**Geography here is largely income wearing a geographic label.** Phase 5 found income's effect is near-identical across area types, so an area-based campaign is an income-based campaign with extra steps — worth knowing before designing outreach around location.
-
-**2. What drives it.** Income is the dominant factor: 38.4% of the model's total explanation, more than four times the next feature. Spending mix matters too (26.7%), but second.
-
-Within spending, one finding is counter-intuitive and important: **households spending a larger share of their budget on food are *more* likely to be on track**, once income is accounted for. That is the opposite of the obvious reading. A food-dominated budget signals the *absence* of large irregular outlays — health shocks, durables, school fees — and those are what push consumption above income. Consistent with this, at-risk households spend **8.8 percentage points less** of their budget on groceries than on-track households at the same income.
-
-**3. What to do about it.**
-
-| Recommendation | Why |
+| Recommendation | Evidence |
 | --- | --- |
-| Prioritise by income first; use the model to re-rank within income bands | The model adds only +1.5 points of at-risk capture over a simple income rule at a 25% budget |
-| Size the campaign as prioritisation, not needle-finding | At-risk households are 68% of the population; lift over random is 1.46× |
-| Treat the shortfall as structural for most households | Only 28.5% could close the gap by matching peer spending in every category |
-| If a behavioural lever exists it is Miscellaneous — not groceries | Groceries runs the wrong way; healthcare and education are the largest excesses but are not optional |
-| Report relative priority only, never a prevalence figure | 32.3% of the at-risk group report spending more than twice their income |
+| Prioritise by income; use the onboarding model to re-rank within income bands | +1.1 pp capture over poorest-first at 25% (CI 1.0 to 1.3); +3.1 pp precision |
+| Judge any targeting result against the ceiling and the income rule, not random contact | With 68.1% at risk, a 25% list reaches at most 36.7% of them; random contact reaches 24.9% |
+| Rank by predicted rupee shortfall when the programme is sized in rupees | 45.5% of the gap at 25% vs 37.0% (risk score) and 28.7% (income rule) |
+| Do not size a budgeting product from peer benchmarks | 92.8% vs 22.3% "closable" depending on the benchmark |
+| Report relative priority only, never a prevalence figure | 32.3% of the at-risk group report spending over twice their income; at-risk share is 61.7% to 74.7% across 10%–30% thresholds |
 
 ### What a stakeholder must be told before acting
 
-- **The model is weakest exactly where the decision is hardest.** Accuracy is 0.98 in the poorest decile and 0.89 in the richest — but **0.78–0.80 in deciles 5–7**, where at-risk rates run 70% down to 49% and targeting is genuinely contested. The headline 0.86 overstates usefulness at the point of decision.
-- **About a third of the "at-risk" group is a measurement artifact.** 22.0% of households report spending more than twice their income; all are classified at-risk and they are 32.3% of that group. Indian household surveys under-report income relative to item-by-item consumption. The *ranking* remains useful; the *count* is not a population estimate.
-- **The 20% benchmark is a convention we chose**, not a measurement. Moving it to 10% or 30% shifts the at-risk share from 68.1% to 61.7% or 74.7%. Findings here hold across that range; levels do not.
-- **The data is from 2011–12.** Sound for methodology, not current for market sizing.
-- **Probabilities can be trusted.** Calibration error is at most 0.036 across the range — a predicted 70% really means about 70%, so scores support expected-value arithmetic, not just ranking.
+- The model is least accurate where the decision is hardest. Accuracy is 0.978 in the poorest tenth, where almost everyone is at risk anyway, and 0.662 in the eighth tenth (decile 7), where the at-risk rate is 48.7%. Overall accuracy (0.815) hides that dip.
+- The at-risk count is not a population estimate. 22.0% of households report spending more than twice their income and they make up 32.3% of the at-risk group. Indian household surveys under-report income relative to itemised consumption. The ranking is usable; the count is not.
+- The 20% line is a convention. At 10% the at-risk share is 61.7%, at 30% it is 74.7%. About 93.5% of households keep the same label either way, so rankings hold and levels do not.
+- The probabilities can be used for planning arithmetic. Out-of-fold calibration error is 0.006 and no probability bin is off by more than 1.3 points.
+- Spending data can only be used if it was recorded before the period being predicted. The scoring service enforces this (below).
+- Nothing here says who would respond to outreach. IHDS records no intervention, so risk is not the same as benefit from contact.
+- The data is from 2011–12: sound for method, not current for market sizing.
+
+### Scoring service and uplift scaffold
+
+`src/savings_goal/api.py` serves the score as a FastAPI app (`sgc train` fits the models, `sgc serve` runs the service) with two endpoints:
+
+- `/score/onboarding`: scores from income, demographics and debt only, the 13 deployable features. Requests are validated (for example, dependants cannot exceed household size; unknown debt stays unknown rather than becoming zero).
+- `/score/with-spending`: adds spending shares, and accepts them only when `shares_observed_through` is strictly before `prediction_window_start`. Shares from the same period as the outcome reconstruct it, so the service rejects them with a 422 error. Shares must also sum to one.
+
+Who to contact is a different question from who would respond. Answering it needs data in which some households were contacted (ideally at random) and others were not, and IHDS has none. `savings_goal.models.uplift` provides a T-learner (separate outcome models for contacted and not-contacted households; uplift is the difference) and a Qini-curve metric. It is tested on synthetic data in `tests/unit/test_models.py` and ready for campaign data; nothing in this project estimates uplift on IHDS.
 
 ---
 
 ## Why each decision was made
 
-Every material decision, the phase that made it, and the evidence behind it.
-
-| Decision | Phase | Reasoning |
+| Decision | Phase | Evidence |
 | --- | --- | --- |
-| Normative 20% target | Phase 0 | No real survey collects a self-declared savings goal. Threshold made configurable, and sensitivity published so no reader takes it on trust. |
-| Composition shares, not expense-to-income ratios | Phases 1–2 | Ratios reconstruct the target with **99.75%** agreement — textbook leakage. Shares sum to exactly 1 and cannot recover consumption-vs-income. |
-| Macro-F1, not accuracy | Phase 3 | The majority baseline scores 0.68 accuracy while never identifying a single on-track household. |
-| Benchmark against a single income rule | Phase 3 | Comparing only to the majority baseline flatters the model by 0.43 macro-F1; against the income rule the honest gain is 0.095. |
-| XGBoost over logistic regression | Phase 4 | Macro-F1 0.837 vs 0.819. Phase 5 explains why: **41.9% of the model's behaviour is interactions**, which a linear model cannot represent. |
-| Optimise for recall on the at-risk class | Phase 4 | A missed at-risk household is a silent failure; an unnecessary nudge is cheap. Reaching 95% recall costs only ~8 points of precision. |
-| SHAP on trees, not coefficients | Phases 2, 5 | The 11 shares sum to 1, so they are exactly singular (VIF = ∞) and no coefficient is identified. |
+| Normative 20% target, with the threshold configurable | Phase 0, Phase 1 | No survey records a self-set goal. Threshold sensitivity is published: at-risk share 61.7% at 10%, 74.7% at 30%, with 93.6% and 93.4% label agreement. |
+| Group all validation by survey PSU (`IDPSU`) | Dataset construction, Phase 1 | Households in a PSU share prices and local shocks. 2,461 PSUs; `PSUID` alone repeats across districts (39 distinct values). One grouped fold (8,299 households, 472 PSUs) is held out first. |
+| Exclude raw rupee categories and expense-to-income ratios | Phase 1 | Either one, with income, reconstructs the label for 99.75% of households. |
+| Headline model on the 13 deployable features; spending shares diagnostic only | Phase 1 (leakage check, ablation) | No single share carries the label (max marginal AUC distance from 0.5 is 0.10), but jointly with size and income they do: food spend scales with size at elasticity 0.63 (R² 0.29), and the size × food-share oracle reaches ROC-AUC 0.895. Dropping all shares and indicators keeps 94.3% of the full model's AUC (0.878 vs 0.931). |
+| Keep missing debt as missing; winsorise debt at the 99th percentile inside each fold | Dataset construction, Phase 2 | 7.6% of households have no debt answer, and they meet the benchmark more often (0.367 vs 0.315). Fitting the cap inside each fold keeps held-out values from setting it. |
+| Raw shares over the CLR log-ratio transform | Phase 2 | Logistic regression ROC-AUC 0.920 on raw shares vs 0.911 with CLR. |
+| Macro-F1 as the selection metric, and a single income threshold as the reference | Phase 3 | The majority class scores 0.681 accuracy and 0.405 macro-F1 while never finding an on-track household. The income threshold (re-learned per fold, mean Rs 122,249) scores 0.742. |
+| Tuned XGBoost (depth 4, learning rate 0.08, 200 trees, subsample 0.7) | Phase 4 | Grouped-CV macro-F1 0.782 and ROC-AUC 0.882, the best of the candidate models; ECE 0.011 vs 0.103 for logistic regression. Held out: ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944, Brier 0.127, ECE 0.009. |
+| Explain with grouped SHAP and permutation importance, not coefficients | Phases 2, 5 | The 11 shares sum to one, so their coefficients are not identified (VIF about 10¹⁵). Income: 58.0% of grouped SHAP, 82% of permutation importance; interactions 31.6%. |
+| Describe the k = 3 clusters as zero-pattern groups, not personas | Phase 6 | ILR basis; all three selection indices pick k = 3. Adjusted Rand index 0.858 with the zero pattern; NMI 0.012 with income decile. |
+| Measure targeting against the ceiling and the income rule, with PSU-bootstrap intervals | Phase 7 | 98.5% vs 95.4% of ceiling at 25%; +1.1 pp (CI 1.0 to 1.3). Random contact is not a meaningful comparison when 68% are at risk. |
+| Judge spending levers by signed budget-share excess against mean peers | Phase 7 | Rupee excess is positive in all 11 categories by construction. Share excess: healthcare +4.4, education +2.8, miscellaneous +2.1, transport +1.8, food −9.0 pp. |
+| Do not split shortfall into structural and behavioural | Phase 7 | 92.8% closable under a rupee benchmark, 22.3% under a share benchmark: the answer belongs to the benchmark. |
+| Model the savings rate with median regression and rank by rupee shortfall | Phase 8 | Pinball loss 0.474 vs 0.739 for a constant; 45.5% of the rupee gap at 25% vs 37.0% for the classifier. |
+| Two-tier scoring service with a date check on spending data | Phase 8 | Same-period shares reconstruct the label (Phase 1), so the spending tier accepts only shares observed before the prediction window. |
 
-> **In plain terms — the technical terms in that table.**
-> - **XGBoost** is the chosen model: hundreds of small decision flowcharts built one after another, each correcting the mistakes the previous ones still make. **Logistic regression** is the simpler alternative — one fixed weight per feature, added up.
-> - An **interaction** means a feature's meaning depends on another feature's value: a high food share signals something different for a household earning ₹40,000 than for one earning ₹400,000. Logistic regression assigns each feature one fixed effect and cannot express that, which is the concrete reason it was not chosen.
-> - **Recall** on the at-risk class is the fraction of genuinely at-risk households the campaign reaches. **Precision** is the fraction of those contacted who genuinely needed it. Pushing one up pushes the other down, and the choice of where to sit is a business decision, not a technical one.
-> - **SHAP** breaks a single prediction into per-feature contributions — "income pushed this household up, family size pulled it down" — and it is used because the simpler route, reading the model's weights, is unavailable here: the eleven budget shares always add to 100%, which mathematically means there is no single correct set of weights to read.
-| Peer benchmarking for "recoverable" | Phase 7 | The survey does not say which spending was avoidable; comparing within income deciles avoids having to assume it. |
-
-### Four times the evidence overturned our approach
-
-Recording these matters more than recording the successes, because each was a plausible choice that measurement rejected.
-
-1. **The CLR transform was proposed, implemented, and rejected** (Phase 2). Compositional data theory says to log-ratio transform simplex data. It scored 0.9117 against 0.9212 for raw shares, and its components are singular by construction (VIF 3×10⁵). The theory was right about the problem and wrong about which transform.
-2. **Expense-to-income ratios generalise *worst*** (Phase 2). Dividing spending by income is the intuitive way to make households comparable across income levels. Tested on a neutral target, it came last (0.589 against 0.625 for raw rupees) — income is the under-reported side of this survey, and so the worst available divisor.
-3. **A high grocery share predicts being *on track*** (Phase 5). We captioned the dependence plot with the opposite, from the obvious Engel's-law reading. The plot contradicted it. Reading this off Phase 1's unconditional correlation would have produced a backwards recommendation.
-4. **The spending personas are not an income split** (Phase 6). Phase 5 found income carries 38.4% of attribution against spending's 26.7%, which suggested the personas would largely re-encode income. The adjusted Rand index against income tertiles is 0.006. Income was *suppressing* the persona effect — controlling for it nearly doubled the spread (0.167 vs 0.092).
-
-> **In plain terms — the two terms in item 4.** The **adjusted Rand index** scores how much two ways of grouping the same households agree: 1.0 means identical, 0 means no more alike than chance. At 0.006 the spending groups are simply not income brackets in disguise.
->
-> **Suppression** is the counter-intuitive part. One group of households was both poorer than average (which lowers saving) and spending on fewer categories (which raises it). Compared straightforwardly, the two effects cancel and the group looks unremarkable — a 9-point gap. Compared only against households *at the same income*, the behavioural effect stands alone and the gap grows to 17 points, reaching 32 points in one income band. The effect was there all along; income was hiding it.
-
-A fifth, methodological: Phase 6's notebook initially **hardcoded the worst-scoring representation** instead of selecting from the sweep it had just computed. Caught by reading the output rather than skimming it.
+> **In plain terms: the technical terms in the table.**
+> - Leakage: a feature that contains the answer. Spending categories plus income add up to the savings rate, so a model given them scores near-perfectly and predicts nothing new.
+> - Oracle: a formula with no fitted model, here 1 − (Rs 8,848 × household size / food share) / income. If it scores higher than a model, the model's inputs are doing arithmetic, not prediction.
+> - Grouped cross-validation: testing on whole villages or urban blocks the model never saw, so neighbours cannot leak information between training and testing.
+> - SHAP: splits each prediction into contributions from each feature ("income pushed this household toward on-track, household size pulled it back").
+> - ILR and CLR: log-ratio transforms for data that must add up to 100%, such as budget shares.
+> - Adjusted Rand index: agreement between two groupings, 1 for identical and 0 for chance.
 
 ---
 
 ## Visual appendix
 
-Four charts, chosen because each answers a question a stakeholder will actually ask.
+Four report figures, built by `project/figures/make_figures.py` from `results/*.json` and `results/*.csv` (no numbers are typed by hand):
 
-**1. `results/phase1_eda.png` — "What is this data really like?"**
-Four panels: income skew, the savings-rate distribution with the 20% line marked, zero-inflation by category, and goal attainment by area type. It earns first place because it makes the two facts that constrain every later claim visible at once — the median household has a **negative** savings rate, and rent is absent for 90% of households.
+| Figure | Question it answers | What it shows |
+| --- | --- | --- |
+| `project/figures/fig1_feature_ladder.png` | How much does each ingredient add? | ROC-AUC from grouped CV for a ladder of models: single income threshold 0.739, income-only logistic regression 0.835, income plus demographics 0.876, headline XGBoost 0.882, XGBoost with spending shares 0.929. A vertical line marks the model-free oracle at 0.895, above every model that does not see spending shares. |
+| `project/figures/fig2_shap.png` | What drives the score? | The ten largest mean absolute SHAP values for the headline model on held-out PSUs (income 1.95, household size 0.50, debt-to-income 0.30), and a bar splitting attribution by family: income 58.0%, household size 14.5%, social and geographic 10.9%, debt 8.7%, head age and education 8.0%. |
+| `project/figures/fig3_business.png` | What is the model worth to a campaign? | (a) capture curves for the model, the income rule and random contact against the ceiling, annotated 98.5% vs 95.4% of ceiling at 25%; (b) accuracy by all ten income deciles with the overall 0.815 line and the decile 7 low of 0.662; (c) signed budget-share excess per category with 95% intervals. |
+| `project/figures/fig4_personas.png` | Do the clusters matter once income is known? | Share meeting the benchmark within each income decile for the three clusters, with the likelihood-ratio test for cluster given decile and the pseudo-R² gain from 0.265 to 0.280. |
 
-**2. `results/shap_summary.png` — "What drives the outcome?"**
-The SHAP summary. `Log_Income` dominates by 4.5×, which is the single most important thing for a stakeholder to internalise before believing any spending-behaviour story. Paired with `shap_dependence.png` when the counter-intuitive grocery finding needs explaining.
+Supporting figures from the notebooks, for a technical reviewer:
 
-**3. `results/business_translation.png` — "Is the model worth deploying?"**
-Three panels: the capture curve (model vs income rule vs random — the model's line sits just above the income rule's and both are near the diagonal, which is the honest picture), aggregate excess by category, and the calibration curve. This is the chart to show anyone approving budget, because it does not oversell.
-
-**4. `results/personas.png` — "Who are the segments?"**
-Spending signature, goal attainment by persona, and income distribution. Included with the caveat that the personas are defined by which categories are *absent*, so they are descriptive rather than targetable.
-
-**Deliberately excluded:** `model_comparison.png` and `cluster_selection.png`. Both are model-selection diagnostics that answer questions a technical reviewer asks and a stakeholder does not. They belong in Phases 4 and 6, not in a summary deck.
+| File | Notebook | Content |
+| --- | --- | --- |
+| `results/phase1_eda.png` | 01 | Income before and after the log, savings-rate distribution with the 20% line, zero-spend rates by category, attainment by area type |
+| `results/phase1_share_correlations.png` | 01 | Correlations between the 11 expense shares |
+| `results/baseline.png` | 03 | Baselines under grouped CV, majority class to income threshold |
+| `results/model_comparison.png` | 04 | Candidate models on the deployable and full feature sets |
+| `results/shap_summary.png`, `results/shap_summary_full.png` | 05 | SHAP summaries for the headline and full models |
+| `results/shap_dependence.png` | 05 | Family attribution and the food-share SHAP against implied spend relative to income |
+| `results/cluster_selection.png` | 06 | Silhouette, Davies-Bouldin and Calinski-Harabasz across k |
+| `results/personas.png` | 06 | Cluster spending signatures, attainment by cluster, attainment within income deciles |
+| `results/business_translation.png` | 07 | Capture curves, signed composition excess, calibration curve |
+| `results/savings_rate_regression.png` | 08 | Share of the total rupee gap reached by budget for the three rankings |
 
 ---
 
-## Honest limitations
+## Limitations
 
-- **Income under-reporting** puts 55.9% of households in an implausible consumption-exceeds-income position and makes ~32% of the at-risk group a measurement artifact. Relative rankings survive; absolute prevalence does not.
-- **2011–12 vintage.** IHDS-3 fieldwork is complete but public microdata was not released as of this work.
-- **Household grain.** No per-individual claims are supported.
-- **Survey weights are carried but not applied.** `WT` is in the dataset; model fitting is unweighted. Any nationally-framed figure must apply it.
-- **Debt is a stock, not a flow.** IHDS records outstanding debt and interest rates but no repayment instalment, so `Debt_To_Income_W` stands in for a cash-flow burden it cannot directly measure.
-- **The at-risk class is the majority (68%)**, so lift-based business cases are structurally weak here regardless of model quality.
-- **Personas are partly a zero-replacement artifact** (adjusted Rand index 0.858 against the raw zero-pattern), not discovered behavioural archetypes.
+- Income under-reporting: 55.9% of households report consumption above income and 22.0% report more than twice their income. Relative rankings hold; absolute prevalence does not.
+- Vintage: 2011–12 data. IHDS-3 microdata was not public at the time of this work.
+- Household grain: no claim about individuals is supported.
+- Weights: the survey weight `WT` is applied to population figures (prevalence, weighted capture) but not to model fitting. Rupee totals in `results/` are sample totals unless labelled otherwise. Survey-weighted, the model's capture edge over the income rule at small budgets disappears.
+- Spending shares leak jointly with household size and income. They can be used to score only if measured before the outcome period.
+- Debt is a stock: IHDS records outstanding debt but no repayment instalment, so `Debt_To_Income` stands in for a cash-flow burden it does not measure.
+- The at-risk class is the majority (68%), so capture must be read against its ceiling.
+- Peer benchmarks cannot separate structural from behavioural shortfall.
+- The clusters are keyed on which categories are recorded as zero, which may reflect a healthy year or a recall gap rather than a budgeting style.
+- The rupee-shortfall ranking favours households whose consumption far exceeds reported income, the group most affected by under-reporting; within at-risk households its predicted gap sizes correlate with actual ones at only 0.31.
+- No intervention data: nothing here estimates who would respond to outreach.
 
-  > **In plain terms.** The grouping algorithm needed every category to hold a positive number, because it works with logarithms and the logarithm of zero does not exist. Categories a household recorded as zero were therefore filled with a tiny stand-in value — and households sharing the same fill pattern ended up looking near-identical to the algorithm. So the "personas" it found are largely *which categories the survey recorded as blank* (agreement of 0.858 with that raw pattern), rather than distinct styles of budgeting. They remain a real and interpretable distinction — some households simply record no transport or no healthcare spend — but they are descriptive, and some of what defines them is measurement rather than behaviour: a household with no healthcare spending may just have had a healthy year.
+---
+
+## What this means for later work
+
+| Next step | Needs |
+| --- | --- |
+| Deploy the onboarding tier | Fitted artifacts from `sgc train`; a decision on budget and operating threshold (held-out: threshold 0.425 gives 91.3% at-risk recall at 82.6% precision) |
+| Use the spending tier | Spending recorded before the prediction window |
+| Rank by expected benefit instead of risk | A randomised or logged campaign, then `savings_goal.models.uplift` |
+| Current prevalence or market sizing | IHDS-3 or another recent survey, with weights applied |

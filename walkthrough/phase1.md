@@ -1,12 +1,13 @@
-# Phase 1 — Data Understanding
+# Phase 1: Data Understanding and the leakage check
 
-**Source:** [README § Phase 1 — Data Understanding](../README.md#phase-1--data-understanding)
+**Source:** [README § Phase 1: Data Understanding](../README.md#phase-1-data-understanding)
 **Notebook:** [`notebooks/01_eda_and_leakage_check.ipynb`](../notebooks/01_eda_and_leakage_check.ipynb)
-**Builds on:** [Dataset construction](dataset_construction.md)
+**Builds on:** [Dataset construction](dataset_construction.md), [Phase 0](phase0.md)
+**Artifacts:** `results/phase1_eda.json`, `results/leakage.json`, `results/phase1_eda.png`, `results/phase1_share_correlations.png`
 
-Six research questions answered on 41,518 IHDS-II households. Three of the answers constrain decisions later phases would otherwise make wrongly. Everything here is read-only exploration; no features are engineered and no leakage column is ever fed to a model.
+Six questions answered on 41,518 IHDS-II households (42,152 raw, 634 dropped upstream for non-positive income or missing consumption) in 2,461 primary sampling units. Most of this page is description. The exception is the leakage check in Q5, which decides which feature set the rest of the project treats as the headline model.
 
-> **In plain terms — what "EDA" is for.** **Exploratory data analysis** is the stage of looking at the data before modelling it: what is in each column, what shape the numbers take, what is missing, what is broken. It produces no model and no prediction. Its value is entirely in the decisions it prevents later — nearly every "we cannot do X" in Phases 2 through 7 traces back to something measured on this page. The technical vocabulary introduced in [Dataset construction](dataset_construction.md) (feature, target, leakage, median, correlation, ROC-AUC) is assumed from here on.
+> **In plain terms: what exploratory analysis is for.** Before fitting any model you look at the data: what each column holds, what shape the numbers take, what is missing, what looks broken. No predictions come out of this stage. Its value is in the decisions it forces later. The vocabulary from [Dataset construction](dataset_construction.md) (feature, target, leakage, median, correlation) is assumed here.
 
 ---
 
@@ -14,225 +15,237 @@ Six research questions answered on 41,518 IHDS-II households. Three of the answe
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | What does each column mean, and what unit/time period does it represent? | All money columns are **annual** ₹. The grain is a **household**, not an individual. Of 50 columns: 6 identifiers, 1 unapplied survey weight, 19 features, 6 behavioural columns reserved for external validation, 13 leakage-excluded, 1 target. Single cross-section, 2011-12. |
-| 2 | Distribution of income, expenses, and savings — skew, outliers, implausible values? | Extreme. `INCOME` skew **15.8**; `Clothing_Footwear` skew **112.3**. The headline: **55.9% of households report consumption exceeding income**, and 22.0% spend more than twice their income. Median savings rate is **−10.8%**. Categories are heavily zero-inflated: 90.5% record no rent, 73.7% no insurance, 72.0% no eating out. |
-| 3 | Missing values or duplicate rows, and how are they handled? | Missingness now exists but is negligible: `Has_*` columns 0.32–0.42%, `Caste_Group` 0.21%, `Religion` 0.03%, `Max_Adult_Education` 0.01%. **Zero duplicate households, zero duplicate rows.** 634 households (1.5%) were dropped upstream for `INCOME <= 0` or missing consumption. |
-| 4 | How correlated are expense categories with income and with each other? | **Weakly, and that is the single most important finding here.** Raw categories correlate with income at only r = 0.09–0.43, and mean \|r\| *between* categories is **0.143**. Among the composition shares, `Groceries_Share` correlates **−0.266** with log income — Engel's law, appearing unprompted. |
-| 5 | Is the target mathematically derivable from any candidate feature (leakage check)? | **Yes, from two representations, and both are excluded.** `Savings = INCOME − COTOTAL` holds exactly (max error 5.8×10⁻¹¹). Raw rupee categories reconstruct `Goal_Met` with **99.75%** agreement, and expense-to-income ratios with the same **99.75%**. The composition shares do not: they sum to exactly 1.000 for every household, and the strongest correlation between any share and `Savings_Rate` is **0.056**. |
-| 6 | Class balance once leakage columns are excluded? | **31.93% positive, a 2.13:1 imbalance.** Survey-weighted the rate is 30.47%. The balance is highly sensitive to the arbitrary threshold, running from 44.1% at 0% to 18.8% at 40%. |
+| 1 | What does each column mean, and what unit/time period does it represent? | 54 columns. All money is annual rupees and the grain is a household. Roles: 7 identifiers, 1 survey weight (`WT`), 1 target, 15 leakage columns (the 11 rupee categories, `Category_Total`, `COTOTAL`, `Savings`, `Savings_Rate`), 6 `Has_*` savings-instrument columns kept for external validation, 1 build diagnostic (`Occupation_Tie`), 23 feature columns (`INCOME` enters as `Log_Income`). One cross-section, 2011-12. |
+| 2 | Distribution of income, expenses and savings: skew, outliers, implausible values? | Heavily skewed: `INCOME` skew 15.8, `Clothing_Footwear` 112.3, `Utilities` 48.0. 55.89% of households report consumption above income (57.69% survey-weighted) and 22.01% spend more than twice their income. Median savings rate is −10.8%. 90.45% record no rent. |
+| 3 | Missing values or duplicate rows? | `Debt_To_Income` is missing for 3,150 households (7.59%), flagged by `Debt_Missing`. Everything else is under 0.5% (`Has_*` 0.32–0.42%, `Caste_Group` 0.21%, `Max_Adult_Education` 6 rows). Zero duplicate household identifiers. |
+| 4 | How correlated are expense categories with income and with each other? | Spearman correlation of raw rupee categories with income runs from 0.09 (healthcare) to 0.58 (groceries). Among the shares, `Groceries_Share` falls with income (−0.280) and `Insurance_Share` (+0.332) and `Transport_Share` (+0.328) rise. 56% of share pairs correlate negatively because the shares sum to one. |
+| 5 | Is the target derivable from any candidate feature, singly or jointly? | Raw rupee categories and expense/income ratios reconstruct `Goal_Met` for 99.75% of households and are excluded. No single share carries the label (largest \|marginal AUC − 0.5\| = 0.10, healthcare). Jointly, the shares do: log food spend on log household size gives R² 0.29 (elasticity 0.63), and the size × food-share oracle reaches ROC-AUC 0.895 with no model. In the ablation, removing all shares and participation indicators keeps 94.3% of the full model's ROC-AUC (0.878 vs 0.931). The headline model therefore uses income, demographics and debt only (13 features); the 29-feature set with spending shares is diagnostic. |
+| 6 | Class balance of `Goal_Met`? | 13,256 met vs 28,262 not met: 31.93% positive, 2.13 : 1. Survey-weighted 30.47%. The positive rate moves from 44.1% at a 0% threshold to 18.8% at 40%. Attainment rises from less-developed villages (26.7%) to metro areas (42.1%), and the gradient holds weighted. |
 
 ---
 
 ## Notebook walkthrough
 
-The notebook carries only section headers and code; the reasoning lives here.
+The notebook holds section headers and code. All logic lives in the `savings_goal` package; the notebook calls it and prints aggregates.
 
-### Cell 1 (code) — Imports, load, and the column-role constants
+### Cell 1: imports and load
 
-Loads `dataset/households.csv` and declares four column groups up front: the 11 expense categories, their `_Share` counterparts, the behavioural `Has_*` columns, and `LEAKAGE_COLS`.
+Loads `dataset/households.parquet` with `savings_goal.io.load_households` and `dataset/features.parquet` with `savings_goal.io.load_features`, then recovers the column lists (participation indicators, log-ratio columns) from the saved feature table with `savings_goal.features.engineer.spec_from_frame`. Column families come from `savings_goal.config`: `EXPENSE_CATEGORIES`, `SHARE_COLS`, `LEAKAGE_COLS`, `CATEGORICALS` and `GROUP_COL`.
 
-**Why the leakage list is a named constant in the first cell rather than derived later:** [dataset construction](dataset_construction.md) already established which representations reconstruct the target, so the exclusion set is known before any analysis runs. Declaring it up front makes it impossible for an intermediate cell to accidentally treat a leakage column as a feature. Cell 13 then *re-verifies* the list rather than establishing it.
+It prints 41,518 households, 54 columns and 2,461 PSUs. The PSU key is `IDPSU`. `PSUID` on its own repeats across districts (39 distinct values), so it cannot identify a village or urban block.
 
-### Cell 3 (code) — Column inventory (Q1)
+> **In plain terms: PSU.** IHDS does not sample households one at a time. It picks villages and urban blocks (primary sampling units) and interviews several households in each. Neighbours share prices, jobs and often the same interviewer, so they look alike. Every train/test split in this project keeps a PSU's households together.
 
-Builds a table assigning every column a role and unit.
+### Cell 3: column inventory (Q1)
 
-**Why the roles are written down as data:** there are 50 columns in six distinct roles, including one that is easy to mishandle — the `Has_*` behavioural indicators, which are neither features nor leakage but a reserved validation set. Writing the roles down as data (rather than prose in the walkthrough) means later phases can import the grouping instead of re-deriving it.
+Assigns each column a role and unit and counts them:
 
-**Two unit changes that will break any copied code:**
+| Role | Columns |
+| --- | --- |
+| Feature | 22 |
+| Feature (as `Log_Income`) | 1 |
+| Leakage, excluded | 15 |
+| Identifier | 7 |
+| External validation, excluded | 6 |
+| Survey weight | 1 |
+| Target | 1 |
+| Build diagnostic | 1 |
 
-- **Money is annual, not monthly.** IHDS reports `INCOME` and `COTOTAL` as annual rupees, so any threshold or axis label assuming a monthly figure is off by 12×.
-- **The grain is a household, not an individual.** `Household_Size` and `Dependents` are counts within the unit of observation, not attributes of a person. Per-capita framing requires `INCOMEPC`/`COPC` from the raw IHDS file.
+The leakage role is taken from `savings_goal.config.LEAKAGE_COLS`, so the notebook cannot drift from the package's definition. Two unit facts matter for anyone reusing the data. Money is annual, not monthly: IHDS reports `INCOME` and `COTOTAL` as annual rupees, so a monthly threshold is off by a factor of 12. And the grain is a household: `Household_Size` and `Age_Dependents` are counts within the household, so per-person framing needs `INCOMEPC`/`COPC` from the raw file.
 
-### Cell 5 (code) — Distributions (Q2, part 1)
+### Cell 5: distributions and implausible values (Q2)
 
-Reports mean/sd/quartiles/max plus skew for all 14 money columns, then the savings-rate percentiles.
-
-**Result — the skew is on a different scale entirely:**
+Prints mean, sd, quartiles, max and skew for the 14 money columns, the savings-rate percentiles, and a table of awkward values (unweighted and weighted with `savings_goal.evaluation.metrics.weighted_mean`).
 
 | Column | Skew | Column | Skew |
 | --- | --- | --- | --- |
 | `Clothing_Footwear` | 112.3 | `Insurance` | 31.5 |
 | `Utilities` | 48.0 | `Entertainment` | 26.8 |
 | `Healthcare` | 35.4 | `Rent` | 24.3 |
-| `INCOME` | 15.8 | `Transport` | 17.8 |
+| `Transport` | 17.8 | `INCOME` | 15.8 |
 
-> **In plain terms — skew.** **Skew** measures how lopsided a distribution is. Zero means symmetric — as many values above the middle as below, at similar distances. A positive skew means the values pile up on the left with a thin tail stretching right: most households spend a little, a few spend enormously. As a rough guide, anything above about 1 is noticeably lopsided and above 5 is severe. **112 is extraordinary** — it means the picture is essentially "everyone here, plus a handful out there." One household buying a motorbike inside an annual-recall category is enough to produce it.
->
-> Why it matters practically: several methods assume values are spread out roughly evenly. **Standardisation** (rescaling a column by its average and spread so all columns are comparable) works fine on symmetric data and badly here, because the average and the spread are both being set by the outliers. The fixes are a **log transform** (compress the tail, as `Log_Income` does) or **robust scaling** (rescale using the median and the middle 50% instead, so the extremes cannot distort the scale). [Phase 2](phase2.md) tests which is needed.
+> **In plain terms: skew.** Skew measures how lopsided a distribution is. Zero is symmetric. A large positive value means most households sit at the low end and a few stretch far to the right. Above 5 is severe; 112 means one or two households reported a single enormous purchase in an annual-recall category. Averages and standard deviations are dominated by those few, which is why income enters models as `Log_Income`.
 
-Skews up to 112 are produced by a handful of households reporting a single very large purchase in an annual-recall category. This is normal for survey expenditure data and is why `Log_Income` exists as a feature — but it means any distance-based or linear method in Phases 4 and 6 needs either the log transform or robust scaling rather than plain standardisation.
+The savings-rate mean (−1.16) and sd (13.08) are unreadable because the left tail reaches −1,647 (a household consuming about 1,648 times its reported income). The percentiles carry the information: 1st −15.73, 25th −0.84, median −0.108, 75th +0.305, 99th +0.803.
 
-**Why savings-rate *percentiles* are reported rather than just the mean and sd:** the mean (−1.16) and standard deviation (13.08) are uninterpretable here, because the distribution has a long left tail reaching −1647 (a household consuming 1,648× its reported income). The percentiles are readable and tell the actual story: the 1st percentile is −15.73, the median is −0.108, the 75th is +0.305.
+| Check | Households | Unweighted | Weighted |
+| --- | --- | --- | --- |
+| Consumption exceeds income | 23,204 | 55.89% | 57.69% |
+| Spends more than 2× income | 9,137 | 22.01% | 23.80% |
+| No rent recorded | 37,553 | 90.45% | 91.01% |
+| Occupation tie broken by priority | 7,491 | 18.04% | 17.93% |
+| Debt (DB5) missing | 3,150 | 7.59% | 7.51% |
+| Debt above 10× income | 430 | 1.04% | 1.08% |
+| Head age below 18 | 14 | 0.03% | 0.04% |
 
-### Cell 6 (code) — Implausible values and zero-inflation (Q2, part 2)
+Consumption above income for most of the sample is a known property of Indian household surveys, so these rows are kept. Income is under-reported (irregular, informal and in-kind earnings are recalled poorly, and IHDS records negative farm income for some households) while consumption is collected item by item with short recall windows. Dropping 56% of households would leave a sample biased toward salaried, formally employed ones. The consequence is that `Goal_Met` levels are biased downward at every threshold, so later phases lean on relative comparisons rather than "X% of Indian households save enough".
 
-**The headline data-quality finding:**
+### Cell 7: missing values and duplicates (Q3)
 
-| Check | Households | Share |
+| Column | Missing | % |
 | --- | --- | --- |
-| Consumption exceeds income | 23,204 | **55.89%** |
-| Spends more than 2× income | 9,137 | 22.01% |
-| Spends more than 6× income | 1,635 | 3.94% |
+| `Debt_To_Income` | 3,150 | 7.59 |
+| `Has_Gold_Jewellery` | 176 | 0.42 |
+| `Has_Pension_LIC` | 155 | 0.37 |
+| `Has_Post_Office_Account` | 142 | 0.34 |
+| `Has_Fixed_Deposit` | 138 | 0.33 |
+| `Has_Bank_Savings` | 133 | 0.32 |
+| `Has_Securities` | 133 | 0.32 |
+| `Caste_Group` | 85 | 0.21 |
+| `Max_Adult_Education` | 6 | 0.01 |
 
-This check flags the **majority of the sample** — which is why it is treated below as a property of the survey rather than as rows to clean.
+No household identifier is duplicated. The missing debt values come from the debt question (DB5) not being answered; the build keeps them as missing and adds `Debt_Missing` rather than reading a blank as zero debt. Phase 2 tests whether that flag carries signal. The `Has_*` gaps cluster at 0.3–0.4%, consistent with a few households skipping the savings block; since those columns are only used for validation, the affected households are dropped from validation comparisons rather than counted as "no".
 
-**Why this is not treated as an error to clean:** it is the documented behaviour of Indian household surveys. Income is under-reported relative to consumption — respondents recall irregular, informal, and in-kind earnings poorly, while consumption is asked item-by-item with short recall windows and is captured much more completely. IHDS itself reports negative farm income for about 9% of households. Deleting or winsorising 56% of the sample to make the arithmetic look tidier would discard the survey's actual population and bias every downstream estimate toward richer, more formally employed households.
+> **In plain terms: imputation.** A model cannot take a blank cell, so each gap needs a rule. Imputation fills it with a guess such as the median. The alternative is to mark the gap ("Unknown", or a 0/1 missing flag) so the fact that it was blank stays visible. Which is right depends on whether households with blanks differ from the rest.
 
-**What it does mean:** the `Goal_Met` rate is biased *downward* at every threshold, and no absolute figure from this analysis should be quoted as "X% of Indian households save adequately." Relative comparisons — between area types, occupations, spending profiles — are far more defensible than levels, and Phase 7 should be written to lean only on the former.
+### Cell 9: correlation with income and between shares (Q4)
 
-**Zero-inflation** is the other structural feature:
+Computes Spearman correlations, which use ranks and so are not driven by the extreme values from Cell 5.
 
-| Feature | Zero |
+Raw rupee categories against income: groceries 0.581, utilities 0.547, transport 0.504, miscellaneous 0.472, clothing 0.437, insurance 0.358, education 0.281, entertainment 0.250, eating out 0.219, rent 0.113, healthcare 0.086.
+
+Shares against log income:
+
+| Share | Spearman ρ with income |
 | --- | --- |
-| `Rent_Share` | 90.5% |
-| `Insurance_Share` | 73.7% |
-| `Eating_Out_Share` | 72.0% |
-| `Entertainment_Share` | 69.1% |
-| `Education_Share` | 35.9% |
+| `Insurance_Share` | +0.332 |
+| `Transport_Share` | +0.328 |
+| `Entertainment_Share` | +0.220 |
+| `Education_Share` | +0.193 |
+| `Healthcare_Share` | −0.122 |
+| `Groceries_Share` | −0.280 |
 
-> **In plain terms — zero-inflation.** A column is **zero-inflated** when a large block of rows are exactly zero rather than merely small. That is not the same as a low average: 90.5% of households do not pay a *little* rent, they pay *none*, because they own their home. The distribution is really two populations glued together — a group where the question does not apply at all, and a group with a genuine amount.
->
-> This causes trouble for models that assume a smooth sliding scale, because the step from ₹0 to ₹1 of school fees is a change of *kind* (this household now pays fees) while the step from ₹5,000 to ₹5,001 is a change of *degree*. Averages across such a column describe nobody. [Phase 2](phase2.md)'s fix is to split the two questions apart: a yes/no column for "does this household spend on X at all", alongside the amount.
+Food taking a smaller slice of the budget as income rises is Engel's law. Nothing in the pipeline was built to produce it, which is some evidence the shares measure real budget structure.
 
-**Why `Rent_Share` at 90.5% zero deserves special attention:** most Indian households own their homes, so rent is absent for nine in ten. Housing cost is the intuitive first place to look for budget strain, and here it is simply not observable for the overwhelming majority. Any analysis leaning on rent is describing a ~10% urban subsample while appearing to describe the whole.
+> **In plain terms: Engel's law.** As households get richer they spend more rupees on food but a smaller proportion of their budget on it. It is one of the oldest regularities in economics (1857).
 
-Four of the eleven features being majority-zero also means these are **semi-continuous** variables — a binary "does this household spend on X at all" mixed with a continuous amount. Phase 2 should consider modelling that explicitly (a paired indicator plus amount) rather than feeding a spike-at-zero distribution to a linear model.
+The cell then draws `results/phase1_share_correlations.png`: the lower triangle of the share-by-share Spearman matrix, annotated with each value. 56% of the off-diagonal pairs are negative. The strongest negative pair is groceries with transport (−0.32); the strongest positive is eating out with entertainment (+0.24).
 
-> **In plain terms — the words in that sentence.** **Binary** = takes only two values, yes or no. **Continuous** = takes any value on a sliding scale. **Semi-continuous** = both at once, which is the awkward case described above. A **spike at zero** is what that looks like when drawn: a tall bar sitting on zero, then a low spread of real amounts beside it. A **linear model** is one that assumes the outcome moves by a fixed step for each unit of a feature — a straight-line relationship — and a spike at zero is precisely the shape a straight line cannot describe.
+> **In plain terms: compositional closure.** The eleven shares are slices of one pie that always totals 1. A slice can only grow by taking room from the others, so negative correlations appear even if households chose at random. This is why the share pairs lean negative, and why a share's effect is always "more of X and correspondingly less of everything else". Data like this is called compositional; it needs log-ratio tools for distance-based methods (Phase 2 and Phase 6).
 
-### Cell 8 (code) — Missingness and duplicates (Q3)
+### Cell 11: the leakage check, single representations (Q5, part 1)
 
-**Result:** nine columns have missing values, all under 0.5%; zero duplicate household identifiers; zero duplicate rows.
+Four steps.
 
-**Why this is still worth a cell when the answer is "almost none":** the *pattern* of missingness is informative even when the volume is negligible. the six `Has_*` columns cluster at 0.32–0.42% missing, which is the signature of a small number of households that skipped the debt-and-investment block entirely, not of random item non-response. Because those columns are reserved for validation rather than used as features, the missingness needs no imputation strategy — but the affected households must be dropped from validation comparisons rather than treated as "no".
+1. `savings_goal.data.build.reconcile_totals` compares the survey's `COTOTAL` with the sum of the 11 categories (`Category_Total`). Pearson r 0.9932, median difference Rs 0, 97.72% within 1% and 98.29% within 5%. Recomputing the label from the category sum agrees with `Goal_Met` for 99.75% of households. The target uses `COTOTAL` (the official aggregate); the shares are computed against `Category_Total` so they sum to exactly one.
+2. Test A: raw rupee categories plus `INCOME` reproduce `Goal_Met` for 99.75% of households. Excluded.
+3. Test B: expense-to-income ratios give the same 99.75%, since they are the same quantity divided by income. Excluded.
+4. Test C: for each share, Spearman correlation with `Savings_Rate` and the ROC-AUC of the share used alone as a score.
 
-`Caste_Group` (0.21%) and `Religion` (0.03%) do need a decision in Phase 2, since they are model inputs. At this rate, either most-frequent imputation or an explicit `Unknown` level is defensible; an explicit level is preferable because refusal to state caste is plausibly informative rather than random.
+| Share | Spearman vs savings rate | Marginal ROC-AUC | \|AUC − 0.5\| |
+| --- | --- | --- | --- |
+| `Healthcare_Share` | −0.209 | 0.400 | 0.100 |
+| `Utilities_Share` | +0.181 | 0.581 | 0.081 |
+| `Transport_Share` | +0.117 | 0.563 | 0.063 |
+| `Insurance_Share` | +0.115 | 0.551 | 0.051 |
+| `Groceries_Share` | +0.138 | 0.544 | 0.044 |
+| `Clothing_Footwear_Share` | +0.097 | 0.536 | 0.036 |
+| `Education_Share` | −0.048 | 0.468 | 0.032 |
+| `Eating_Out_Share` | +0.064 | 0.525 | 0.025 |
+| `Entertainment_Share` | +0.037 | 0.516 | 0.016 |
+| `Miscellaneous_Share` | −0.021 | 0.492 | 0.008 |
+| `Rent_Share` | +0.008 | 0.499 | 0.001 |
 
-> **In plain terms — missingness and imputation.** Models cannot be handed a blank cell, so every gap needs a decision. **Imputation** means filling the gap with a guess — most commonly the column's most frequent value or its average. The alternative is to stop treating the gap as a gap and make **"Unknown" its own category**, which keeps the fact of the refusal visible instead of overwriting it with a caste the household declined to give.
->
-> The choice hinges on *why* the value is missing. If it is missing at random, imputing is harmless. If the missingness itself carries meaning — people who refuse to answer differ from people who answer — then imputing destroys real information. [Phase 2](phase2.md) measures which case this is rather than assuming.
+No share on its own is a strong predictor. A naive reading would stop here and call the shares safe. The next two cells test them jointly with household size and income, which is where they do leak.
 
-### Cell 10 (code) — Correlation with income (Q4, part 1)
+> **In plain terms: ROC-AUC.** Take one household that met the goal and one that did not, at random. ROC-AUC is the probability that the score ranks the first above the second. 0.5 is a coin flip, 1.0 is perfect ranking. A score below 0.5 ranks backwards, which is why the table reports the distance from 0.5: healthcare at 0.400 is as informative as a score of 0.600 used the other way round.
 
-**The most consequential comparison in this document:**
+### Cell 12: the food–size fit and the size × food-share oracle (Q5, part 2)
 
+The concern, written out in the docstring of `savings_goal.evaluation.leakage`: if food spending is roughly proportional to household size, then `Groceries ≈ k · Household_Size`, and because `Groceries_Share = Groceries / total spend`, total spend ≈ `k · Household_Size / Groceries_Share`. Add `INCOME` and you have an approximate savings rate, the quantity the share representation was meant to hide.
 
-Household spending is only loosely tied to income here (strongest: `Groceries` at 0.43; weakest: `Rent` at 0.09), so the raw columns carry substantial information that income does not.
+`savings_goal.evaluation.leakage.food_size_fit` regresses log food spend on log household size for the 41,494 households with positive food spend: R² 0.292, elasticity 0.630. Food spend rises with size, but less than proportionally (doubling the household raises food spend by about 55%, not 100%).
 
-**Why this constrains Phase 2's central decision:** converting expenses to ratios is often justified as *removing redundancy* — when raw columns are so collinear with income that they carry little independent signal. That argument does not apply here; the raw columns are genuinely informative and mutually distinct. Ratios and shares remain the right representation, but the justification has to be comparability across a 100× income range and, for shares specifically, leakage avoidance.
+> **In plain terms: R² and elasticity.** R² is the fraction of the variation in one quantity that a fitted line explains: 0.29 means household size accounts for under a third of the spread in food spending. An elasticity of 0.63 on a log-log fit means a 1% larger household spends about 0.63% more on food.
 
-**The share correlations recover a real economic law:**
+`savings_goal.evaluation.leakage.size_share_oracle` then scores each household by the implied savings rate
 
-| Feature | r with `Log_Income` |
-| --- | --- |
-| `Transport_Share` | **+0.273** |
-| `Insurance_Share` | +0.251 |
-| `Education_Share` | +0.179 |
-| `Healthcare_Share` | −0.128 |
-| `Groceries_Share` | **−0.266** |
+`implied_sr = 1 − (k · Household_Size / Groceries_Share) / INCOME`
 
-> **In plain terms — reading these signs.** A **positive** correlation means the two rise together: richer households put a larger slice of their budget into transport (+0.273) and insurance (+0.251). A **negative** correlation means one rises as the other falls: richer households put a *smaller* slice into food (−0.266). The size (0.27, not 0.9) says the relationship is real but loose — a tendency across thousands of households, not a rule you could apply to any individual one.
->
-> **Engel's law** is the observation, first published in 1857, that as a household's income grows, the *proportion* of its budget spent on food falls — even though the rupees spent on food usually rise. It is one of the most reliably reproduced findings in economics. Nothing in this pipeline was designed to produce it; it simply appears when the shares are computed, which is good evidence the shares are measuring something economically real rather than an artefact of the arithmetic.
+with `k` = median food spend per person = Rs 8,848 per year. The 24 households with a zero or missing food share (0.058%) are excluded because the formula divides by the share; 41,494 are scored. The result is ROC-AUC 0.895 with no fitting, no cross-validation and three columns plus one median. Thresholding `implied_sr` at 0.20 agrees with `Goal_Met` for 82.2% of households.
 
-Food's budget share falling as income rises is **Engel's law**, one of the oldest empirical regularities in economics, and it appears here without being engineered in. It is the clearest single piece of evidence that the composition shares carry real economic structure rather than arithmetic noise.
+### Cell 13: the ablation (Q5, part 3)
 
-### Cell 11 (code) — Correlation among the shares, and the closure problem
+`savings_goal.evaluation.leakage.ablation_sets` builds four feature sets and `savings_goal.evaluation.leakage.ablation` scores each with the untuned default XGBoost from `savings_goal.models.pipeline.xgb_pipeline` (400 trees, depth 6, learning rate 0.08) under PSU-grouped 5-fold cross-validation on all households.
 
-**Result:** mean off-diagonal correlation **−0.064**, with **65.5% of all pairs negative**. Strongest negative: `Groceries_Share` × `Healthcare_Share` (−0.362). Strongest positive: `Eating_Out_Share` × `Entertainment_Share` (+0.110).
+| Feature set | Features | ROC-AUC (sd) | Macro-F1 | At-risk PR-AUC | ROC-AUC retained |
+| --- | --- | --- | --- | --- | --- |
+| All features | 29 | 0.931 (0.003) | 0.837 | 0.966 | 100% |
+| No `Groceries_Share` | 28 | 0.929 (0.003) | 0.835 | 0.965 | 99.8% |
+| No size family (`Household_Size`, `Age_Dependents`, `Dependency_Ratio`) | 26 | 0.921 (0.003) | 0.824 | 0.961 | 98.9% |
+| No shares or indicators | 13 | 0.878 (0.007) | 0.775 | 0.940 | 94.3% |
 
-> **In plain terms — correlation matrix, off-diagonal.** A **correlation matrix** is a grid holding the correlation of every column with every other column. Down its diagonal sits each column paired with itself, which is always exactly 1 and tells you nothing — so the informative entries are the **off-diagonal** ones, and "mean off-diagonal correlation" is just the average over all the genuine pairs.
+Removing the food share alone costs almost nothing because the other shares and size columns carry the same route. Removing the size family costs 0.010. Removing every share and participation indicator costs 0.053 ROC-AUC and leaves a model built only from income, demographics, debt and the four categoricals.
 
-**Why a predominantly negative correlation matrix is expected rather than a finding:** the shares sum to exactly 1 for every household. That constraint — *compositional closure* — forces the components to be negatively correlated on average, because one share can only rise if others fall. The negative correlations are therefore partly an artifact of the representation, not evidence that households trade groceries off against healthcare.
+> **In plain terms: grouped cross-validation.** Cross-validation splits the data into five parts, trains on four and scores on the fifth, five times over, and averages. "Grouped" means every household from one PSU lands in the same part, so the model is never scored on the neighbours of households it trained on. Splitting households at random would let village-level similarities inflate the score.
 
-> **In plain terms — compositional closure.** Think of the eleven shares as slices of one pie. Because the pie is always exactly one whole, **any slice can only grow by taking room from the others** — that is *closure*. So if you measured thousands of pies you would find slice sizes moving against each other on average, even if the bakers were cutting them completely at random. The negative correlations here are largely that geometry, not a behavioural discovery: they do not show households choosing food over healthcare. Data of this kind — proportions that must sum to a fixed whole — is called **compositional data**, and it needs its own toolkit, which is what the next paragraph is warning about.
+> **In plain terms: macro-F1 and PR-AUC.** F1 balances how many flagged households were right (precision) against how many of the true cases were found (recall). Macro-F1 averages F1 over the two classes, so the smaller "met" class counts equally. PR-AUC summarises precision against recall across all thresholds for one class; here it is computed for the at-risk class (68.1% of households), so its floor is about 0.68 rather than 0.5.
 
-**What this obliges later phases to do:**
+### Cell 14: the decision and `results/leakage.json`
 
-- **Phase 5 (explainability):** a share's coefficient or SHAP value is never "the effect of spending more on X." It is the effect of spending more on X *and correspondingly less on everything else*. Every interpretive sentence must carry that relative framing.
-- **Phase 6 (clustering):** Euclidean distance is not well-defined on compositional data — the space is a simplex, not ℝ¹¹. Standard KMeans on raw shares will find structure partly driven by the closure constraint. A centred log-ratio transform before clustering is the standard fix, and the 4 zero-inflated features complicate it (the log of zero is undefined), which is a real design problem Phase 6 must solve rather than ignore.
+The notebook applies a fixed rule: reframe the project if the oracle reaches ROC-AUC 0.85 or the share-free model keeps at least 90% of the full model's ROC-AUC. Both hold (0.895 and 94.3%).
 
-> **In plain terms — the vocabulary in that second bullet.**
-> - A **coefficient** is the number a linear model attaches to a feature: "each extra unit of this moves the prediction by that much."
-> - **SHAP** is a method for splitting a single prediction into per-feature contributions — "income pushed this household up, family size pulled it down." [Phase 5](phase5.md) explains it properly.
-> - **Clustering** means letting an algorithm group similar households together without being told what the groups are. **KMeans** is the standard workhorse: it puts households near each other into the same group.
-> - "Near each other" requires a definition of distance. **Euclidean distance** is the everyday one — straight-line distance, Pythagoras extended to many columns. **ℝ¹¹** is notation for "ordinary space with eleven free axes", where every combination of eleven numbers is possible.
-> - A **simplex** is the restricted space our shares actually live in: eleven numbers that must be non-negative *and* must sum to 1. That is not ordinary space — the eleventh value is fixed the moment the first ten are known, so one of the eleven axes is not free. Straight-line distance measured as if all eleven were free therefore mismeasures how different two budgets are.
-> - A **log-ratio transform** is the standard repair: instead of the shares themselves, work with the logarithms of ratios between them, which converts the constrained simplex into an ordinary space where straight-line distance behaves. Its snag is that **the logarithm of zero does not exist**, and four of our categories are zero for most households — which is the real design problem [Phase 6](phase6.md) has to solve.
+The headline model is therefore the 13-feature "deployable" set: `Log_Income`, `Household_Size`, `Age_Dependents`, `Dependency_Ratio`, `Head_Age`, `Max_Adult_Education`, `Debt_To_Income`, `Has_Debt`, `Debt_Missing`, and the four categoricals. These are all known when a household is first onboarded. The 29-feature "full" set with spending shares stays in the project as a diagnostic: with size and income the shares approximately rebuild total spend, so their extra 0.053 ROC-AUC is largely the label restated. All test results, the reconciliation, the food–size fit, the oracle, the ablation table and the decision are written to `results/leakage.json` with `savings_goal.io.write_result`.
 
-The `Eating_Out_Share` × `Entertainment_Share` positive pair is worth noting precisely because it survives the closure pressure: two discretionary categories moving together against a background that pushes everything apart is a genuine behavioural signal.
+### Cell 16: class balance and threshold sensitivity (Q6)
 
-### Cell 13 (code) — The leakage check (Q5)
-
-Four tests, in increasing subtlety.
-
-**Identity 1 — `Savings = INCOME − COTOTAL`:** max absolute error 5.82×10⁻¹¹, i.e. floating point. The target is definitionally an accounting identity, which is the root of every leakage risk below.
-
-**Identity 2 — does `COTOTAL` equal the sum of the 11 categories?** Median difference 0, 97.7% within 1%, but the maximum gap is ₹960,000. The gap is strictly one-directional (`COTOTAL ≥ reconstruction` for every household, never below) and affects 2.7% of the sample.
-
-**Why the gap exists and why it is left in place:** the build script sums the 52 IHDS consumption items with `fillna(0)`, treating an unanswered item as zero spend. IHDS's own `COTOTAL` imputes some of those. The target uses IHDS's `COTOTAL` — the official aggregate, comparable to the published literature — while the shares are computed against the reconstruction so that they sum to exactly 1. Using one denominator for both would break one property or the other. The measured cost of this choice is **0.25 percentage points**: recomputing `Goal_Met` from the reconstruction gives 32.18% versus the published 31.93%, agreeing on 99.75% of households. That is small, but it is a real design decision and it is recorded here rather than left to be rediscovered.
-
-**Test A — raw categories + `INCOME`:** reconstruct `Goal_Met` with **99.75%** agreement. Excluded.
-
-**Test B — expense-to-income ratios:** identical **99.75%** agreement, because they are the same quantity divided through by income. Excluded. This is the test that forced the whole feature-set redesign: these were the Phase 2 features in the original project.
-
-**Test C — composition shares:** sum to exactly 1.000000 (min = max), so they contain no information about the level of consumption relative to income and cannot reconstruct the target by construction. Empirically, the strongest correlation between any share and `Savings_Rate` is **0.056**. Safe.
-
-**Why Test C reports both the algebraic argument and the empirical correlation:** the algebra proves reconstruction is impossible; the correlation shows the shares are not even a strong *statistical* proxy. A feature can be non-reconstructing but still so predictive that it amounts to leakage in practice. Checking both closes that gap.
-
-> **In plain terms — two different kinds of proof.** The **algebraic** argument is a proof on paper: because the shares always total 1, no formula built from them can recover how large spending was relative to income. That settles the matter for *every possible* dataset. The **empirical** check looks at these particular 41,518 households and asks whether the shares happen to track the answer closely anyway — they do not, the strongest link being a feeble 0.056. The distinction matters because a feature can be innocent in theory and still be a giveaway in practice (a **proxy** — a stand-in that carries nearly the same information by a different route). Running both tests is how you rule out each failure separately.
-
-**Test D — the behavioural `Has_*` columns:** these are survey-reported facts about holding savings instruments, entirely outside the consumption arithmetic. They are neither features nor leakage but a reserved external-validation set, letting the normative target be checked against real saving behaviour.
-
-### Cell 15 (code) — Class balance and threshold sensitivity (Q6)
-
-**Result:** 28,262 not-met vs 13,256 met — **31.93% positive, 2.13:1**.
-
-**Why this single number shapes Phase 4:** at 2.13:1 with 13,256 minority cases, this is an ordinary near-balanced problem. Class weighting is optional rather than essential, and macro-F1 and ROC-AUC are straightforwardly usable — none of the contortions a severe imbalance would force (resampling, selecting on minority recall alone, treating a handful of minority rows as the whole result) are needed here.
-
-> **In plain terms — the imbalance toolkit we do *not* need.** When one class is genuinely rare, models tend to ignore it (predicting "no" always is nearly free), and practitioners reach for workarounds: **class weighting** tells the model that mistakes on the rare class hurt more; **resampling** duplicates rare rows or discards common ones to even the counts. Both distort the data or the fitted probabilities, so they are a cost, not a free improvement. With 13,256 households in the smaller class — a large number in absolute terms — there is no starvation to fix here, and [Phase 4](phase4.md) can mostly leave these tools alone.
-
-**Threshold sensitivity** — the benchmark is a convention, not a measurement:
-
-| Threshold | Goal_Met rate | Imbalance |
+| `Goal_Met` | Households | % |
 | --- | --- | --- |
-| 0% | 0.4411 | 1.27 : 1 |
-| 10% | 0.3833 | 1.61 : 1 |
-| **20%** | **0.3193** | **2.13 : 1** |
-| 30% | 0.2532 | 2.95 : 1 |
-| 40% | 0.1876 | 4.33 : 1 |
+| 0 (at risk) | 28,262 | 68.07 |
+| 1 (on track) | 13,256 | 31.93 |
 
-**Why this table is Phase 1 work rather than a Phase 4 robustness check:** the threshold is the one part of the target definition that was chosen rather than measured. Establishing early how much the problem changes across a plausible range tells later phases how much weight any single-threshold result can bear. A finding that holds at 10%, 20%, and 30% is a finding about households; one that only appears at 20% is a finding about the threshold.
+Imbalance 2.13 : 1. With 13,256 households in the smaller class, resampling is not needed; the metrics above (ROC-AUC, macro-F1, at-risk PR-AUC) work as they are. Survey-weighted, 30.47% meet the goal, so the sample slightly over-represents savers.
 
-**Survey weights:** unweighted 31.93%, weighted **30.47%**. The 1.5-point gap means the sample modestly over-represents goal-meeting households relative to the national population. Small, but it is the reason `WT` is carried in the dataset, and any nationally-framed claim in Phase 7 or 8 must apply it.
+> **In plain terms: survey weights.** IHDS over-samples some groups so they have enough interviews. `WT` says how many households in India each sampled household stands for. Unweighted numbers describe the sample; weighted numbers estimate the national population.
 
-**The two gradients that will drive Phase 7:**
+The 20% benchmark is a convention, so the cell recomputes the label at other thresholds:
 
-| Area type | Goal_Met | | Occupation | Goal_Met |
-| --- | --- | --- | --- | --- |
-| Metro urban | 0.4212 | | Salaried | **0.4410** |
-| Other urban | 0.3698 | | Non-ag labour | 0.3171 |
-| Developed village | 0.3091 | | Business | 0.2870 |
-| Less developed village | 0.2666 | | Farm | 0.2570 |
-| | | | Ag labour | 0.2512 |
-| | | | No regular worker | 0.2503 |
+| Threshold | Positive rate | Weighted | Agreement with 20% label |
+| --- | --- | --- | --- |
+| 0% | 0.441 | 0.423 | 0.878 |
+| 5% | 0.414 | 0.397 | 0.905 |
+| 10% | 0.383 | 0.367 | 0.936 |
+| 15% | 0.351 | 0.335 | 0.969 |
+| 20% | 0.319 | 0.305 | 1.000 |
+| 25% | 0.287 | 0.274 | 0.968 |
+| 30% | 0.253 | 0.240 | 0.934 |
+| 40% | 0.188 | 0.176 | 0.868 |
 
-Both are clean and monotone, and both run against a common intuition. Metro households are the *most* likely to save, not the least — urban living does not strain the budget once income is in view. And occupation is the strongest single categorical signal: salaried households meet the goal at 1.76× the rate of agricultural labourers.
+A result that holds from 10% to 30% describes households; one that appears only at 20% describes the threshold.
 
-> **In plain terms — monotone, and a warning about these two tables.** **Monotone** means the values move in one direction the whole way down without doubling back: 0.42, 0.37, 0.31, 0.27. Ragged orderings usually mean noise; a clean staircase like this one usually means a real underlying gradient.
->
-> But note what these tables are *not*. Each column is **unconditional** — it compares metro households with village households as they actually are, differences in income included. It cannot tell you whether living in a metro *causes* higher saving, because metro households also earn more. Separating those requires holding income constant, which is exactly what [Phase 5](phase5.md) does — and it finds the geographic gradient is largely the income gradient wearing a different label.
+By area type:
+
+| Area | Households | Rate | Weighted |
+| --- | --- | --- | --- |
+| Metro urban | 3,063 | 0.421 | 0.432 |
+| Other urban | 11,410 | 0.370 | 0.361 |
+| Developed village | 12,635 | 0.309 | 0.287 |
+| Less-developed village | 14,410 | 0.267 | 0.257 |
+
+The gradient is monotone in both columns. It is unconditional: metro households also earn more, so this table cannot separate place from income. Phase 5 looks at area with income held constant.
+
+As a check that the normative label tracks real behaviour, the cell also records fixed-deposit ownership by class: 15.2% of on-track households hold one against 8.2% of at-risk households. These figures, the class balance, the sensitivity table and the area breakdown go to `results/phase1_eda.json`.
+
+### Cell 18: summary figure
+
+Writes `results/phase1_eda.png`, four panels:
+
+- Income: histogram of log annual income. Raw income has skew 15.8; after the log the distribution is close to symmetric.
+- Savings rate: histogram clipped to [−2, 1] with the 20% benchmark marked. Median −10.8%; 44% of households save a positive amount.
+- Zero spend: share of households with zero spend in each category, sorted. Four categories (rent, insurance, eating out, entertainment) are zero for more than half of households; education is zero for 36%.
+- Area type: unweighted and weighted attainment rates for the four area types, with the overall 31.9% and weighted 30.5% in the title.
+
+> **In plain terms: zero-inflation.** A column is zero-inflated when a large block of rows are exactly zero rather than small. Ninety per cent of households pay no rent because they own their home; that is a different state from paying a little. Phase 2 adds a yes/no "spends on X" column for each category that is zero for more than 30% of households.
 
 ---
 
-## What this changes for later phases
+## What this means for later phases
 
 | Phase | Consequence |
 | --- | --- |
-| **2 — Feature engineering** | Restate the ratio justification: collinearity with income is no longer the reason (r ≤ 0.43). Decide on `Unknown` vs imputation for `Caste_Group`. Consider explicit zero-indicators for the four majority-zero shares. Decide winsorisation for `Debt_To_Income`. |
-| **3 — Baseline** | Majority baseline is **0.681 accuracy / 0.405 macro-F1**, not 0.994 / 0.499. |
-| **4 — Model comparison** | **Rewrite.** The imbalance narrative is gone. Re-select a winning model on macro-F1/ROC-AUC without the `recall_0` constraint. Skew up to 112 means robust or log scaling, not plain standardisation. |
-| **5 — Explainability** | Every share must be interpreted *relatively* because of compositional closure. |
-| **6 — Clustering** | Euclidean KMeans on shares is not well-founded; needs a log-ratio transform, complicated by zero-inflation. |
-| **7 — Business translation** | Both headline gradients reverse or newly appear. Lean on relative comparisons, not levels, because of the 55.9% income under-reporting. Apply `WT` for any national claim. |
+| 2: Feature engineering | Raw rupees and expense/income ratios are leakage and never features. Decide the handling of `Debt_Missing`, missing caste, zero-inflated shares and the log-ratio transform on the training split only. |
+| 3: Baseline | Majority-class macro-F1 is 0.405 at a 68.1% at-risk rate. The single income threshold is the baseline that matters. |
+| 4: Model comparison | Tune and report the 13-feature deployable set as the headline; report the 29-feature full set alongside it as a diagnostic, never as the result. All validation is grouped by `IDPSU`. |
+| 5: Explainability | Read share effects relative to the other shares (closure). Check whether the area gradient survives once income is held constant. |
+| 6: Clustering | Euclidean distance on raw shares is not meaningful; use a log-ratio basis, with care for the zero-inflated categories. |
+| 7 and 8: Business translation and reporting | Lean on relative comparisons, since 55.9% of households report spending above income. Apply `WT` to any population-level figure. |

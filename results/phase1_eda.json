@@ -1,0 +1,89 @@
+{
+  "n_households": 41518,
+  "n_psu": 2461,
+  "goal_met_rate": 0.31928320246640013,
+  "goal_met_rate_weighted": 0.30468584458573206,
+  "consumption_exceeds_income": 0.5588901199479743,
+  "consumption_exceeds_income_weighted": 0.5768994126391304,
+  "spends_over_2x_income": 0.22007322125343223,
+  "threshold_sensitivity": [
+    {
+      "threshold": 0.0,
+      "Goal_Met rate": 0.4411098800520256,
+      "weighted rate": 0.42310058736086964,
+      "agreement with 20% label": 0.8781733224143745
+    },
+    {
+      "threshold": 0.05,
+      "Goal_Met rate": 0.4138445975239655,
+      "weighted rate": 0.39657997197105155,
+      "agreement with 20% label": 0.9054386049424346
+    },
+    {
+      "threshold": 0.1,
+      "Goal_Met rate": 0.3832795414037285,
+      "weighted rate": 0.3669033742741986,
+      "agreement with 20% label": 0.9360036610626716
+    },
+    {
+      "threshold": 0.15,
+      "Goal_Met rate": 0.35054675080687897,
+      "weighted rate": 0.33527659037456276,
+      "agreement with 20% label": 0.9687364516595212
+    },
+    {
+      "threshold": 0.2,
+      "Goal_Met rate": 0.31928320246640013,
+      "weighted rate": 0.30468584458573206,
+      "agreement with 20% label": 1.0
+    },
+    {
+      "threshold": 0.25,
+      "Goal_Met rate": 0.2868394431330989,
+      "weighted rate": 0.27398952645332264,
+      "agreement with 20% label": 0.9675562406666988
+    },
+    {
+      "threshold": 0.3,
+      "Goal_Met rate": 0.25323955874560433,
+      "weighted rate": 0.2395559456613688,
+      "agreement with 20% label": 0.9339563562792041
+    },
+    {
+      "threshold": 0.4,
+      "Goal_Met rate": 0.18762946192013102,
+      "weighted rate": 0.1757338360225846,
+      "agreement with 20% label": 0.8683462594537309
+    }
+  ],
+  "by_area": [
+    {
+      "Area_Type": "Developed_Village",
+      "rate": 0.3091412742382271,
+      "weighted": 0.28728304679644945,
+      "n": 12635.0
+    },
+    {
+      "Area_Type": "Less_Developed_Village",
+      "rate": 0.26655100624566275,
+      "weighted": 0.25742442910598756,
+      "n": 14410.0
+    },
+    {
+      "Area_Type": "Metro_Urban",
+      "rate": 0.42115572967678744,
+      "weighted": 0.43171141087947795,
+      "n": 3063.0
+    },
+    {
+      "Area_Type": "Other_Urban",
+      "rate": 0.36976336546888694,
+      "weighted": 0.36058343981280316,
+      "n": 11410.0
+    }
+  ],
+  "has_fixed_deposit_by_goal": {
+    "0": 0.08221804110902055,
+    "1": 0.15184316100219514
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "test_a_raw_agreement": 0.997470976443952,
+  "test_b_ratio_agreement": 0.997470976443952,
+  "test_c": [
+    {
+      "share": "Healthcare_Share",
+      "Spearman vs Savings_Rate": -0.20898498907215168,
+      "marginal ROC-AUC": 0.3997289851338029,
+      "|AUC - 0.5|": 0.1002710148661971
+    },
+    {
+      "share": "Utilities_Share",
+      "Spearman vs Savings_Rate": 0.18148036016518557,
+      "marginal ROC-AUC": 0.5810494878148331,
+      "|AUC - 0.5|": 0.08104948781483312
+    },
+    {
+      "share": "Transport_Share",
+      "Spearman vs Savings_Rate": 0.11716450878086052,
+      "marginal ROC-AUC": 0.5627595964705119,
+      "|AUC - 0.5|": 0.06275959647051188
+    },
+    {
+      "share": "Insurance_Share",
+      "Spearman vs Savings_Rate": 0.11528160964901021,
+      "marginal ROC-AUC": 0.5514378199302185,
+      "|AUC - 0.5|": 0.051437819930218454
+    },
+    {
+      "share": "Groceries_Share",
+      "Spearman vs Savings_Rate": 0.13814751022987706,
+      "marginal ROC-AUC": 0.5436489675643466,
+      "|AUC - 0.5|": 0.04364896756434655
+    },
+    {
+      "share": "Clothing_Footwear_Share",
+      "Spearman vs Savings_Rate": 0.09743906124425762,
+      "marginal ROC-AUC": 0.5355697412695851,
+      "|AUC - 0.5|": 0.03556974126958512
+    },
+    {
+      "share": "Education_Share",
+      "Spearman vs Savings_Rate": -0.047703701484268814,
+      "marginal ROC-AUC": 0.4681352329143453,
+      "|AUC - 0.5|": 0.03186476708565472
+    },
+    {
+      "share": "Eating_Out_Share",
+      "Spearman vs Savings_Rate": 0.06362502100861192,
+      "marginal ROC-AUC": 0.5253591082506831,
+      "|AUC - 0.5|": 0.025359108250683104
+    },
+    {
+      "share": "Entertainment_Share",
+      "Spearman vs Savings_Rate": 0.036997831887658116,
+      "marginal ROC-AUC": 0.5159776261797585,
+      "|AUC - 0.5|": 0.01597762617975851
+    },
+    {
+      "share": "Miscellaneous_Share",
+      "Spearman vs Savings_Rate": -0.021217893066088556,
+      "marginal ROC-AUC": 0.4915177773140688,
+      "|AUC - 0.5|": 0.008482222685931184
+    },
+    {
+      "share": "Rent_Share",
+      "Spearman vs Savings_Rate": 0.007502470664542107,
+      "marginal ROC-AUC": 0.49910852406486816,
+      "|AUC - 0.5|": 0.0008914759351318358
+    }
+  ],
+  "reconcile_totals": {
+    "pearson_r": 0.9932317957031315,
+    "median_diff": 0.0,
+    "within_1pct": 0.9771665301796811,
+    "within_5pct": 0.9828748976347609,
+    "label_agreement": 0.997470976443952
+  },
+  "ablation": [
+    {
+      "feature set": "all features",
+      "n features": 29,
+      "ROC-AUC": 0.9308693771211061,
+      "ROC-AUC sd": 0.0033078482154180505,
+      "F1 (macro)": 0.8371671029261426,
+      "PR-AUC (at-risk)": 0.9662294494389216,
+      "AUC retained": 1.0
+    },
+    {
+      "feature set": "no Groceries_Share",
+      "n features": 28,
+      "ROC-AUC": 0.9291073802945947,
+      "ROC-AUC sd": 0.002886852790503571,
+      "F1 (macro)": 0.8349281057287659,
+      "PR-AUC (at-risk)": 0.9654368673033001,
+      "AUC retained": 0.9981071492200542
+    },
+    {
+      "feature set": "no size family",
+      "n features": 26,
+      "ROC-AUC": 0.9210297809028456,
+      "ROC-AUC sd": 0.003221995758520358,
+      "F1 (macro)": 0.8242248685899017,
+      "PR-AUC (at-risk)": 0.9611101663540472,
+      "AUC retained": 0.989429670305955
+    },
+    {
+      "feature set": "no shares or indicators (deployable)",
+      "n features": 13,
+      "ROC-AUC": 0.8781991141225417,
+      "ROC-AUC sd": 0.006690814885317552,
+      "F1 (macro)": 0.7748656525056765,
+      "PR-AUC (at-risk)": 0.9398000390458583,
+      "AUC retained": 0.9434182020666988
+    }
+  ],
+  "food_size_fit": {
+    "r2": 0.2920391323894237,
+    "elasticity": 0.6296937317472555,
+    "n": 41494
+  },
+  "oracle": {
+    "auc": 0.8950303135967488,
+    "k": 8848.5,
+    "n_used": 41494,
+    "n_excluded": 24,
+    "agreement_at_threshold": 0.8217573625102425
+  },
+  "decision": {
+    "shares_diagnostic": true,
+    "headline": "deployable"
+  }
+}

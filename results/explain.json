@@ -1,0 +1,413 @@
+{
+  "deployable": {
+    "families": [
+      {
+        "family": "Income",
+        "n columns": 1,
+        "grouped mean |SHAP|": 1.9479608100919428,
+        "sum of per-column mean |SHAP|": 1.9479608100919428,
+        "share of grouped total": 0.5799114233658322
+      },
+      {
+        "family": "Household size family",
+        "n columns": 3,
+        "grouped mean |SHAP|": 0.4869366994176854,
+        "sum of per-column mean |SHAP|": 0.6316277180177619,
+        "share of grouped total": 0.14496192787114756
+      },
+      {
+        "family": "Social/geo (categoricals)",
+        "n columns": 26,
+        "grouped mean |SHAP|": 0.36446630860707857,
+        "sum of per-column mean |SHAP|": 0.8443409849196177,
+        "share of grouped total": 0.10850227309411097
+      },
+      {
+        "family": "Debt",
+        "n columns": 3,
+        "grouped mean |SHAP|": 0.29147618407098286,
+        "sum of per-column mean |SHAP|": 0.3245271994513996,
+        "share of grouped total": 0.08677298224180745
+      },
+      {
+        "family": "Head age & education",
+        "n columns": 2,
+        "grouped mean |SHAP|": 0.2682261096434756,
+        "sum of per-column mean |SHAP|": 0.3487312669838991,
+        "share of grouped total": 0.07985139342710183
+      }
+    ],
+    "permutation": [
+      {
+        "family": "Income",
+        "importance": 0.3846612681835814,
+        "sd": 0.003688037874260772,
+        "share": 0.8166635400914148
+      },
+      {
+        "family": "Household size family",
+        "importance": 0.03928012225863782,
+        "sd": 0.002634154220337974,
+        "share": 0.08339452487754255
+      },
+      {
+        "family": "Social/geo (categoricals)",
+        "importance": 0.02184162291636167,
+        "sd": 0.0011971487636149875,
+        "share": 0.04637133646558036
+      },
+      {
+        "family": "Debt",
+        "importance": 0.013932519718359581,
+        "sd": 0.0010313445512278834,
+        "share": 0.02957974149390754
+      },
+      {
+        "family": "Head age & education",
+        "importance": 0.01130006796302221,
+        "sd": 0.0007684648445864694,
+        "share": 0.023990857071554773
+      }
+    ],
+    "interaction_totals": {
+      "main effects": 3.870080276783266,
+      "interactions": 1.7904066898881519,
+      "interaction share": 0.31629905702989003,
+      "n rows": 8299.0
+    },
+    "top_interactions": [
+      {
+        "level_0": "Household_Size",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.24198538080039175
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Max_Adult_Education",
+        "mean |interaction SHAP|": 0.12533378440194107
+      },
+      {
+        "level_0": "Debt_To_Income",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.06406878586173963
+      },
+      {
+        "level_0": "Area_Type_Less_Developed_Village",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.04615753158659429
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Occupation_Non_Ag_Labour",
+        "mean |interaction SHAP|": 0.04423724049357768
+      },
+      {
+        "level_0": "Head_Age",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.04195031695716969
+      },
+      {
+        "level_0": "Caste_Group_Scheduled_Tribe",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.03902272561010445
+      },
+      {
+        "level_0": "Debt_To_Income",
+        "level_1": "Max_Adult_Education",
+        "mean |interaction SHAP|": 0.034332390994476346
+      },
+      {
+        "level_0": "Head_Age",
+        "level_1": "Household_Size",
+        "mean |interaction SHAP|": 0.03424165840392544
+      },
+      {
+        "level_0": "Dependency_Ratio",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.03136150979725679
+      }
+    ],
+    "top_columns": {
+      "Log_Income": 1.9479608100919428,
+      "Household_Size": 0.4951093541177942,
+      "Debt_To_Income": 0.30108830859191343,
+      "Max_Adult_Education": 0.26004034786150143,
+      "Occupation_Non_Ag_Labour": 0.15820160752528403,
+      "Dependency_Ratio": 0.12499315346376247,
+      "Area_Type_Less_Developed_Village": 0.10917154418626973,
+      "Head_Age": 0.08869091912239765,
+      "Area_Type_Metro_Urban": 0.07779402761606329,
+      "Caste_Group_Scheduled_Tribe": 0.06948673364707797,
+      "Occupation_Ag_Labour": 0.05926411914598663,
+      "Area_Type_Other_Urban": 0.05123705703805855,
+      "Caste_Group_Scheduled_Caste": 0.04615968247138812,
+      "Occupation_Business": 0.03578984741805213,
+      "Religion_Sikh": 0.03158800808998106
+    }
+  },
+  "full": {
+    "families": [
+      {
+        "family": "Income",
+        "n columns": 1,
+        "grouped mean |SHAP|": 2.64039573525234,
+        "sum of per-column mean |SHAP|": 2.64039573525234,
+        "share of grouped total": 0.5175267121332822
+      },
+      {
+        "family": "Spending mix (shares)",
+        "n columns": 11,
+        "grouped mean |SHAP|": 0.9731255585498185,
+        "sum of per-column mean |SHAP|": 1.8150247385616631,
+        "share of grouped total": 0.19073598100665806
+      },
+      {
+        "family": "Household size family",
+        "n columns": 3,
+        "grouped mean |SHAP|": 0.5541404498074702,
+        "sum of per-column mean |SHAP|": 0.7140460970139276,
+        "share of grouped total": 0.10861344806009186
+      },
+      {
+        "family": "Social/geo (categoricals)",
+        "n columns": 26,
+        "grouped mean |SHAP|": 0.3627361192769454,
+        "sum of per-column mean |SHAP|": 0.8629380920445339,
+        "share of grouped total": 0.0710975361287814
+      },
+      {
+        "family": "Head age & education",
+        "n columns": 2,
+        "grouped mean |SHAP|": 0.2268937009001821,
+        "sum of per-column mean |SHAP|": 0.27704882805411746,
+        "share of grouped total": 0.044471951481697684
+      },
+      {
+        "family": "Debt",
+        "n columns": 3,
+        "grouped mean |SHAP|": 0.17743299287844558,
+        "sum of per-column mean |SHAP|": 0.26177788753072334,
+        "share of grouped total": 0.034777481345831
+      },
+      {
+        "family": "Participation indicators",
+        "n columns": 5,
+        "grouped mean |SHAP|": 0.16722607380262472,
+        "sum of per-column mean |SHAP|": 0.30438171539159303,
+        "share of grouped total": 0.032776889843657855
+      }
+    ],
+    "permutation": [
+      {
+        "family": "Income",
+        "importance": 0.41446860343469727,
+        "sd": 0.0031049410611948313,
+        "share": 0.7379130409946466
+      },
+      {
+        "family": "Spending mix (shares)",
+        "importance": 0.08963863120763652,
+        "sd": 0.0024755274660576906,
+        "share": 0.15959113524372523
+      },
+      {
+        "family": "Household size family",
+        "importance": 0.03324217944375032,
+        "sd": 0.0017292337148854912,
+        "share": 0.05918382603494934
+      },
+      {
+        "family": "Social/geo (categoricals)",
+        "importance": 0.013572160753919293,
+        "sd": 0.0011783982764682927,
+        "share": 0.024163650350829853
+      },
+      {
+        "family": "Head age & education",
+        "importance": 0.004061618738131734,
+        "sd": 0.00012888473288263499,
+        "share": 0.0072312387707500906
+      },
+      {
+        "family": "Debt",
+        "importance": 0.0036602655687147045,
+        "sd": 0.000457186594218392,
+        "share": 0.006516676231385097
+      },
+      {
+        "family": "Participation indicators",
+        "importance": 0.003033297339290364,
+        "sd": 0.00047019606458506926,
+        "share": 0.005400432373713889
+      }
+    ],
+    "interaction_totals": {
+      "main effects": 6.443730391993812,
+      "interactions": 4.826691447923516,
+      "interaction share": 0.4282618269733656,
+      "n rows": 8299.0
+    },
+    "top_interactions": [
+      {
+        "level_0": "Groceries_Share",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.3379105364418788
+      },
+      {
+        "level_0": "Household_Size",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.18779891432732154
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Utilities_Share",
+        "mean |interaction SHAP|": 0.1715748482747945
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Max_Adult_Education",
+        "mean |interaction SHAP|": 0.0888009310946549
+      },
+      {
+        "level_0": "Groceries_Share",
+        "level_1": "Utilities_Share",
+        "mean |interaction SHAP|": 0.07688437072408244
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Transport_Share",
+        "mean |interaction SHAP|": 0.0736731949707502
+      },
+      {
+        "level_0": "Clothing_Footwear_Share",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.050918486710412915
+      },
+      {
+        "level_0": "Healthcare_Share",
+        "level_1": "Log_Income",
+        "mean |interaction SHAP|": 0.04817808787640871
+      },
+      {
+        "level_0": "Log_Income",
+        "level_1": "Occupation_Non_Ag_Labour",
+        "mean |interaction SHAP|": 0.045930010221825836
+      },
+      {
+        "level_0": "Debt_To_Income",
+        "level_1": "Has_Debt",
+        "mean |interaction SHAP|": 0.04561158113701399
+      }
+    ],
+    "top_columns": {
+      "Log_Income": 2.64039573525234,
+      "Household_Size": 0.5688362143982266,
+      "Groceries_Share": 0.5610822895155361,
+      "Utilities_Share": 0.3313406059292022,
+      "Clothing_Footwear_Share": 0.2465182792340544,
+      "Max_Adult_Education": 0.2168663369976786,
+      "Debt_To_Income": 0.20000828142753124,
+      "Transport_Share": 0.16511681754590538,
+      "Occupation_Non_Ag_Labour": 0.14435339921885426,
+      "Healthcare_Share": 0.1391103233786212,
+      "Dependency_Ratio": 0.12412789398686334,
+      "Education_Share": 0.10057923625780545,
+      "Area_Type_Less_Developed_Village": 0.09826942364951088,
+      "Spends_On_Entertainment": 0.09286481002239773,
+      "Spends_On_Insurance": 0.09111350163777455
+    }
+  },
+  "coefficient_stability": [
+    {
+      "share": "Eating_Out_Share",
+      "sd (all 11 shares)": 0.07402391247609383,
+      "sd (Groceries dropped)": 0.07301016058786186,
+      "flips sign (all 11)": true,
+      "flips sign (dropped)": true,
+      "sd ratio (all / dropped)": 1.0138850795570022,
+      "zero rate": 0.7236822300490683
+    },
+    {
+      "share": "Utilities_Share",
+      "sd (all 11 shares)": 0.02763243840877343,
+      "sd (Groceries dropped)": 0.031450140659196844,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.8786109641990737,
+      "zero rate": 0.0015352659622505193
+    },
+    {
+      "share": "Rent_Share",
+      "sd (all 11 shares)": 0.08675578489064177,
+      "sd (Groceries dropped)": 0.0851643221401231,
+      "flips sign (all 11)": true,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 1.018686965510043,
+      "zero rate": 0.9029772118365995
+    },
+    {
+      "share": "Transport_Share",
+      "sd (all 11 shares)": 0.0552964121269783,
+      "sd (Groceries dropped)": 0.06246766528398459,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.8852005573698806,
+      "zero rate": 0.11363978446070021
+    },
+    {
+      "share": "Healthcare_Share",
+      "sd (all 11 shares)": 0.05079473914550065,
+      "sd (Groceries dropped)": 0.07012931952875119,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.7243010410884727,
+      "zero rate": 0.19290165266865347
+    },
+    {
+      "share": "Education_Share",
+      "sd (all 11 shares)": 0.022752475509885458,
+      "sd (Groceries dropped)": 0.017472083978118797,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 1.3022187586998535,
+      "zero rate": 0.35858996357506245
+    },
+    {
+      "share": "Entertainment_Share",
+      "sd (all 11 shares)": 0.01748390020321715,
+      "sd (Groceries dropped)": 0.014794175198562414,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 1.181809730421207,
+      "zero rate": 0.6948132093079262
+    },
+    {
+      "share": "Insurance_Share",
+      "sd (all 11 shares)": 0.041492863063369995,
+      "sd (Groceries dropped)": 0.04361769716067213,
+      "flips sign (all 11)": true,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.9512850463087265,
+      "zero rate": 0.7368072488636022
+    },
+    {
+      "share": "Clothing_Footwear_Share",
+      "sd (all 11 shares)": 0.05191907965283192,
+      "sd (Groceries dropped)": 0.052932356702995495,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.9808571332682372,
+      "zero rate": 0.013907703422739998
+    },
+    {
+      "share": "Miscellaneous_Share",
+      "sd (all 11 shares)": 0.043348128093653744,
+      "sd (Groceries dropped)": 0.049490903275277984,
+      "flips sign (all 11)": false,
+      "flips sign (dropped)": false,
+      "sd ratio (all / dropped)": 0.8758807220095189,
+      "zero rate": 0.0006321683373972727
+    }
+  ],
+  "groceries_shap_vs_implied_spend_rho": 0.2695443297156186
+}
