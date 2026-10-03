@@ -20,7 +20,7 @@ Source: codebase audit of 2026-10-03. Notebook refs are 0-indexed cell numbers
       Run on `households.csv` under grouped CV:
   - [ ] T1 ablation: all / no `Groceries_Share` / no size family (`Household_Size`, `Dependents`, `Dependency_Ratio`) / no shares+indicators (the deployable model).
   - [ ] T2 `R²[log(Groceries) ~ log(Household_Size)]`.
-  - [ ] T3 model-free oracle: `implied_sr = 1 - (k*size/share)/INCOME`, `k = median(Groceries/size)`; report `roc_auc_score(Goal_Met, implied_sr)`.
+  - [ ] T3 model-free oracle: `implied_sr = 1 - (k*size/share)/INCOME`, `k = median(Groceries/size)`; drop the ~0.06% of rows with `Groceries_Share == 0` (division by zero gives `inf`, which `roc_auc_score` rejects; also drop NaN shares) and report `roc_auc_score(Goal_Met[m], implied_sr[m])` on the remaining mask `m`, noting the excluded count.
   - [ ] Decision: if T3 is high (≳0.85) or the no-shares model keeps most of the AUC, reframe the headline as the income+demographics model and treat shares as post-hoc/diagnostic. Update README, `report.tex` abstract and conclusion.
 - [ ] **C1 (P1) Grouped CV.** Carry `PSUID` into `features.csv`; replace `StratifiedKFold` / `train_test_split` with `StratifiedGroupKFold(5, shuffle=True, random_state=42)` grouped by `PSUID` (NB02 c1, NB03 c1, NB04 c1, NB05 c1, NB07 c1). Record the drop in AUC / macro-F1.
 - [ ] **D1 (P1) No full-data preprocessing.** Move the p99 winsorization (NB02 c11) into the pipeline (`QuantileClipper`); fit the income-rule threshold per fold (NB03 c4, NB07 c3); take the train/test split *before* any Phase 2/3 design decision.
