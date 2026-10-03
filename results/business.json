@@ -1,0 +1,782 @@
+{
+  "capture": [
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.1,
+      "capture": 0.14655721463449153,
+      "ceiling": 0.14690396999504635,
+      "pct_of_ceiling": 0.9976395780143552,
+      "precision": 0.9975915221579962
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.1,
+      "capture": 0.14684028023494444,
+      "ceiling": 0.14690396999504635,
+      "pct_of_ceiling": 0.9995664531046775,
+      "precision": 0.9995183044315993
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "capture": 0.1436911754299059,
+      "ceiling": 0.14690396999504635,
+      "pct_of_ceiling": 0.9781299677248424,
+      "precision": 0.978082851637765
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "capture": 0.09995754015993207,
+      "ceiling": 0.14690396999504635,
+      "pct_of_ceiling": 0.6804277662700515,
+      "precision": 0.6803949903660886
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.25,
+      "capture": 0.3618286037789258,
+      "ceiling": 0.36725992498761584,
+      "pct_of_ceiling": 0.9852112336817768,
+      "precision": 0.9851637764932563
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.25,
+      "capture": 0.36582690538532303,
+      "ceiling": 0.36725992498761584,
+      "pct_of_ceiling": 0.9960980779420975,
+      "precision": 0.9960500963391137
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "capture": 0.35043521336069633,
+      "ceiling": 0.36725992498761584,
+      "pct_of_ceiling": 0.9541885447275881,
+      "precision": 0.9541425818882466
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "capture": 0.2491684947986696,
+      "ceiling": 0.36725992498761584,
+      "pct_of_ceiling": 0.6784527193024713,
+      "precision": 0.6784200385356455
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.5,
+      "capture": 0.6853725850965962,
+      "ceiling": 0.7345198499752317,
+      "pct_of_ceiling": 0.9330892624885593,
+      "precision": 0.9330892624885592
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.5,
+      "capture": 0.7075932347321492,
+      "ceiling": 0.7345198499752317,
+      "pct_of_ceiling": 0.9633412014066189,
+      "precision": 0.9633412014066188
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "capture": 0.6583752034534003,
+      "ceiling": 0.7345198499752317,
+      "pct_of_ceiling": 0.8963341201406619,
+      "precision": 0.8963341201406618
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "capture": 0.4994692519991508,
+      "ceiling": 0.7345198499752317,
+      "pct_of_ceiling": 0.6799942193747291,
+      "precision": 0.679994219374729
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.65,
+      "capture": 0.8363173165381077,
+      "ceiling": 0.9548758049678012,
+      "pct_of_ceiling": 0.8758388391318687,
+      "precision": 0.8758291029013969
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.65,
+      "capture": 0.8701436557922299,
+      "ceiling": 0.9548758049678012,
+      "pct_of_ceiling": 0.9112636965616396,
+      "precision": 0.9112535665320339
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.65,
+      "capture": 0.8092137852947421,
+      "ceiling": 0.9548758049678012,
+      "pct_of_ceiling": 0.8474544868398137,
+      "precision": 0.8474450661429577
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.65,
+      "capture": 0.6507678154412285,
+      "ceiling": 0.9548758049678012,
+      "pct_of_ceiling": 0.6815208973309075,
+      "precision": 0.6815133212287398
+    }
+  ],
+  "capture_weighted": [
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.1,
+      "capture": 0.162331405111751,
+      "ceiling": 0.14381988230977413,
+      "pct_of_ceiling": 1.128713238424885,
+      "precision": 0.995356331448996
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.1,
+      "capture": 0.15931032728892983,
+      "ceiling": 0.14381988230977413,
+      "pct_of_ceiling": 1.1077072566767283,
+      "precision": 0.9985786000171359
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "capture": 0.16367318646661994,
+      "ceiling": 0.14381988230977413,
+      "pct_of_ceiling": 1.1380428341199982,
+      "precision": 0.9696377149308136
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "capture": 0.09912806190438775,
+      "ceiling": 0.14381988230977413,
+      "pct_of_ceiling": 0.6892514464090262,
+      "precision": 0.6965920104755519
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.25,
+      "capture": 0.389950348502399,
+      "ceiling": 0.3595497057744353,
+      "pct_of_ceiling": 1.08455198888978,
+      "precision": 0.981465169531975
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.25,
+      "capture": 0.39293657369001767,
+      "ceiling": 0.3595497057744353,
+      "pct_of_ceiling": 1.0928574474666035,
+      "precision": 0.9940620841285175
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "capture": 0.3909267304007642,
+      "ceiling": 0.3595497057744353,
+      "pct_of_ceiling": 1.0872675575098742,
+      "precision": 0.942474220505973
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "capture": 0.2462500568553982,
+      "ceiling": 0.3595497057744353,
+      "pct_of_ceiling": 0.6848846012125066,
+      "precision": 0.692550173504834
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.5,
+      "capture": 0.7142069328949211,
+      "ceiling": 0.7190994115488706,
+      "pct_of_ceiling": 0.9931963806736935,
+      "precision": 0.9285748452029075
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.5,
+      "capture": 0.7368249244972311,
+      "ceiling": 0.7190994115488706,
+      "pct_of_ceiling": 1.0246496001299479,
+      "precision": 0.9592665990255115
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "capture": 0.7012578445925631,
+      "ceiling": 0.7190994115488706,
+      "pct_of_ceiling": 0.9751890118810159,
+      "precision": 0.8886996116303632
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "capture": 0.4999018820179885,
+      "ceiling": 0.7190994115488706,
+      "pct_of_ceiling": 0.6951777097706814,
+      "precision": 0.6958089235768663
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.65,
+      "capture": 0.8556400933158009,
+      "ceiling": 0.9348292350135318,
+      "pct_of_ceiling": 0.9152902597268638,
+      "precision": 0.8736590462158674
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.65,
+      "capture": 0.8894962614114296,
+      "ceiling": 0.9348292350135318,
+      "pct_of_ceiling": 0.9515066796114415,
+      "precision": 0.9057939696434167
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.65,
+      "capture": 0.83634109547078,
+      "ceiling": 0.9348292350135318,
+      "pct_of_ceiling": 0.894645849900783,
+      "precision": 0.840862534963719
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.65,
+      "capture": 0.652776059732828,
+      "ceiling": 0.9348292350135318,
+      "pct_of_ceiling": 0.6982837456119769,
+      "precision": 0.6984316561326553
+    }
+  ],
+  "edge_vs_income_rule": [
+    {
+      "budget": 0.1,
+      "capture: model - income rule (pp)": 0.2866039204585641,
+      "CI low": 0.2179975060199524,
+      "CI high": 0.36181418678721716,
+      "precision: model - income rule (pp)": 1.9508670520231197,
+      "precision CI low": 1.4981625633598858,
+      "precision CI high": 2.4645108480525093
+    },
+    {
+      "budget": 0.25,
+      "capture: model - income rule (pp)": 1.1393390418229454,
+      "CI low": 0.9983097882536939,
+      "CI high": 1.3174096201661323,
+      "precision: model - income rule (pp)": 3.1021194605009628,
+      "precision CI low": 2.7228696394039567,
+      "precision CI high": 3.570980614473873
+    },
+    {
+      "budget": 0.5,
+      "capture: model - income rule (pp)": 2.6997381643195872,
+      "CI low": 2.4444001392444275,
+      "CI high": 2.9846547397479513,
+      "precision: model - income rule (pp)": 3.675514234789734,
+      "precision CI low": 3.3508528784132183,
+      "precision CI high": 4.052890401524154
+    },
+    {
+      "budget": 0.65,
+      "capture: model - income rule (pp)": 2.710353124336562,
+      "CI low": 2.458145975826091,
+      "CI high": 3.0536138574927723,
+      "precision: model - income rule (pp)": 2.8384036758439257,
+      "precision CI low": 2.573447796643698,
+      "precision CI high": 3.179689443418691
+    }
+  ],
+  "deciles": [
+    {
+      "Income_Decile": 0,
+      "median_income": 13360.0,
+      "at_risk_rate": 0.978082851637765,
+      "at_risk_rate_weighted": 0.9696377149308137,
+      "accuracy (headline)": 0.9778420038535646,
+      "n": 4152.0
+    },
+    {
+      "Income_Decile": 1,
+      "median_income": 28100.0,
+      "at_risk_rate": 0.9448458574181118,
+      "at_risk_rate_weighted": 0.9373248331807933,
+      "accuracy (headline)": 0.9455684007707129,
+      "n": 4152.0
+    },
+    {
+      "Income_Decile": 2,
+      "median_income": 40230.0,
+      "at_risk_rate": 0.9171683120635685,
+      "at_risk_rate_weighted": 0.9014755071936904,
+      "accuracy (headline)": 0.9190946303876716,
+      "n": 4153.0
+    },
+    {
+      "Income_Decile": 3,
+      "median_income": 53430.0,
+      "at_risk_rate": 0.8504609849336632,
+      "at_risk_rate_weighted": 0.8340939968110104,
+      "accuracy (headline)": 0.8565324938160558,
+      "n": 4447.0
+    },
+    {
+      "Income_Decile": 4,
+      "median_income": 67500.0,
+      "at_risk_rate": 0.784443314692425,
+      "at_risk_rate_weighted": 0.7724722340512448,
+      "accuracy (headline)": 0.8101169293340111,
+      "n": 3934.0
+    },
+    {
+      "Income_Decile": 5,
+      "median_income": 84736.5,
+      "at_risk_rate": 0.7045893719806764,
+      "at_risk_rate_weighted": 0.6776561307941773,
+      "accuracy (headline)": 0.75,
+      "n": 4140.0
+    },
+    {
+      "Income_Decile": 6,
+      "median_income": 108780.0,
+      "at_risk_rate": 0.6187561214495593,
+      "at_risk_rate_weighted": 0.598138015477706,
+      "accuracy (headline)": 0.7000489715964741,
+      "n": 4084.0
+    },
+    {
+      "Income_Decile": 7,
+      "median_income": 145730.0,
+      "at_risk_rate": 0.4868832731648616,
+      "at_risk_rate_weighted": 0.47483803440328853,
+      "accuracy (headline)": 0.6620938628158844,
+      "n": 4155.0
+    },
+    {
+      "Income_Decile": 8,
+      "median_income": 216000.0,
+      "at_risk_rate": 0.34514340805013255,
+      "at_risk_rate_weighted": 0.33193737946999313,
+      "accuracy (headline)": 0.6866714871053266,
+      "n": 4149.0
+    },
+    {
+      "Income_Decile": 9,
+      "median_income": 410000.0,
+      "at_risk_rate": 0.16907514450867056,
+      "at_risk_rate_weighted": 0.16594849749376517,
+      "accuracy (headline)": 0.8326107899807321,
+      "n": 4152.0
+    }
+  ],
+  "overall_accuracy_headline": 0.8145864444337396,
+  "calibration": [
+    {
+      "predicted": 0.032542177865328446,
+      "actual": 0.03143941917005262,
+      "n": 15013,
+      "error": -0.0011027586952758253
+    },
+    {
+      "predicted": 0.14623175182999754,
+      "actual": 0.1509286412512219,
+      "n": 5115,
+      "error": 0.004696889421224371
+    },
+    {
+      "predicted": 0.24819338490688725,
+      "actual": 0.25646551724137934,
+      "n": 3712,
+      "error": 0.008272132334492088
+    },
+    {
+      "predicted": 0.34946226410608255,
+      "actual": 0.36277173913043476,
+      "n": 2944,
+      "error": 0.013309475024352202
+    },
+    {
+      "predicted": 0.4488564785060368,
+      "actual": 0.44148936170212766,
+      "n": 2632,
+      "error": -0.007367116803909168
+    },
+    {
+      "predicted": 0.5504240244391221,
+      "actual": 0.5593354430379747,
+      "n": 2528,
+      "error": 0.008911418598852583
+    },
+    {
+      "predicted": 0.6512984491088554,
+      "actual": 0.6379585326953748,
+      "n": 2508,
+      "error": -0.013339916413480535
+    },
+    {
+      "predicted": 0.750262206658219,
+      "actual": 0.7404664938911514,
+      "n": 2701,
+      "error": -0.009795712767067588
+    },
+    {
+      "predicted": 0.849816048182703,
+      "actual": 0.8458856345885635,
+      "n": 2868,
+      "error": -0.003930413594139481
+    },
+    {
+      "predicted": 0.9324523152792222,
+      "actual": 0.9285237140948563,
+      "n": 1497,
+      "error": -0.0039286011843658875
+    }
+  ],
+  "ece": {
+    "deployable": 0.005526666644219396,
+    "full": 0.007364844388848414
+  },
+  "benchmarks": [
+    {
+      "category": "Groceries",
+      "mean excess share (pp)": -8.985191749193568,
+      "share CI low": -9.734218121080795,
+      "share CI high": -8.280560209335077,
+      "mean excess (Rs/yr)": 21719.765202856008,
+      "Rs CI low": 21277.73973105358,
+      "Rs CI high": 22124.342381674942,
+      "share of at-risk above peer (Rs)": 0.9427499823084,
+      "sample total excess (Rs crore/yr)": 61.38440041631164,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Miscellaneous",
+      "mean excess share (pp)": 2.0893144824427603,
+      "share CI low": 1.6943431286273298,
+      "share CI high": 2.4880875690748834,
+      "mean excess (Rs/yr)": 18159.738132747476,
+      "Rs CI low": 17186.58007116918,
+      "Rs CI high": 19012.719386969748,
+      "share of at-risk above peer (Rs)": 0.8710282357936452,
+      "sample total excess (Rs crore/yr)": 51.323051910770914,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Healthcare",
+      "mean excess share (pp)": 4.366129772318848,
+      "share CI low": 3.7806283871692052,
+      "share CI high": 4.864544501842591,
+      "mean excess (Rs/yr)": 11764.49408152654,
+      "Rs CI low": 11135.237127661558,
+      "Rs CI high": 12392.298458888365,
+      "share of at-risk above peer (Rs)": 0.6532446394451914,
+      "sample total excess (Rs crore/yr)": 33.24881317321031,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Transport",
+      "mean excess share (pp)": 1.7984510998102312,
+      "share CI low": 1.4522966409161455,
+      "share CI high": 2.1372989953666837,
+      "mean excess (Rs/yr)": 7079.890682754806,
+      "Rs CI low": 6669.413521675885,
+      "Rs CI high": 7436.355606212462,
+      "share of at-risk above peer (Rs)": 0.7309815299695704,
+      "sample total excess (Rs crore/yr)": 20.009187047601635,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Education",
+      "mean excess share (pp)": 2.8281529670167704,
+      "share CI low": 2.668094610143705,
+      "share CI high": 2.9771102028343632,
+      "mean excess (Rs/yr)": 5975.665185546579,
+      "Rs CI low": 5646.115718967317,
+      "Rs CI high": 6307.84377015748,
+      "share of at-risk above peer (Rs)": 0.5757908145212653,
+      "sample total excess (Rs crore/yr)": 16.88842494739174,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Utilities",
+      "mean excess share (pp)": -2.904351083686843,
+      "share CI low": -3.3917308716042767,
+      "share CI high": -2.397261348856942,
+      "mean excess (Rs/yr)": 4773.095561844375,
+      "Rs CI low": 4555.429306076169,
+      "Rs CI high": 5051.506315894595,
+      "share of at-risk above peer (Rs)": 0.8163611917061779,
+      "sample total excess (Rs crore/yr)": 13.489722676884574,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Clothing_Footwear",
+      "mean excess share (pp)": -0.4867745734216928,
+      "share CI low": -0.6629861853950856,
+      "share CI high": -0.31251126867857904,
+      "mean excess (Rs/yr)": 2570.1439495487684,
+      "Rs CI low": 2459.1506761244013,
+      "Rs CI high": 2722.5293246476817,
+      "share of at-risk above peer (Rs)": 0.7957327860731724,
+      "sample total excess (Rs crore/yr)": 7.26374083021473,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Insurance",
+      "mean excess share (pp)": 0.4773478385727222,
+      "share CI low": 0.4065162214066615,
+      "share CI high": 0.5339758679725337,
+      "mean excess (Rs/yr)": 1405.454091641916,
+      "Rs CI low": 1263.9113895403066,
+      "Rs CI high": 1540.5018678937106,
+      "share of at-risk above peer (Rs)": 0.22181728115490765,
+      "sample total excess (Rs crore/yr)": 3.972094353798383,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Rent",
+      "mean excess share (pp)": 0.361836549803695,
+      "share CI low": 0.16436060066985594,
+      "share CI high": 0.5446861686493971,
+      "mean excess (Rs/yr)": 1190.6182047910993,
+      "Rs CI low": 1013.8416219906301,
+      "Rs CI high": 1363.581938016768,
+      "share of at-risk above peer (Rs)": 0.09107635694572216,
+      "sample total excess (Rs crore/yr)": 3.364925170380605,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Entertainment",
+      "mean excess share (pp)": 0.3297987995266003,
+      "share CI low": 0.29078612935912557,
+      "share CI high": 0.3717677309017848,
+      "mean excess (Rs/yr)": 833.3932475397341,
+      "Rs CI low": 764.4762046272829,
+      "Rs CI high": 908.0274129585995,
+      "share of at-risk above peer (Rs)": 0.28055339324888545,
+      "sample total excess (Rs crore/yr)": 2.355335996196797,
+      "CI excludes zero (Rs)": true
+    },
+    {
+      "category": "Eating_Out",
+      "mean excess share (pp)": 0.12528589681047986,
+      "share CI low": 0.007925940407388695,
+      "share CI high": 0.21407583304165315,
+      "mean excess (Rs/yr)": 649.8777157131784,
+      "Rs CI low": 590.0974180956318,
+      "Rs CI high": 706.869946062099,
+      "share of at-risk above peer (Rs)": 0.2575896964121435,
+      "sample total excess (Rs crore/yr)": 1.8366844001485847,
+      "CI excludes zero (Rs)": true
+    }
+  ],
+  "levers_by_share": [
+    "Healthcare",
+    "Education",
+    "Miscellaneous",
+    "Transport",
+    "Insurance",
+    "Rent",
+    "Entertainment",
+    "Eating_Out"
+  ],
+  "gap": {
+    "median_gap": 37114.0,
+    "closable_rupee_benchmark": 0.9283136366853019,
+    "closable_share_benchmark": 0.2230203099568325,
+    "miscellaneous_rank": 3
+  },
+  "implausible_share": 0.22007322125343223,
+  "implausible_of_at_risk": 0.32329629891727407,
+  "at_risk_rate": 0.6807167975335999,
+  "at_risk_rate_weighted": 0.6953141554142679,
+  "threshold_alternatives": {
+    "0.1": 0.6167204585962714,
+    "0.2": 0.6807167975335999,
+    "0.3": 0.7467604412543957
+  },
+  "capture_curve": {
+    "Model (headline, deployable)": [
+      0.0,
+      0.036727761658764416,
+      0.07338475691741561,
+      0.1100063689760102,
+      0.14655721463449153,
+      0.18303729389285966,
+      0.2193050739508881,
+      0.25532517160852025,
+      0.29088528766541644,
+      0.32672846932276556,
+      0.3618286037789258,
+      0.39682258863491615,
+      0.4315688910905102,
+      0.46550137994480223,
+      0.4989385039983016,
+      0.5317033472507253,
+      0.5642558913028094,
+      0.5957469393531951,
+      0.6267072394027315,
+      0.6569244922510792,
+      0.6853725850965962,
+      0.7135729955417168,
+      0.740534993984856,
+      0.7666831788266931,
+      0.7897884084636615,
+      0.8140966669025547,
+      0.8363173165381077,
+      0.8584318165734909,
+      0.8776448942042319,
+      0.8948411294317458,
+      0.9114358502582973,
+      0.9268275422829241,
+      0.9406977567051165,
+      0.9534710919255538,
+      0.9644752671431605,
+      0.9741348807586158,
+      0.9823083999716934,
+      0.9884650767815442,
+      0.9943386879909419,
+      0.9976647087962636,
+      1.0
+    ],
+    "Model (full, with shares)": [
+      0.0,
+      0.036727761658764416,
+      0.07345552331752883,
+      0.11014790177623664,
+      0.14684028023494444,
+      0.18356804189370887,
+      0.22022503715236005,
+      0.2567758828108414,
+      0.2933267284693228,
+      0.32966527492746445,
+      0.36582690538532303,
+      0.4018823862430118,
+      0.4376901847003043,
+      0.4728964687566343,
+      0.5082089024131342,
+      0.5432382704691813,
+      0.577736890524379,
+      0.6113509305781615,
+      0.6442219234307551,
+      0.6762437194819899,
+      0.7075932347321492,
+      0.7375274219800438,
+      0.7661170476257873,
+      0.7949897388719835,
+      0.8212086901139339,
+      0.8463661453541859,
+      0.8701436557922299,
+      0.8918335574269337,
+      0.9123558134597693,
+      0.9299058806878494,
+      0.9458283207133253,
+      0.9604061991366499,
+      0.9721180383553889,
+      0.9809284551694856,
+      0.9868374495789399,
+      0.9922864623876584,
+      0.9959663151935461,
+      0.9981246903969995,
+      0.9994338687990942,
+      0.999823083999717,
+      1.0
+    ],
+    "Income rule (poorest first)": [
+      0.0,
+      0.03651546245842474,
+      0.07246479371594367,
+      0.10844950817351921,
+      0.1436911754299059,
+      0.17889745948623592,
+      0.2138560611421697,
+      0.24849621399759395,
+      0.28249946925199915,
+      0.31671502370674404,
+      0.35043521336069633,
+      0.38412001981459204,
+      0.4172033118675253,
+      0.4489774255183639,
+      0.4807869223692591,
+      0.511711839218739,
+      0.5421060080673696,
+      0.5723232609157172,
+      0.6019036161630458,
+      0.6300686434081099,
+      0.6583752034534003,
+      0.684381855495011,
+      0.7108484891373575,
+      0.7363597763781756,
+      0.7616941476187107,
+      0.7854008916566414,
+      0.8092137852947421,
+      0.8309390701295025,
+      0.8529120373646593,
+      0.8729035453966457,
+      0.8915858750265374,
+      0.9092067086547307,
+      0.9244922510791876,
+      0.9396716439034747,
+      0.9524095959238553,
+      0.9642275847427642,
+      0.9751609935602575,
+      0.9843960087750336,
+      0.9915434151864695,
+      0.9967447455947916,
+      1.0
+    ],
+    "Random contact": [
+      0.0,
+      0.024662090439459345,
+      0.04953648007925837,
+      0.07448163611917062,
+      0.09995754015993207,
+      0.1248673129997877,
+      0.1496355530394169,
+      0.17496992427995187,
+      0.19966739791946783,
+      0.22447102115915363,
+      0.2491684947986696,
+      0.2745028660392046,
+      0.30089873328143796,
+      0.3263392541221428,
+      0.3514259429622815,
+      0.3754511358007218,
+      0.400219375840351,
+      0.42541221428065956,
+      0.449791239119666,
+      0.4743117967588989,
+      0.4994692519991508,
+      0.5243436416389499,
+      0.5496072464793716,
+      0.5750477673200765,
+      0.600877503361404,
+      0.6259288090014861,
+      0.6507678154412285,
+      0.6756775882810842,
+      0.7003042955204869,
+      0.7252140683603425,
+      0.7499469251999151,
+      0.774644398839431,
+      0.7992003396787205,
+      0.824039346118463,
+      0.8487722029580356,
+      0.8742834901988535,
+      0.899582478239332,
+      0.9242799518788479,
+      0.9488358927181374,
+      0.9744887127591819,
+      1.0
+    ]
+  }
+}

@@ -53,11 +53,15 @@ MODEL_FINAL_PATH = RESULTS / "model_final.json"
 
 
 def preprocessor(
-    numeric: list[str], categorical: list[str] | None = None, linear: bool = False
+    numeric: list[str],
+    categorical: list[str] | None = None,
+    linear: bool = False,
+    drop_reference: bool = True,
 ) -> ColumnTransformer:
     """Impute, winsorise debt per fold, one-hot categoricals; scale only for linear models."""
     categorical = CATEGORICALS if categorical is None else categorical
-    num = [c for c in numeric if not (linear and c == REFERENCE_SHARE and _has_all_shares(numeric))]
+    drop = linear and drop_reference and _has_all_shares(numeric)
+    num = [c for c in numeric if not (drop and c == REFERENCE_SHARE)]
     wins = [c for c in num if c in WINSORISED]
     rest = [c for c in num if c not in WINSORISED]
 

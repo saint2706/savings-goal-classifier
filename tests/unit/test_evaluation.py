@@ -92,6 +92,8 @@ def test_linear_preprocessor_drops_reference_share(features: pd.DataFrame) -> No
     lin = preprocessor(spec.numeric, linear=True).fit(features[spec.features])
     names = list(lin.get_feature_names_out())
     assert "Groceries_Share" not in names and "Rent_Share" in names
+    keep = preprocessor(spec.numeric, linear=True, drop_reference=False).fit(features[spec.features])
+    assert "Groceries_Share" in keep.get_feature_names_out()
     tree = preprocessor(spec.numeric).fit(features[spec.features])
     assert "Groceries_Share" in tree.get_feature_names_out()
     only_num = preprocessor(["Debt_To_Income"], []).fit(features[["Debt_To_Income"]])
