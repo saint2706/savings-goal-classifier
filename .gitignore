@@ -17,3 +17,9 @@
 #   python src/build_dataset.py --tsv <path>/36151-0002-Data.tsv
 dataset/households.csv
 dataset/features.csv
+
+# Raw ICPSR download and any derived household-level files (same redistribution terms).
+dataset/*.tsv
+dataset/*.parquet
+dataset/36151-*
+*.tsv
