@@ -22,3 +22,14 @@ dataset/features.csv
 dataset/*.tsv
 dataset/*.parquet
 36151-*
+
+# Fitted models are derived from the microdata; rebuild with `uv run sgc train`.
+artifacts/
+
+# Python tooling
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
