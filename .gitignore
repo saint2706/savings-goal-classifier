@@ -21,5 +21,4 @@ dataset/features.csv
 # Raw ICPSR download and any derived household-level files (same redistribution terms).
 dataset/*.tsv
 dataset/*.parquet
-dataset/36151-*
-*.tsv
+36151-*
