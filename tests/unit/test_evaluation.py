@@ -184,3 +184,15 @@ def test_weighted_capture_counts_budget_in_weight() -> None:
     table = capture_vs_ceiling(at_risk, {"s": score}, budgets=(0.5,), weights=w)
     assert table["pct_of_ceiling"].iloc[0] <= 1.0
     assert capture_at_budget(at_risk, score, 0.0)[0] == 0.0
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_degenerate_cohorts_give_nan_not_zero_division():
+    score = np.array([0.9, 0.5, 0.1, 0.2])
+    on_track = np.zeros(4)
+    cap, prec = capture_at_budget(on_track, score, 0.5)
+    assert np.isnan(cap) and prec == 0.0
+    table = capture_vs_ceiling(on_track, {"s": score}, budgets=(0.5,))
+    assert table["ceiling"].iloc[0] == 1.0 and np.isnan(table["capture"].iloc[0])
+    assert np.isnan(weighted_mean(np.array([np.nan, np.nan]), np.array([1.0, 1.0])))
+    assert np.isnan(weighted_mean(np.array([1.0, 2.0]), np.zeros(2)))

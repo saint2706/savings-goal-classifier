@@ -93,8 +93,10 @@ def capture_at_budget(
     top = order[:n_top]
     if n_top == 0:
         return 0.0, float("nan")
-    captured = (at_risk[top] * w[top]).sum()
-    return float(captured / (at_risk * w).sum()), float(captured / w[top].sum())
+    captured = np.float64((at_risk[top] * w[top]).sum())
+    return float(captured / np.float64((at_risk * w).sum())), float(
+        captured / np.float64(w[top].sum())
+    )
 
 
 def capture_vs_ceiling(
@@ -111,10 +113,10 @@ def capture_vs_ceiling(
     """
     at_risk = np.asarray(at_risk, dtype=float)
     w = np.ones_like(at_risk) if weights is None else np.asarray(weights, dtype=float)
-    prevalence = (at_risk * w).sum() / w.sum()
+    prevalence = np.float64((at_risk * w).sum()) / np.float64(w.sum())
     rows = []
     for b in budgets:
-        ceiling = min(1.0, b / prevalence)
+        ceiling = np.float64(min(1.0, np.float64(b) / prevalence))
         for name, s in scores.items():
             cap, prec = capture_at_budget(at_risk, s, b, weights)
             rows.append(
@@ -166,4 +168,4 @@ def weighted_mean(x: Array, w: Array) -> float:
     x = np.asarray(x, dtype=float)
     w = np.asarray(w, dtype=float)
     m = ~np.isnan(x)
-    return float((x[m] * w[m]).sum() / w[m].sum())
+    return float(np.float64((x[m] * w[m]).sum()) / np.float64(w[m].sum()))

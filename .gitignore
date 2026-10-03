@@ -33,3 +33,8 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+
+# Locally downloaded agent skills; not part of this project.
+.claude/skills/
+.agents/
+skills-lock.json
