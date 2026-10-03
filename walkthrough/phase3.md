@@ -17,6 +17,26 @@ A baseline exists to answer one question before any modelling effort is justifie
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+Training split, PSU-grouped 5-fold CV; the income threshold is re-learned in every fold (Rs 110,377–126,545, mean Rs 122,249).
+
+| Baseline | Accuracy | Macro-F1 | ROC-AUC |
+| --- | --- | --- | --- |
+| Majority class | 0.681 | 0.405 | 0.500 |
+| Single income threshold | 0.778 | 0.742 | 0.739 |
+| LR income only | 0.752 | 0.732 | 0.835 |
+| LR income + groceries share | 0.788 | 0.770 | 0.875 |
+| LR income + size + groceries share | 0.806 | 0.789 | 0.894 |
+| LR deployable (income, demographics, debt) | 0.791 | 0.773 | 0.876 |
+| LR all 29 | 0.835 | 0.819 | 0.920 |
+
+The jump from adding the food share once household size is present (+0.044 AUC) is the A1 reconstruction route.
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

@@ -9,6 +9,19 @@ This is where the project has to say what it would actually recommend. The recom
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+- **Capture vs ceiling (F1/F2):** with 68.1% at risk, a b% budget can reach at most min(1, b/0.681). Headline model / income rule, % of ceiling: 10% budget 99.8 / 97.8; 25% 98.5 / 95.4; 50% 93.3 / 89.6; 65% 87.6 / 84.8. Model − income rule capture, 95% PSU-bootstrap CI: +0.3 [0.2, 0.4], **+1.1 [1.0, 1.3]**, +2.7 [2.4, 3.0], +2.7 [2.5, 3.1] pp. Precision at 25%: 98.5% vs 95.4% (+3.1 pp [2.7, 3.6]); the old comparison was against random.
+- Survey-weighted capture is in `results/business.json`; the at-risk share is 69.5% weighted.
+- **Reliability:** OOF ECE 0.006; accuracy by all ten income deciles runs 0.978 → 0.662 (decile 7) → 0.833.
+- **G1 peer benchmarks:** mean (not median) on-track peer in the same income decile; signed excess (no clipping before summing); shares *and* rupees; 300 PSU-bootstrap resamples. In rupees at-risk households out-spend peers in all 11 categories — mechanical, since at-risk means a larger budget at the same income. In budget shares: healthcare +4.4 pp [3.8, 4.9], education +2.8 [2.7, 3.0], miscellaneous +2.1 [1.7, 2.5], transport +1.8 [1.5, 2.1]; food −9.0 [−9.7, −8.3]. **Miscellaneous is third, not "the lever"**; the old "Rs 36 crore" was a median-based, clipped sample total (now Rs 51 crore, labelled as a sample total).
+- **"Structural for 71.5%" is withdrawn:** 92.8% of at-risk households could close the gap by matching peers' rupee spending, 22.3% by matching their shares — the answer is the benchmark's, not the data's.
+- `results/business_recommendations.csv` is regenerated with every number computed in the notebook (f-strings, no hard-coded figures).
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

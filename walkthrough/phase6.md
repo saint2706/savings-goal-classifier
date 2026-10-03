@@ -17,6 +17,19 @@ Two predictions were made going in. **One was confirmed, one was falsified**, an
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+- **One representation, k chosen within it:** ILR of the six core parts. Silhouette 0.412, Davies–Bouldin 0.98 and Calinski–Harabasz all pick k = 3. The cluster-selection figure title is computed: 0.412 is *above* the 0.25 weak-structure line (the old hard-coded "far below" was wrong).
+- **Stability:** bootstrap ARI vs the reference partition, median 0.998.
+- **δ-sensitivity (zero replacement 0.1×–1× min positive):** partition ARI vs baseline 0.93–1.00; silhouette 0.39–0.48; ARI with the zero pattern 0.83–0.92. The partition is robust, its silhouette is set by an arbitrary constant, and it remains a zero-pattern partition — so the word "personas" was removed from the abstract.
+- Clusters: no transport spend (11.7%), no healthcare spend (18.6%), spends on all core parts (69.7%).
+- **Income association:** NMI with income decile 0.012 and Kruskal–Wallis ε² 0.034 (replacing ARI vs income tertiles).
+- **Persona × income decile:** logit `Goal_Met ~ decile + cluster` — LR 774 on 2 df, pseudo-R² 0.265 → 0.280; the decile × cluster interaction is significant (LR 133.5 on 18 df, p = 1e-19). This replaces the "181%" / "nearly doubles" spread ratio, which was not a test. Income-adjusted OR vs the no-transport cluster: 0.34 (everything), 0.54 (no healthcare). Mechanism: an empty category means a smaller budget at a given income — the A1 route again.
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

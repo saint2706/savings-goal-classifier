@@ -17,6 +17,20 @@ This document records how the analysis dataset is built from the raw survey file
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The build was ported from `src/build_dataset.py` (pandas) to `savings_goal.data.build` (lazy Polars, `uv run sgc build --tsv ...`) and validated by a Pandera schema. It matches the old build on every legacy column, with these deliberate changes:
+
+- **`IDPSU`** is carried as the primary-sampling-unit key. `PSUID` alone repeats across districts (39 distinct values); `IDPSU` has 2,461 in the analysis file. All CV groups by it.
+- **Missing debt stays missing.** A blank `DB5` (7.6% of households) used to become zero debt; it is now NaN with `Debt_Missing = 1`. It is informative: goal attainment 0.367 when missing vs 0.315 when recorded.
+- **`Dependents` → `Age_Dependents`.** The codebook defines `NADULT*` as 21+ (elders included), `NTEEN*` 15–20, `NCHILD*` 0–14, `NELDER*` 60+. The column counts 0–14 and 60+, the standard age-dependency definition, so it was renamed rather than changed.
+- **`Category_Total`** (the 11-category sum used for the shares) is kept beside `COTOTAL` (used for the target). They match within 1% for 97.7% of households and a label built from `Category_Total` agrees 99.75%. "Savings is an exact identity over the expense columns" was too strong: it is exact over `INCOME` and `COTOTAL`.
+- **Occupation ties** (18.0% of households) are counted in `Occupation_Tie`; the priority order (salaried → business → non-ag labour → farm → ag labour) favours the more regular cash income.
+- **Religion code 9** is `No_Religion`: the old label `None` was silently read back as NaN by pandas (12 households).
+- **The leakage constraint is wider than this document originally said.** Composition shares pass every univariate test but, with household size and income, reconstruct total spend: a model-free oracle reaches ROC-AUC 0.895 (`results/leakage.json`). Shares are diagnostic only.
+
+---
+
 ## Why IHDS-II
 
 This project's entire feature set is built from **income and category-level expenditure measured on the same household**. That requirement rules out most household microdata: India's NSS-lineage surveys, including the current HCES rounds, deliberately collect consumption *without* income.

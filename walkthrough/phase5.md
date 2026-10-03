@@ -15,6 +15,20 @@ Phase 2 left an unexploded charge under this phase: the 11 expense shares sum to
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+- SHAP via `shap.TreeExplainer` (shap 0.51 reads XGBoost 3.2; the `pred_contribs` workaround is gone); additivity 6.5e-06.
+- **Grouped families** (SHAP summed within family, then mean |·|), headline model: income 58.0%, household-size family 14.5%, social/geo 10.9%, debt 8.7%, head age & education 8.0%. **Permutation cross-check** (family permuted jointly, ROC-AUC drop): income 0.385 (82%), size 0.039, social/geo 0.022, debt 0.014, age/education 0.011.
+- Full model: shares family 19.1% of grouped SHAP, 16.0% of permutation importance.
+- **Interactions over the whole held-out set** (8,299 rows, not a 3,000-row sample): 31.6% of attribution in the headline model (top pair: size × income); 42.8% in the full model (top pair: food share × income).
+- **The "grocery reversal" is withdrawn as a behavioural finding.** At a given size and income a higher food share means a smaller budget, so it predicts adequacy mechanically (A1). Food-share SHAP rises as implied spend/income falls (Spearman 0.27).
+- **Identification, full table:** with all 11 shares 3 of 10 share coefficients flip sign across subsamples, 1 with food dropped. With standard scaling no share's coefficient spread changes by more than 1.4× when the reference is dropped. The earlier "Rent_Share 17× worse" was an artefact of `RobustScaler` on a share whose IQR is zero.
+- Individual explanations now print contributions only, not a household's raw values.
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

@@ -9,6 +9,20 @@ At **2.13:1 with 13,256 minority cases** (Phase 1), this is an ordinary near-bal
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+- **Validation:** `StratifiedGroupKFold(5, shuffle=True, random_state=42)` grouped by `IDPSU`; held-out set = one grouped fold (8,299 households, 472 PSUs) drawn before any design decision.
+- **Two feature sets:** deployable (headline) and full (diagnostic). Grouped CV barely moves the full model (0.929 vs 0.931 pre-audit), so the change in headline numbers comes from the feature set.
+- **Winner (deployable):** tuned XGBoost `max_depth=4, learning_rate=0.08, n_estimators=200, subsample=0.7, min_child_weight=1` — macro-F1 0.782, ROC-AUC 0.882, at-risk PR-AUC 0.942 (base 0.681), Brier 0.128, ECE 0.011. Tuning worth +0.007; `max_depth` moves it most. HistGradientBoosting within one fold sd.
+- **E1 fixed:** Table 1, the text and the held-out evaluation all use the tuned configuration, stored in `results/model_final.json`. Baseline rows are computed on the same split and folds.
+- **K1:** every family is also ranked on ROC-AUC, PR-AUC (both classes named), Brier, log-loss and ECE (`results/model_comparison.csv`).
+- **K2:** the at-risk threshold is tuned on out-of-fold training scores (0.425) and applied once to the held-out set: precision 0.826, recall 0.913. The recall-target printout now reports the precision at the highest threshold still reaching the target recall (80% → 0.893, 95% → 0.789).
+- **Held-out:** ROC-AUC 0.886, macro-F1 0.781, accuracy 0.814. Full model 0.932 / 0.836.
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

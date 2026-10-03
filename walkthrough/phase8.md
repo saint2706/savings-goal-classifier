@@ -5,6 +5,20 @@
 **No notebook.** Phase 8 runs no new analysis — every figure it cites was computed and persisted by an earlier phase. Its job is to assemble them into something a non-technical stakeholder would read, and to make sure the *reasoning* survives the compression.
 
 ---
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+**Executive summary, revised.** Across 41,518 households, 68% (70% survey-weighted) retain less than 20% of income after recorded consumption. A model that uses only income, household composition, debt and social group ranks households at ROC-AUC 0.886 on held-out sampling units with well-calibrated probabilities (ECE 0.009). It improves on contacting the poorest first by about one percentage point of attainable at-risk capture at a 25% budget (CI 1.0–1.3). Spending composition would appear to add a lot (0.93), but with household size and income it reconstructs the size of the budget, i.e. the label. The project's earlier behavioural claims — a reversed Engel effect, a miscellaneous-spending lever, a structural majority of shortfalls — did not survive the audit.
+
+**Figures:** `project/figures/fig1`–`fig4`, built by `make_figures.py` from `results/*.json`; fig 3(b) now plots all ten deciles and fig 3(c) signed composition excess with CIs.
+
+**New notebook 08 — distance from adequacy.** A median HistGradientBoosting model of `Savings_Rate` on the deployable features (out-of-fold pinball loss 0.474 vs 0.739 for a constant; Spearman 0.78) ranks households by predicted rupee shortfall. At a 25% budget it reaches 45.5% of the total rupee gap against 37.0% for the classifier and 28.7% for the income rule, while catching about the same number of at-risk households (35.0%).
+
+**Product follow-ups.** `savings_goal.api` serves the two tiers (onboarding; with spending only if observed before the prediction window). Uplift modelling needs intervention data IHDS lacks; a T-learner and Qini metric are in `savings_goal.models.uplift`, tested on synthetic data only.
+
+---
+
 
 ## Research questions & answers
 

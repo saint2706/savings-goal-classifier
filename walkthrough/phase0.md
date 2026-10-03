@@ -12,6 +12,19 @@ Where the analysis later constrained the framing, this document says so rather t
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+| Question | Current answer |
+| --- | --- |
+| Business decision | Unchanged: on-track / at-risk triage for outreach. |
+| Target definition | Unchanged: `Goal_Met = 1` if the savings rate is at least 20%. |
+| Classification or regression? | Classification remains primary. The robust regression this phase called the clearest follow-up now exists: notebook 08 fits a median (quantile) model of `Savings_Rate` from the deployable features and ranks by predicted rupee shortfall, reaching 45.5% of the total rupee gap at a 25% budget against 37.0% for the classifier. |
+| What leakage means here | Wider than first stated: spending shares leak jointly with household size and income (Phase 1, A1). The headline model uses income, demographics and debt only. |
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

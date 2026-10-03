@@ -10,6 +10,21 @@ Six research questions answered on 41,518 IHDS-II households. Three of the answe
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+| # | Current answer |
+| --- | --- |
+| Q1 | 54 columns. New: `IDPSU`, `Debt_Missing`, `Occupation_Tie`, `Category_Total`; `Dependents` renamed `Age_Dependents`. |
+| Q2 | Unchanged distributions. 55.9% of households report consumption above income (57.7% survey-weighted); 22.0% above twice income. |
+| Q3 | `Debt_To_Income` is now missing for 7.6% (was silently zero); all else under 0.5%. |
+| Q4 | Reported as Spearman (fat tails): raw categories 0.09–0.58 with income; `Groceries_Share` −0.280. |
+| Q5 | Raw categories and expense/income ratios reconstruct the label (99.75%). Test C is now Spearman + marginal ROC-AUC per share (largest |AUC − 0.5| = 0.10, healthcare). The circular "Savings = INCOME − COTOTAL" check was dropped. **A1:** `R²[log Groceries ~ log size] = 0.29`; the oracle `1 − (k·size/food share)/INCOME` reaches **ROC-AUC 0.895** (24 zero-share households excluded); grouped-CV ablation: all 0.931, no food share 0.929, no size family 0.921, no shares/indicators 0.878 (94.3% retained). **Decision: reframe** — headline = income + demographics model; shares diagnostic. |
+| Q6 | 31.93% positive; survey-weighted 30.47%. Area-type gradient holds weighted (metro 0.432 → less-developed village 0.257). |
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |

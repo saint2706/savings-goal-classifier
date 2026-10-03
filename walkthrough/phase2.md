@@ -13,6 +13,24 @@ Phase 1 left four decisions open. This phase settles each one **empirically** ra
 
 ---
 
+## Post-audit revision (October 2026)
+
+> The notebooks were rewritten as thin callers of the `savings_goal` package and re-run under PSU-grouped cross-validation (see [`TODO.md`](../TODO.md)). This section gives the current answers. The cell-by-cell walkthrough further down describes the pre-audit notebook; where its numbers or conclusions conflict with this section, this section wins.
+
+All decisions below were re-taken on the **training split only** (33,219 households, one PSU-grouped fold held out first) under grouped CV.
+
+| Decision | Current result |
+| --- | --- |
+| Ratios vs raw vs shares (transfer across income halves, `Has_Bank_Savings`) | Ratios still transfer worst after p99 winsorising: 0.603 vs raw 0.628 vs shares 0.618 (unwinsorised 0.581 / 0.620 / 0.614). |
+| Categorical missingness | `Unknown` level; missing caste uninformative (0.333 vs 0.319, n = 69). |
+| Participation indicators | Kept for the diagnostic full set (0.917 → 0.919). |
+| Debt | Winsorised at p99 **inside the pipeline** (`QuantileClipper`, refit per fold) instead of on the full sample; `Debt_Missing` added. log1p and in-pipeline winsorising tie (0.920). |
+| CLR | Still rejected (0.911 vs 0.920). |
+| Scaling | `RobustScaler` is no longer used: zero-inflated shares have IQR ≈ 0 (Entertainment scaled to 154). Linear models use `StandardScaler` and drop `Groceries_Share` as reference; trees are unscaled. AUC is unaffected (0.9200 vs 0.9199). |
+| Final sets | Full: 29 features (25 numeric + 4 categorical). **Headline (deployable): 13** — income, size, age dependents, dependency ratio, head age, education, debt ×3, four categoricals. |
+
+---
+
 ## Research questions & answers
 
 | # | Question | Answer |
