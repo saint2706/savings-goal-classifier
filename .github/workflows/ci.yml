@@ -13,6 +13,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.13", "3.14"]
+    env:
+      # Read by the Makefile: `make install-dev` runs `uv sync --locked --python <this>`.
+      PYTHON_VERSION: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -20,19 +23,21 @@ jobs:
           enable-cache: true
           # The key otherwise ignores the matrix, so both jobs race to save one entry.
           cache-suffix: ${{ matrix.python-version }}
+      # Every step below is a Make target, so `make ci` reproduces this job locally.
       - name: Install
-        run: uv sync --locked --python ${{ matrix.python-version }}
-      - name: Lint
-        run: uv run ruff check .
-      - name: Format
-        run: uv run ruff format --check .
-      - name: Type-check
-        run: uv run mypy
+        run: make install-dev
+      - name: Quality
+        # ruff check, ruff format --check, mypy (src and scripts), uv.lock consistency.
+        run: make ci-quality
       - name: Test
         # The real IHDS-II file cannot be redistributed; the suite builds a
-        # synthetic DS0002 in tests/conftest.py.
-        run: uv run pytest
+        # synthetic DS0002 in tests/conftest.py. Enforces the coverage threshold.
+        run: make ci-test
       - name: End-to-end demo
         # Runs build -> features -> grouped CV -> targeting -> outreach on the
         # synthetic survey, so a broken pipeline fails CI without the ICPSR file.
-        run: uv run sgc demo --out demo_out
+        run: make ci-demo
+      - name: Docs and notebooks
+        # Markdown links, and notebook structure / dependency order / no machine paths.
+        # Notebooks are validated, not executed: they need the restricted ICPSR tables.
+        run: make ci-docs ci-notebooks

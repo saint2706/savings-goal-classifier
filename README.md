@@ -343,7 +343,10 @@ The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `da
 ├── results/                                (aggregate CSV, JSON and PNG files only)
 ├── walkthrough/                            (phase-by-phase reasoning)
 ├── project/                                (report.tex, report.pdf, figures/make_figures.py)
-├── .github/workflows/ci.yml                (ruff, ruff format, mypy --strict, pytest, sgc demo)
+├── Makefile, scripts/mk*.py                (the developer interface and its helpers; see docs/makefile.md)
+├── docs/makefile.md                        (the Makefile guide)
+├── .github/workflows/ci.yml                (calls the Makefile: ruff, ruff format, mypy --strict, pytest, sgc demo)
+├── .pre-commit-config.yaml                 (hooks that run the Makefile's lint, format and type checks)
 ├── LICENSE, CITATION.cff
 └── pyproject.toml, uv.lock
 ```
@@ -380,7 +383,21 @@ done
 uv run python project/figures/make_figures.py
 ```
 
-CI runs `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`.
+**The Makefile.** A root `Makefile` wraps the same commands as one interface for setup, quality checks, tests, the data and ML workflows, notebooks, reports, cleanup, Git and releases: `make` shows the help, `make setup` builds the environment from `uv.lock` (with a pip fallback that says it does not honour the lock), `make check` is the fast gate and `make validate` the full one.
+
+```bash
+make setup          # environment from uv.lock
+make doctor         # what is installed, what is missing
+make check          # lint, format, types, unit tests
+make test           # the whole suite with coverage
+make ci             # everything CI runs
+make data-pipeline RAW_TSV=path/to/36151-0002-Data.tsv
+make notebooks-run  # executes copies in build/; the committed notebooks and results are untouched
+```
+
+Nothing in it commits, pushes, tags or deletes unless you name that target; destructive targets support `DRY_RUN=1` and need `CONFIRM=1`. It needs GNU Make 4+ (on Windows: `scoop install make`). The full guide, with every target, the configuration variables, cleanup safety, Git automation and the release procedure, is [`docs/makefile.md`](docs/makefile.md).
+
+CI runs the same targets: `make install-dev`, then `make ci-quality` (ruff, ruff format, mypy, lock check), `make ci-test` (pytest with a coverage threshold), `make ci-demo`, and `make ci-docs ci-notebooks`.
 
 Scoring service: `uv run sgc train` fits two tiers into `artifacts/` (gitignored), and `uv sync --extra api && uv run sgc serve` exposes:
 

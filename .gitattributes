@@ -1,0 +1,5 @@
+# GNU Make and the helper scripts break on CRLF (a stray \r ends up in recipes and shebangs),
+# even on Windows checkouts where core.autocrlf would otherwise rewrite them.
+Makefile text eol=lf
+scripts/*.py text eol=lf
+.pre-commit-config.yaml text eol=lf

@@ -1,0 +1,35 @@
+# Install the git hook with `make hooks-install`; run every hook on every file with `make precommit`.
+#
+# ruff, ruff format and mypy run through the Makefile, so they use the versions pinned in uv.lock and
+# the settings in pyproject.toml (no second copy of either), and honour the pip fallback too.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=5000]
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: make --no-print-directory lint
+        language: system
+        types_or: [python]
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format --check
+        entry: make --no-print-directory format-check
+        language: system
+        types_or: [python]
+        pass_filenames: false
+      - id: mypy
+        name: mypy (strict)
+        entry: make --no-print-directory typecheck
+        language: system
+        types_or: [python]
+        pass_filenames: false
