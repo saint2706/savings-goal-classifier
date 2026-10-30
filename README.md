@@ -13,6 +13,8 @@ The intended user is a savings-product or financial-inclusion team deciding whic
 
 Headline result: spending composition does not make a safe feature set. Food spending tracks household size, so household size, the food share and income together recover total spending. A formula built from those three columns, with no fitted model, ranks households at ROC-AUC 0.895. The headline model therefore uses only what a team would know at onboarding: income, demographics, debt and social group. Under cross-validation grouped by primary sampling unit (PSU), tuned XGBoost reaches ROC-AUC 0.882 and macro-F1 0.782; on held-out PSUs it scores 0.886 and 0.781. Adding spending shares raises the score to 0.93, mostly through the reconstruction route. At a 25% contact budget the model reaches 98.5% of the at-risk households any strategy could reach, against 95.4% for contacting the poorest first: a gain of 1.1 percentage points (95% CI 1.0 to 1.3). Details are in [§8 Results](#8-results).
 
+Added for the second review: (1) targeting is reported as recall, precision and ceiling capture separately, in the sample and survey-weighted (§8.1); (2) an outreach what-if with explicit costs and heterogeneous response, which shows that a risk ranking and a reachability ranking pick different households (§8.2); (3) an external-validity section that compares the leakage mechanism on HCES 2022-23 and stress-tests the model across states and sectors (§8.3); (4) `sgc demo` and `sgc reproduce`, so the pipeline can be run without ICPSR registration or from a single command (§7).
+
 ## 2. Dataset
 
 Source: [India Human Development Survey-II (IHDS-II), 2011-12](https://www.icpsr.umich.edu/web/DSDR/studies/36151), ICPSR study 36151, dataset DS0002 (Household).
@@ -123,6 +125,16 @@ Each question maps to one phase of the pipeline (Section 5). Later phases depend
 - Does the final write-up explain _reasoning_ rather than just reporting numbers?
 - Which 3–4 visualisations communicate the findings fastest to a non-technical reader?
 - Does ranking by predicted rupee shortfall (a quantile regression on `Savings_Rate`, notebook 08) reach more of the gap than the classifier?
+
+### Phase 9: Outreach what-if
+
+- What does a contact budget buy once each contact has a cost and households respond differently?
+- Does the household a risk model ranks first coincide with the household a nudge could move?
+
+### Phase 10: External validity
+
+- Does the leakage mechanism (food spend tied to household size) still hold in a newer survey?
+- Does the model transport across states and between rural and urban households, in discrimination and in calibration?
 
 ### Machine-readable question manifest
 
@@ -288,6 +300,22 @@ questions:
     phase: reporting
     text: "Does ranking by predicted rupee shortfall beat the classifier?"
     answer: "On the rupee gap, yes: 45.5% of the total gap reached at a 25% budget vs 37.0% (classifier) and 28.7% (income rule)."
+  - id: P9-Q1
+    phase: outreach_what_if
+    text: "Does ranking by risk move more households to on-track than other rankings?"
+    answer: "No, under every assumed response. Per 1,000 contacts at a 25% budget (5 pp nudge, uniform 20% response): risk model 0.8, income rule 2.2, random 6.2, reachability model 10.1, oracle 25.0. The response is assumed, not identified: IHDS records no outreach."
+  - id: P9-Q2
+    phase: outreach_what_if
+    text: "What does a moved household cost?"
+    answer: "At an assumed Rs 150 per contact: Rs 14,885 (reachability model), Rs 24,028 (random), Rs 199,615 (risk model). Break-even requires a moved household to be worth more than that to the programme."
+  - id: P10-Q1
+    phase: external_validity
+    text: "Does the leakage mechanism hold in a newer survey?"
+    answer: "Yes. Elasticity of food spend on household size 0.63 (IHDS-II 2011-12) vs 0.57 (HCES 2022-23); residual sd 0.485 vs 0.472; simulated oracle AUC 0.868 in both. HCES has no income, so the label itself cannot be rebuilt there."
+  - id: P10-Q2
+    phase: external_validity
+    text: "Does the model transport?"
+    answer: "Discrimination yes, calibration no. Leave-states-out ROC-AUC 0.871-0.890 (CV 0.882) and the model beats the income rule at 25% in all 5 folds, but mean predicted minus observed on-track rate ranges from -7.1 to +3.9 pp across folds and +9.1 pp for rural-to-urban."
 ```
 
 ## 5. Pipeline
@@ -298,7 +326,8 @@ ICPSR DS0002 TSV → sgc build (Polars + Pandera) → dataset/households.parquet
         → 04 model comparison (7 families × 2 feature sets, grouped CV, tuning → model_final.json)
         → 05 grouped SHAP, permutation importance, interactions → 06 ILR clustering
         → 07 business translation (capture against the ceiling, bootstrap CIs, peer benchmarks)
-        → 08 quantile regression on Savings_Rate → make_figures.py → report.tex
+        → 08 quantile regression on Savings_Rate → 09 outreach what-if → 10 external validity
+        → make_figures.py → report.tex
 ```
 
 The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `data/` (build and schema), `features/` (engineering and transforms), `models/` (pipelines, clusters, regression, uplift), `evaluation/` (`cv.py`, `metrics.py`, `leakage.py`, `explain.py`, `business.py`), `viz.py` (the shared plot style), `cli.py` and `api.py`. The notebooks call the package, print aggregates and write `results/*.json`.
@@ -308,17 +337,38 @@ The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `da
 ```text
 .
 ├── dataset/README.md                       (acquisition and build; data files are gitignored)
-├── notebooks/01_… 08_*.ipynb               (thin callers of the package)
+├── notebooks/01_… 10_*.ipynb               (thin callers of the package)
 ├── src/savings_goal/                       (data, features, models, evaluation, viz, cli, api)
 ├── tests/                                  (unit and integration tests on a synthetic DS0002)
 ├── results/                                (aggregate CSV, JSON and PNG files only)
 ├── walkthrough/                            (phase-by-phase reasoning)
 ├── project/                                (report.tex, report.pdf, figures/make_figures.py)
-├── .github/workflows/ci.yml                (ruff, ruff format, mypy --strict, pytest)
+├── .github/workflows/ci.yml                (ruff, ruff format, mypy --strict, pytest, sgc demo)
+├── LICENSE, CITATION.cff
 └── pyproject.toml, uv.lock
 ```
 
 ## 7. Setup and usage
+
+Three ways in, from least to most effort:
+
+| Goal | Command | Needs | Time |
+| --- | --- | --- | --- |
+| Check the code path end to end | `uv run sgc demo` | nothing (synthetic survey) | ~15 s |
+| Rebuild every number and figure | `uv run sgc reproduce --tsv <path>/36151-0002-Data.tsv` | free ICPSR download | ~25 min on 4 cores (`--fast` skips the two tuning notebooks) |
+| Audit a claim without any data | open the file in the table below | nothing | seconds |
+
+`sgc demo` is **not a result**: it builds a made-up survey with the real schema and runs build, features, grouped CV, targeting, the outreach what-if and the leakage curve, and CI runs it on every push. `sgc reproduce` also writes `results/run_manifest.json` (Python and package versions, git commit, seed, and the SHA-256 of the input file, so you can confirm you hold the same ICPSR file; ours is `5ee026ccd5f1c3ce91d59a0af3e3c15d0728e703031c5870b72f9f68cfc5b65e` for `36151-0002-Data.tsv`, ICPSR v6). The environment is pinned by `uv.lock` (Python 3.11 to 3.13); every seed is 42.
+
+| Claim in the report | Produced by | Artifact |
+| --- | --- | --- |
+| Label reconstruction and the size × food-share oracle (AUC 0.895) | notebook 01 | `results/leakage.json` |
+| Model comparison, held-out scores | notebook 04 | `results/model_comparison.csv`, `model_final.json`, `model_test.json` |
+| Recall, precision, ceiling capture; weighted vs unweighted; weighted-fit check | notebook 07 | `results/business.json` (`targeting`, `targeting_weighted`, `operating_point`, `weighted_fit_check`) |
+| Outreach what-if (cost, response scenarios) | notebook 09 | `results/outreach.json` |
+| HCES comparison, leakage curve, leave-states-out | notebook 10 | `results/external_validity.json` |
+
+**Numerical sensitivity.** `results/run_manifest.json` records the reference environment (Python 3.13.18, xgboost 3.4.1, scikit-learn 1.9.1). Runs are deterministic within an environment (out-of-fold scores identical to 1e-16), but `uv.lock` resolves xgboost 3.2.0 under Python 3.11 and 3.4.1 from 3.12, and results move in the third or fourth decimal between them: model recall at a 50% budget is 0.6860 under 3.11 and 0.6865 under 3.13 (the earlier committed run gave 0.6854). `results/business.json`, `outreach.json` and `external_validity.json` were regenerated under the reference environment; `uv sync --python 3.13` reproduces them. The results of notebooks 01-06 and 08 were produced earlier in a different environment and not regenerated, so they can differ from a fresh `sgc reproduce` in the last digits; no conclusion changes.\n\nDetailed steps for the data are in [`dataset/README.md`](dataset/README.md).
 
 ```bash
 git clone <repo-url> && cd savings-goal-classifier
@@ -362,22 +412,58 @@ Explainability: income carries 58.0% of grouped SHAP attribution (82% of grouped
 
 Clusters: three clusters on an isometric log-ratio basis, chosen by all three indices and stable under bootstrap resampling (ARI 0.998). They are defined by which categories a household does not spend on (ARI 0.858 with the zero pattern). Cluster membership is significant once income decile is controlled (likelihood ratio 774 on 2 df) and close to independent of income (NMI 0.012). They are descriptive segments, not personas.
 
-Business translation: at a 25% budget the model reaches 98.5% of the attainable at-risk households and the income rule 95.4% (+1.1 pp, CI 1.0 to 1.3; +2.7 pp at a 50% budget). Precision at 25% is 98.5% against 95.4%. Accuracy falls to 0.66 in income decile 7. Peer benchmarks cannot separate structural from behavioural shortfall: 22% or 93% of at-risk households could close their gap by spending like their peers, depending on how the benchmark is built. Among categories, miscellaneous takes the third-largest extra share of at-risk budgets, behind healthcare and education. Ranking by a quantile model's predicted rupee shortfall reaches 45.5% of the total rupee gap at a 25% budget, against 37.0% for the classifier.
+Business translation: at a 25% budget the model reaches 98.5% of the attainable at-risk households and the income rule 95.4% (+1.1 pp, CI 1.0 to 1.3; +2.8 pp at a 50% budget). Precision at 25% is 98.5% against 95.4%. Accuracy falls to 0.66 in income decile 7. Peer benchmarks cannot separate structural from behavioural shortfall: 22% or 93% of at-risk households could close their gap by spending like their peers, depending on how the benchmark is built. Among categories, miscellaneous takes the third-largest extra share of at-risk budgets, behind healthcare and education. Ranking by a quantile model's predicted rupee shortfall reaches 45.5% of the total rupee gap at a 25% budget, against 37.0% for the classifier.
+
+### 8.1 Targeting, stated three ways
+
+Models are fitted unweighted; weighted rows are survey-population estimates computed from the same scores. At a 25% budget (ceiling 36.7% of at-risk households in the sample):
+
+| Strategy | Recall (sample) | Precision | Ceiling capture | Recall (weighted) | Precision (weighted) |
+| --- | --- | --- | --- | --- | --- |
+| Headline model | 0.362 | 0.985 | 0.985 | 0.354 | 0.985 |
+| Income rule (poorest first) | 0.350 | 0.954 | 0.954 | 0.342 | 0.951 |
+| Random contact | 0.249 | 0.678 | 0.678 | 0.248 | 0.691 |
+
+Below the at-risk prevalence, ceiling capture equals precision up to rounding of the contact count (recall / ceiling = hits / contacts), so they are one number under two names; they separate only once the ceiling saturates. The deployed classifier threshold is a different operating point: it contacts 75.3% of households (78.0% weighted) at recall 0.914 (0.928) and precision 0.826 (0.827). Refitting with survey weights changes out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25% from 0.3540 to 0.3536, so the unweighted fit is kept.
+
+### 8.2 Outreach what-if (assumed response, not identified)
+
+IHDS records no outreach. The simulation assumes a contacted household responds with probability r, a responder raises its savings rate by 5 pp of income, and a household is moved to on-track only if it was within 5 pp of the benchmark (4.6% of the at-risk, 3.1% of all households). Cost is an assumed Rs 150 per contact. Households moved per 1,000 contacts at a 25% budget, uniform r = 0.20:
+
+| Ranking | Moved per 1,000 | Rs per household moved |
+| --- | --- | --- |
+| Risk model (highest P(at risk) first) | 0.8 | 199,615 |
+| Income rule (poorest first) | 2.2 | 68,894 |
+| Random contact | 6.2 | 24,028 |
+| Reachability model | 10.1 | 14,885 |
+| Oracle (true reach) | 25.0 | 5,998 |
+
+The reachability model (the headline XGBoost fitted to the benchmark and to the benchmark relaxed by 5 pp; the difference in P(on track) is the probability of sitting in the band a nudge could cross) beats the risk model by 9.3 per 1,000 (95% PSU-bootstrap CI 8.4 to 10.1); 11.3 (10.3 to 12.2) if response rises with income and 10.1 (8.9 to 11.0) if indebted households respond less. The ordering holds for effect sizes of 2.5 and 10 pp. Read this as sensitivity of the targeting decision to an untestable assumption, not as an estimate of benefit: the most at-risk households are the deepest dissavers and are out of reach of any small nudge, which is why a pure risk ranking can do worse than random on this outcome. Other outcomes (rupees of gap closed) would reorder the strategies, and the largest gaps come from the least reliable part of the data.
+
+### 8.3 External validity
+
+No public survey records both income and consumption for the same households after 2011-12, so the classifier cannot be tested out of time. Three checks stand in (notebook 10):
+
+- **Mechanism on HCES 2022-23** (261,746 households; no income, so the label cannot be rebuilt). Elasticity of food spend on household size 0.57 against 0.63 in IHDS-II; residual sd 0.472 against 0.485; mean household food share 0.465 against 0.466; simulated oracle ROC-AUC 0.868 in both. The rank correlation of the implied and actual budget is lower (0.56 against 0.67). Nominal per-capita spending grew 2.4× (rural) and 2.5× (urban), so any income threshold is a 2011-12 rupee figure.
+- **Leave-states-out** (5 folds of whole states): ROC-AUC 0.871 to 0.890 (grouped CV 0.882), and the model beats the income rule at 25% in every fold (+0.7 to +1.6 pp recall). Calibration does not transport: mean predicted minus observed on-track rate runs from -7.1 to +3.9 pp across folds.
+- **Sector shift**: rural-to-urban ROC-AUC 0.866 with calibration off by +9.1 pp; urban-to-rural 0.882, -4.8 pp.
+
+Rankings travel; absolute probabilities need recalibration before use in another population. HCES data is read from the public level-wise parquet dump at <https://github.com/advaitmoharir/hces_2022> (files `level_01`, `level_03`, `level_14`); the loader reproduces the published MPCE (Rs 3,773 rural, Rs 6,459 urban).
 
 ## 9. Limitations
 
 - Income under-reporting: 55.9% of households report consumption above income, and 32.3% of the at-risk group report spending more than twice their income. Relative comparisons hold; absolute prevalence figures do not.
-- Vintage: 2011-12. Fine for methodology, out of date for market sizing.
+- Vintage: 2011-12. The leakage mechanism is stable in HCES 2022-23 (§8.3), but nominal spending has grown 2.4 to 2.5 times, so income thresholds must be re-based and probabilities recalibrated before use.
 - Household grain: the data supports no per-person claims.
 - Weights: `WT` is applied to population figures (prevalence, weighted capture) but not to model fitting. Rupee totals in `results/` are sample totals unless labelled otherwise.
 - Spending shares leak jointly with household size and income, so they are usable only when measured before the outcome period.
 - Debt is a stock, not a flow.
 - The at-risk class is the majority (68%), so capture has to be read against its ceiling.
-- IHDS records no outreach or intervention, so nothing here estimates who would respond to a nudge. `savings_goal.models.uplift` (a T-learner) is ready for campaign data.
+- IHDS records no outreach or intervention, so nothing here estimates who would respond to a nudge. The outreach what-if (§8.2) states its response assumptions and shows how the targeting decision depends on them; `savings_goal.models.uplift` (a T-learner) is ready for campaign data.
 
 ## 10. License
 
-Code: MIT License.
+Code: MIT License (see [`LICENSE`](LICENSE)); [`CITATION.cff`](CITATION.cff) gives the citation.
 Data: not redistributed; see the [ICPSR terms of use](https://www.icpsr.umich.edu/web/ICPSR/support/terms) for study 36151.
 
 ## 11. Citation

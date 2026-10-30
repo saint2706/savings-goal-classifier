@@ -48,7 +48,7 @@ The predicted rate becomes a rupee figure with `savings_goal.models.regression.r
 | Strategy | At-risk reached @10% | @25% | @50% | Rupee gap reached @10% | @25% | @50% |
 | --- | --- | --- | --- | --- | --- | --- |
 | Predicted rupee shortfall (median model) | 14.3% | 35.0% | 67.1% | 23.7% | 45.5% | 69.6% |
-| Classifier at-risk score | 14.7% | 36.2% | 68.5% | 17.0% | 37.0% | 64.6% |
+| Classifier at-risk score | 14.7% | 36.2% | 68.7% | 17.0% | 37.0% | 64.6% |
 | Income rule (poorest first) | 14.4% | 35.0% | 65.8% | 12.4% | 28.7% | 54.7% |
 
 Precision at 25% is 95.4% for the shortfall ranking, 98.5% for the classifier and 95.4% for the income rule.
@@ -100,7 +100,7 @@ The target is normative. No large household survey asks people for their own sav
 ### What we found
 
 1. Income dominates. Risk falls from 97.8% in the poorest tenth of households to 16.9% in the richest. In the headline model income accounts for 58.0% of the explanation (SHAP) and 82% of permutation importance (the drop in score when a feature group is shuffled). A single income cut-off, around Rs 122,249 a year, already reaches macro-F1 0.742.
-2. The model refines an income ranking. Its edge over poorest-first is +0.3 pp of capture at a 10% budget, +1.1 at 25% and +2.7 at 50% and 65%, all with intervals above zero. Its precision edge at 25% is 3.1 pp (98.5% vs 95.4%). After survey weighting, its capture at 10% and 25% is level with the income rule (39.0% vs 39.1% at 25%); the precision edge remains.
+2. The model refines an income ranking. Its edge over poorest-first is +0.3 pp of capture at a 10% budget, +1.1 at 25%, +2.8 at 50% and +2.7 at 65%, all with intervals above zero. Its precision edge at 25% is 3.1 pp (98.5% vs 95.4%). After survey weighting, its capture at 10% and 25% is level with the income rule (39.0% vs 39.1% at 25%); the precision edge remains.
 3. About a third of the model's behaviour comes from combinations of features (31.6% of attribution is interactions), led by income with household size. The same income means different things for a family of three and a family of eight.
 4. Spending shares cannot be used to score households in the same period as the outcome. Food spending relative to household size, divided by income, ranks households at ROC-AUC 0.895 with no model at all; the ablation shows the model loses only 0.002 without the food share but 0.053 without all shares and spending indicators. The spending model (0.929 in cross-validation, 0.932 on held-out villages) is a diagnostic, not a forecast.
 5. Peer comparisons cannot size a budgeting product. At the same income, at-risk households spend more rupees than on-track households in all 11 categories, because "at risk" means a larger budget. In budget shares they spend more on healthcare (+4.4 pp), education (+2.8), miscellaneous (+2.1) and transport (+1.8), and 9.0 pp less on food. Whether matching peers would close the gap depends on how "matching" is defined: 92.8% of at-risk households under a rupee benchmark, 22.3% under a share benchmark.
@@ -117,7 +117,7 @@ The target is normative. No large household survey asks people for their own sav
 
 ### What a stakeholder must be told before acting
 
-- The model is least accurate where the decision is hardest. Accuracy is 0.978 in the poorest tenth, where almost everyone is at risk anyway, and 0.662 in the eighth tenth (decile 7), where the at-risk rate is 48.7%. Overall accuracy (0.815) hides that dip.
+- The model is least accurate where the decision is hardest. Accuracy is 0.978 in the poorest tenth, where almost everyone is at risk anyway, and 0.665 in the eighth tenth (decile 7), where the at-risk rate is 48.7%. Overall accuracy (0.814) hides that dip.
 - The at-risk count is not a population estimate. 22.0% of households report spending more than twice their income and they make up 32.3% of the at-risk group. Indian household surveys under-report income relative to itemised consumption. The ranking is usable; the count is not.
 - The 20% line is a convention. At 10% the at-risk share is 61.7%, at 30% it is 74.7%. About 93.5% of households keep the same label either way, so rankings hold and levels do not.
 - The probabilities can be used for planning arithmetic. Out-of-fold calibration error is 0.006 and no probability bin is off by more than 1.3 points.
@@ -174,7 +174,7 @@ Four report figures, built by `project/figures/make_figures.py` from `results/*.
 | --- | --- | --- |
 | `project/figures/fig1_feature_ladder.png` | How much does each ingredient add? | ROC-AUC from grouped CV for a ladder of models: single income threshold 0.739, income-only logistic regression 0.835, income plus demographics 0.876, headline XGBoost 0.882, XGBoost with spending shares 0.929. A vertical line marks the model-free oracle at 0.895, above every model that does not see spending shares. |
 | `project/figures/fig2_shap.png` | What drives the score? | The ten largest mean absolute SHAP values for the headline model on held-out PSUs (income 1.95, household size 0.50, debt-to-income 0.30), and a bar splitting attribution by family: income 58.0%, household size 14.5%, social and geographic 10.9%, debt 8.7%, head age and education 8.0%. |
-| `project/figures/fig3_business.png` | What is the model worth to a campaign? | (a) capture curves for the model, the income rule and random contact against the ceiling, annotated 98.5% vs 95.4% of ceiling at 25%; (b) accuracy by all ten income deciles with the overall 0.815 line and the decile 7 low of 0.662; (c) signed budget-share excess per category with 95% intervals. |
+| `project/figures/fig3_business.png` | What is the model worth to a campaign? | (a) capture curves for the model, the income rule and random contact against the ceiling, annotated 98.5% vs 95.4% of ceiling at 25%; (b) accuracy by all ten income deciles with the overall 0.814 line and the decile 7 low of 0.665; (c) signed budget-share excess per category with 95% intervals. |
 | `project/figures/fig4_personas.png` | Do the clusters matter once income is known? | Share meeting the benchmark within each income decile for the three clusters, with the likelihood-ratio test for cluster given decile and the pseudo-R² gain from 0.265 to 0.280. |
 
 Supporting figures from the notebooks, for a technical reviewer:

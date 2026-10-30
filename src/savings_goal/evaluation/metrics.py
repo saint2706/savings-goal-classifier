@@ -71,27 +71,37 @@ def fold_metrics(with_proba: bool = True) -> dict[str, Callable[[Array, Array, A
     return m
 
 
+def top_by_budget(
+    score: Array, budget: float, weights: Array | None = None
+) -> tuple[NDArray[np.intp], Array]:
+    """Indices of the highest-scoring households that fit in ``budget``, and the weights used.
+
+    Unweighted, the budget is a share of rows. With ``weights`` it is a share of the
+    weighted population: households are taken in score order until their weights
+    reach ``budget`` of the total. Ties in ``score`` are broken by a stable sort,
+    so pass a continuous score.
+    """
+    order = np.argsort(-np.asarray(score, dtype=float), kind="stable")
+    if weights is None:
+        return order[: round(len(order) * budget)], np.ones(len(order))
+    w = np.asarray(weights, dtype=float)
+    cum = np.cumsum(w[order])
+    return order[: int(np.searchsorted(cum, budget * cum[-1], side="right"))], w
+
+
 def capture_at_budget(
     at_risk: Array, score: Array, budget: float, weights: Array | None = None
 ) -> tuple[float, float]:
-    """Contact the top ``budget`` fraction by ``score``: (share of at-risk reached, precision).
+    """Contact the top ``budget`` fraction by ``score``: (recall of at-risk, precision).
 
-    With ``weights`` the budget is a share of the weighted population (households
-    are taken in score order until their weights reach ``budget`` of the total),
-    and both returned quantities are survey-weighted. Ties in ``score`` are
-    broken by a stable sort, so pass a continuous score.
+    Recall is the share of all at-risk households that were contacted; precision is
+    the share of contacted households that are at risk. With ``weights`` both are
+    survey-weighted (population estimates); the model that produced ``score`` is
+    still fitted unweighted.
     """
     at_risk = np.asarray(at_risk, dtype=float)
-    order = np.argsort(-np.asarray(score, dtype=float), kind="stable")
-    if weights is None:
-        w = np.ones_like(at_risk)
-        n_top = round(len(order) * budget)
-    else:
-        w = np.asarray(weights, dtype=float)
-        cum = np.cumsum(w[order])
-        n_top = int(np.searchsorted(cum, budget * cum[-1], side="right"))
-    top = order[:n_top]
-    if n_top == 0:
+    top, w = top_by_budget(score, budget, weights)
+    if len(top) == 0:
         return 0.0, float("nan")
     captured = np.float64((at_risk[top] * w[top]).sum())
     return float(captured / np.float64((at_risk * w).sum())), float(
@@ -130,6 +140,47 @@ def capture_vs_ceiling(
                 }
             )
     return pd.DataFrame(rows)
+
+
+def targeting_table(
+    at_risk: Array,
+    scores: Mapping[str, Array],
+    budgets: Sequence[float] = (0.10, 0.25, 0.50, 0.65),
+    weights: Array | None = None,
+) -> pd.DataFrame:
+    """Recall, precision and ceiling capture as three separate columns.
+
+    ``ceiling`` is the best recall any strategy can reach, min(1, budget / prevalence).
+    While ``budget`` is below the at-risk prevalence, ``ceiling_capture`` is
+    recall / ceiling = hits / (budget x N), which is ``precision`` up to the rounding
+    of the contact count: the two are the same number there and only diverge once the
+    ceiling saturates at 1.
+    Reporting recall (how many at-risk households are reached), precision (how few
+    contacts are wasted) and ceiling capture (how close to perfect ranking) side by
+    side makes that explicit instead of presenting one number under two names.
+    """
+    t = capture_vs_ceiling(at_risk, scores, budgets, weights)
+    t = t.rename(columns={"capture": "recall", "pct_of_ceiling": "ceiling_capture"})
+    return t[["strategy", "budget", "recall", "precision", "ceiling", "ceiling_capture"]]
+
+
+def operating_point(
+    at_risk: Array, risk_score: Array, threshold: float, weights: Array | None = None
+) -> dict[str, float]:
+    """Contact everyone with ``risk_score >= threshold``: contacted share, recall, precision.
+
+    This is the threshold view (a deployed classifier), as opposed to the budget view
+    of :func:`targeting_table`; the two coincide when the budget equals ``contacted``.
+    """
+    at_risk = np.asarray(at_risk, dtype=float)
+    w = np.ones_like(at_risk) if weights is None else np.asarray(weights, dtype=float)
+    sel = np.asarray(risk_score, dtype=float) >= threshold
+    hits = np.float64((at_risk[sel] * w[sel]).sum())
+    return {
+        "contacted": float(np.float64(w[sel].sum()) / np.float64(w.sum())),
+        "recall": float(hits / np.float64((at_risk * w).sum())),
+        "precision": float(hits / np.float64(w[sel].sum())) if sel.any() else float("nan"),
+    }
 
 
 def bootstrap_indices(

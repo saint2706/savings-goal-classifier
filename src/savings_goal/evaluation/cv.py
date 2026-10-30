@@ -41,12 +41,21 @@ def oof_predict_proba(
     y: pd.Series,
     groups: pd.Series,
     cv: StratifiedGroupKFold | None = None,
+    sample_weight: pd.Series | None = None,
 ) -> NDArray[np.float64]:
-    """Out-of-fold P(y=1) under grouped CV."""
+    """Out-of-fold P(y=1) under grouped CV.
+
+    The project fits unweighted. ``sample_weight`` (survey weights, for the
+    weighted-fit sensitivity check) is passed to the last step of the pipeline.
+    """
     cv = cv or grouped_cv()
     out = np.full(len(y), np.nan)
     for tr, te in cv.split(X, y, groups):
-        m = clone(model).fit(X.iloc[tr], y.iloc[tr])
+        m = clone(model)
+        fit_params = {}
+        if sample_weight is not None:
+            fit_params[f"{m.steps[-1][0]}__sample_weight"] = sample_weight.iloc[tr]
+        m.fit(X.iloc[tr], y.iloc[tr], **fit_params)
         out[te] = m.predict_proba(X.iloc[te])[:, 1]
     return out
 

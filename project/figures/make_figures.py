@@ -151,7 +151,6 @@ def fig_business():
     c25 = cap[cap["budget"] == 0.25].set_index("strategy")
     H, INC = "Model (headline, deployable)", "Income rule (poorest first)"
     dec = pd.DataFrame(bus["deciles"])
-    bench = pd.DataFrame(bus["benchmarks"]).set_index("category")
 
     fig, axes = plt.subplots(1, 3, figsize=(WIDE, 1.75))
     ax_a, ax_b, ax_c = axes
@@ -159,20 +158,20 @@ def fig_business():
 
     # (a) capture curve against its ceiling
     ax_a.plot(frac, np.minimum(100, frac / prevalence), color=INK_2, linewidth=0.7,
-              linestyle="--", zorder=2)
+              linestyle="--", zorder=2, label="Ceiling")
     ax_a.plot(frac, np.array(curves["Random contact"]) * 100, color=MUTED, linewidth=1.0, zorder=2,
               label="Random")
     ax_a.plot(frac, np.array(curves[INC]) * 100, color=ORANGE, linewidth=1.4, zorder=3, label="Income rule")
     ax_a.plot(frac, np.array(curves[H]) * 100, color=BLUE, linewidth=1.6, zorder=4, label="Model")
-    ax_a.text(40, 93, "ceiling", color=INK_2, fontsize=6.0, ha="right")
     leg = ax_a.legend(loc="lower right", frameon=False, fontsize=5.8, handlelength=1.2, borderpad=0.1,
                       labelspacing=0.25)
     for text in leg.get_texts():
         text.set_color(INK_2)
-    ax_a.annotate(f"{c25.loc[H, 'pct_of_ceiling']:.1%} vs {c25.loc[INC, 'pct_of_ceiling']:.1%}\n"
-                  "of ceiling at 25%", xy=(25, c25.loc[H, "capture"] * 100), xytext=(2, 70),
-                  fontsize=6.0, color=INK_2,
-                  arrowprops=dict(arrowstyle="->", color=MUTED, linewidth=0.6))
+    ax_a.text(1.5, 98, "At 25%, recall:\n"
+              f"model {c25.loc[H, 'capture']:.1%}\n"
+              f"income rule {c25.loc[INC, 'capture']:.1%}\n"
+              f"(ceiling {c25.loc[H, 'ceiling']:.1%})",
+              va="top", fontsize=5.8, color=INK_2)
     ax_a.set_xlim(0, 100)
     ax_a.set_ylim(0, 102)
     ax_a.set_xlabel("Households contacted (%)")
@@ -201,19 +200,24 @@ def fig_business():
     ax_b.set_title("(b) Weakest in the middle deciles", loc="left", fontsize=6.8, pad=6)
     strip(ax_b, grid_axis="y")
 
-    # (c) signed composition excess (pp of budget), with 95% PSU-bootstrap intervals
-    b = bench.sort_values("mean excess share (pp)")
-    ys = np.arange(len(b))
-    x = b["mean excess share (pp)"]
-    colours = [RED if lo_ > 0 else BLUE if hi_ < 0 else CONTEXT
-               for lo_, hi_ in zip(b["share CI low"], b["share CI high"])]
-    ax_c.barh(ys, x, height=0.55, color=colours, zorder=3)
-    ax_c.errorbar(x, ys, xerr=[x - b["share CI low"], b["share CI high"] - x],
-                  fmt="none", ecolor=INK_2, elinewidth=0.6, capsize=1.2, zorder=4)
-    ax_c.axvline(0, color=AXIS, linewidth=0.8, zorder=2)
-    ax_c.set_yticks(ys, [c.replace("_", " ") for c in b.index], fontsize=5.6)
-    ax_c.set_xlabel("Budget share vs same-income peers (pp)")
-    ax_c.set_title("(c) Signed composition excess, 95% CI", loc="left", fontsize=6.8, pad=6)
+    # (c) outreach what-if: households moved to on-track per 1,000 contacts (assumed response)
+    out = pd.DataFrame(result("outreach")["simulation"])
+    out = out[out["budget"] == 0.25]
+    order = ["Risk model", "Income rule (poorest first)", "Random contact", "Reachability model",
+             "Oracle (true reach)"]
+    shown = ["Risk model", "Income rule", "Random", "Reachability model", "Oracle (true reach)"]
+    colours = [RED, ORANGE, CONTEXT, BLUE, MUTED]
+    scen = sorted(out["scenario"].unique())
+    base = [s_ for s_ in scen if s_.startswith("uniform")][0]
+    ys = np.arange(len(order))[::-1]
+    for y, name, colour in zip(ys, order, colours):
+        rows = out[out["strategy"] == name].set_index("scenario")["flips_per_1000"]
+        ax_c.barh(y, rows[base], height=0.55, color=colour, zorder=3)
+        ax_c.text(rows[base] + 0.7, y, f"{rows[base]:.1f}", va="center", fontsize=5.8, color=INK_2)
+    ax_c.set_yticks(ys, shown, fontsize=5.6)
+    ax_c.set_xlim(0, 32)
+    ax_c.set_xlabel("Moved to on-track per 1,000 contacts")
+    ax_c.set_title("(c) What-if: risk rank is not reach", loc="left", fontsize=6.8, pad=6)
     strip(ax_c)
     ax_c.spines["left"].set_visible(False)
     ax_c.tick_params(axis="y", length=0)

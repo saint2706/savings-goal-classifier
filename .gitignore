@@ -38,3 +38,11 @@ __pycache__/
 .claude/skills/
 .agents/
 skills-lock.json
+
+# HCES 2022-23 level files (third-party clean dump of public NSS microdata; used for
+# the external-validity check only and never committed).
+dataset/hces/
+oof.parquet
+
+# Output of `sgc demo` (synthetic data).
+demo_out/

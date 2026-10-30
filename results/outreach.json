@@ -1,0 +1,1303 @@
+{
+  "assumptions": {
+    "delta": 0.05,
+    "cost_per_contact_rs": 150.0,
+    "scenarios": [
+      "uniform r=0.20",
+      "income-gradient 0.05-0.35",
+      "debt-burdened 0.30/0.10"
+    ],
+    "note": "Response is assumed, not identified: IHDS-II records no outreach."
+  },
+  "simulation": [
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 5.684007707129094,
+      "extra_savings_per_contact": 1256.5927083333336,
+      "cost_per_flip": 26389.830508474573
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 6.24277456647399,
+      "extra_savings_per_contact": 1275.0336270321534,
+      "cost_per_flip": 24027.777777777774
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 6.445397177127993,
+      "extra_savings_per_contact": 1295.1995502703649,
+      "cost_per_flip": 23272.421524663674
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.7225433526011562,
+      "extra_savings_per_contact": 125.79457851637767,
+      "cost_per_flip": 207599.99999999997
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.1772639691714835,
+      "extra_savings_per_contact": 237.19075096339114,
+      "cost_per_flip": 68893.80530973451
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 4.13314706874127,
+      "extra_savings_per_contact": 402.10145481327385,
+      "cost_per_flip": 36291.95804195804
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 181.77159983140658,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.7514450867052024,
+      "extra_savings_per_contact": 294.90773747591527,
+      "cost_per_flip": 199615.3846153846
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 3.583987667999422,
+      "extra_savings_per_contact": 468.5875711965293,
+      "cost_per_flip": 41852.82258064516
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 9.8747591522158,
+      "extra_savings_per_contact": 1287.143421731997,
+      "cost_per_flip": 15190.243902439024
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.077071290944124,
+      "extra_savings_per_contact": 1313.5932008670522,
+      "cost_per_flip": 14885.277246653919
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 8.748012910063107,
+      "extra_savings_per_contact": 1400.1354226103742,
+      "cost_per_flip": 17146.751101321584
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 62.52408477842005,
+      "extra_savings_per_contact": 1300.0699934895833,
+      "cost_per_flip": 2399.0755007704156
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 25.009633911368013,
+      "extra_savings_per_contact": 1292.0412733170763,
+      "cost_per_flip": 5997.688751926041
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 12.50541933619153,
+      "extra_savings_per_contact": 1296.3700964641844,
+      "cost_per_flip": 11994.799691833592
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 6.737534320142128,
+      "extra_savings_per_contact": 1747.3623698748174,
+      "cost_per_flip": 22263.337427695027
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 7.23150722007336,
+      "extra_savings_per_contact": 1781.2604580580175,
+      "cost_per_flip": 20742.563816243874
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 7.430579710497716,
+      "extra_savings_per_contact": 1815.7688885576524,
+      "cost_per_flip": 20186.850265273948
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.25420759071836524,
+      "extra_savings_per_contact": 43.37967054371964,
+      "cost_per_flip": 590068.9258574656
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.0935547513296227,
+      "extra_savings_per_contact": 115.25192518939369,
+      "cost_per_flip": 137167.34330642264
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 3.091346799990971,
+      "extra_savings_per_contact": 293.29339911458754,
+      "cost_per_flip": 48522.54040227325
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 79.68076839840128,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.448717904094526,
+      "extra_savings_per_contact": 181.59150589233892,
+      "cost_per_flip": 334285.74752925686
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 3.0610611020059846,
+      "extra_savings_per_contact": 400.250926232761,
+      "cost_per_flip": 49002.61543348531
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 11.31468234730884,
+      "extra_savings_per_contact": 1732.181374880671,
+      "cost_per_flip": 13257.111016967878
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 11.765826596463812,
+      "extra_savings_per_contact": 1781.9154276447127,
+      "cost_per_flip": 12748.785541772484
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 10.090147452749495,
+      "extra_savings_per_contact": 1949.1342207612877,
+      "cost_per_flip": 14865.986914703219
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 71.08379054849205,
+      "extra_savings_per_contact": 1810.1204465058347,
+      "cost_per_flip": 2110.1857236731457
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 28.433516219396818,
+      "extra_savings_per_contact": 1806.742817176803,
+      "cost_per_flip": 5275.464309182865
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 14.217442957625076,
+      "extra_savings_per_contact": 1817.5488496595115,
+      "cost_per_flip": 10550.420384809931
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 6.262042389210019,
+      "extra_savings_per_contact": 1353.6310639450867,
+      "cost_per_flip": 23953.846153846152
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 6.608863198458574,
+      "extra_savings_per_contact": 1368.6443753687981,
+      "cost_per_flip": 22696.793002915452
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 6.9608362637892,
+      "extra_savings_per_contact": 1414.4070317467724,
+      "cost_per_flip": 21549.134948096886
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.98747591522158,
+      "extra_savings_per_contact": 131.2678853564547,
+      "cost_per_flip": 151902.43902439025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.5337186897880537,
+      "extra_savings_per_contact": 241.92144605009636,
+      "cost_per_flip": 59201.52091254754
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 4.60041427814442,
+      "extra_savings_per_contact": 409.33227254218053,
+      "cost_per_flip": 32605.75916230366
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 152.7375207731214,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.6454720616570327,
+      "extra_savings_per_contact": 257.8964303949904,
+      "cost_per_flip": 232388.05970149254
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 3.612890794354256,
+      "extra_savings_per_contact": 444.1973007227287,
+      "cost_per_flip": 41518.0
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 9.898843930635836,
+      "extra_savings_per_contact": 1324.2438900492232,
+      "cost_per_flip": 15153.284671532849
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.722543352601155,
+      "extra_savings_per_contact": 1408.5747782695087,
+      "cost_per_flip": 13989.21832884097
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 9.480225444385567,
+      "extra_savings_per_contact": 1543.0320156505913,
+      "cost_per_flip": 15822.408536585364
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 4152.0,
+      "flips_per_1000": 68.54527938342966,
+      "extra_savings_per_contact": 1423.6663257353382,
+      "cost_per_flip": 2188.3345045678147
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 27.418111753371868,
+      "extra_savings_per_contact": 1405.6019882511441,
+      "cost_per_flip": 5470.836261419536
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 20759.0,
+      "flips_per_1000": 13.70971626764295,
+      "extra_savings_per_contact": 1412.695291620502,
+      "cost_per_flip": 10941.145467322556
+    }
+  ],
+  "edge_reachability_vs_risk": [
+    {
+      "scenario": "uniform r=0.20",
+      "reachability - risk (flips/1000)": 9.325626204238922,
+      "CI low": 8.407105112983292,
+      "CI high": 10.093579264145923
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "reachability - risk (flips/1000)": 11.317108692369287,
+      "CI low": 10.30817117779458,
+      "CI high": 12.203024569831586
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "reachability - risk (flips/1000)": 10.077071290944122,
+      "CI low": 8.927157921238972,
+      "CI high": 11.02014392429228
+    }
+  ],
+  "delta_sensitivity": [
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.9094412331406554,
+      "extra_savings_per_contact": 641.2256165477481,
+      "cost_per_flip": 51556.291390728475,
+      "delta": 0.025
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.0982658959537572,
+      "extra_savings_per_contact": 118.59537548169557,
+      "cost_per_flip": 136578.94736842104,
+      "delta": 0.025
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.34682080924855496,
+      "extra_savings_per_contact": 147.45386873795763,
+      "cost_per_flip": 432499.99999999994,
+      "delta": 0.025
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 4.354527938342967,
+      "extra_savings_per_contact": 716.7342071290944,
+      "cost_per_flip": 34446.902654867255,
+      "delta": 0.025
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 12.196531791907514,
+      "extra_savings_per_contact": 652.4737408477844,
+      "cost_per_flip": 12298.578199052134,
+      "delta": 0.025
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 3.218916655319823,
+      "extra_savings_per_contact": 896.7413666944778,
+      "cost_per_flip": 46599.528991252,
+      "delta": 0.025
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.558517414412079,
+      "extra_savings_per_contact": 57.625962594696844,
+      "cost_per_flip": 268568.17017585185,
+      "delta": 0.025
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.21314698242172,
+      "extra_savings_per_contact": 90.79575294616946,
+      "cost_per_flip": 703739.7306578747,
+      "delta": 0.025
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 5.234339243809194,
+      "extra_savings_per_contact": 1000.6454256470342,
+      "cost_per_flip": 28656.912174236586,
+      "delta": 0.025
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 13.949903892928118,
+      "extra_savings_per_contact": 915.7986705759791,
+      "cost_per_flip": 10752.762252078473,
+      "delta": 0.025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 3.208092485549133,
+      "extra_savings_per_contact": 685.1765389082069,
+      "cost_per_flip": 46756.75675675676,
+      "delta": 0.025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.1849710982658959,
+      "extra_savings_per_contact": 120.9413444123314,
+      "cost_per_flip": 126585.36585365853,
+      "delta": 0.025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.30828516377649323,
+      "extra_savings_per_contact": 128.9482151974952,
+      "cost_per_flip": 486562.5,
+      "delta": 0.025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 4.932562620423892,
+      "extra_savings_per_contact": 772.636463195448,
+      "cost_per_flip": 30410.15625,
+      "delta": 0.025
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 13.497109826589599,
+      "extra_savings_per_contact": 710.3246883429673,
+      "cost_per_flip": 11113.490364025694,
+      "delta": 0.025
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 6.24277456647399,
+      "extra_savings_per_contact": 1275.0336270321534,
+      "cost_per_flip": 24027.777777777774,
+      "delta": 0.05
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.1772639691714835,
+      "extra_savings_per_contact": 237.19075096339114,
+      "cost_per_flip": 68893.80530973451,
+      "delta": 0.05
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.7514450867052024,
+      "extra_savings_per_contact": 294.90773747591527,
+      "cost_per_flip": 199615.3846153846,
+      "delta": 0.05
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.077071290944124,
+      "extra_savings_per_contact": 1313.5932008670522,
+      "cost_per_flip": 14885.277246653919,
+      "delta": 0.05
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 25.009633911368013,
+      "extra_savings_per_contact": 1292.0412733170763,
+      "cost_per_flip": 5997.688751926041,
+      "delta": 0.05
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 7.23150722007336,
+      "extra_savings_per_contact": 1781.2604580580175,
+      "cost_per_flip": 20742.563816243874,
+      "delta": 0.05
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.0935547513296227,
+      "extra_savings_per_contact": 115.25192518939369,
+      "cost_per_flip": 137167.34330642264,
+      "delta": 0.05
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.448717904094526,
+      "extra_savings_per_contact": 181.59150589233892,
+      "cost_per_flip": 334285.74752925686,
+      "delta": 0.05
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 11.765826596463812,
+      "extra_savings_per_contact": 1781.9154276447127,
+      "cost_per_flip": 12748.785541772484,
+      "delta": 0.05
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 28.433516219396818,
+      "extra_savings_per_contact": 1806.742817176803,
+      "cost_per_flip": 5275.464309182865,
+      "delta": 0.05
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 6.608863198458574,
+      "extra_savings_per_contact": 1368.6443753687981,
+      "cost_per_flip": 22696.793002915452,
+      "delta": 0.05
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.5337186897880537,
+      "extra_savings_per_contact": 241.92144605009636,
+      "cost_per_flip": 59201.52091254754,
+      "delta": 0.05
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.6454720616570327,
+      "extra_savings_per_contact": 257.8964303949904,
+      "cost_per_flip": 232388.05970149254,
+      "delta": 0.05
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.722543352601155,
+      "extra_savings_per_contact": 1408.5747782695087,
+      "cost_per_flip": 13989.21832884097,
+      "delta": 0.05
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 27.418111753371868,
+      "extra_savings_per_contact": 1405.6019882511441,
+      "cost_per_flip": 5470.836261419536,
+      "delta": 0.05
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 12.870905587668597,
+      "extra_savings_per_contact": 2663.0994496026015,
+      "cost_per_flip": 11654.191616766466,
+      "delta": 0.1
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 4.682080924855491,
+      "extra_savings_per_contact": 474.3815019267823,
+      "cost_per_flip": 32037.03703703704,
+      "delta": 0.1
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.9653179190751444,
+      "extra_savings_per_contact": 589.8154749518305,
+      "cost_per_flip": 76323.52941176471,
+      "delta": 0.1
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 21.32947976878613,
+      "extra_savings_per_contact": 2387.8500319725435,
+      "cost_per_flip": 7032.520325203251,
+      "delta": 0.1
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 51.19460500963391,
+      "extra_savings_per_contact": 2560.0020478684974,
+      "cost_per_flip": 2929.9962363567934,
+      "delta": 0.1
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 14.657768629452546,
+      "extra_savings_per_contact": 3761.065409559155,
+      "cost_per_flip": 10233.48122023143,
+      "delta": 0.1
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 2.322900130788039,
+      "extra_savings_per_contact": 230.50385037878738,
+      "cost_per_flip": 64574.450710075434,
+      "delta": 0.1
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.1702132399151617,
+      "extra_savings_per_contact": 363.18301178467783,
+      "cost_per_flip": 128181.7662658429,
+      "delta": 0.1
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 24.163215160942798,
+      "extra_savings_per_contact": 3130.864483031971,
+      "cost_per_flip": 6207.7831530656,
+      "delta": 0.1
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 57.449618852783495,
+      "extra_savings_per_contact": 3557.062534769349,
+      "cost_per_flip": 2610.9833797919505,
+      "delta": 0.1
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 14.219653179190752,
+      "extra_savings_per_contact": 2905.5618232478323,
+      "cost_per_flip": 10548.78048780488,
+      "delta": 0.1
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 5.616570327552987,
+      "extra_savings_per_contact": 483.7653776493256,
+      "cost_per_flip": 26706.689536878217,
+      "delta": 0.1
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 1.8304431599229292,
+      "extra_savings_per_contact": 515.7928607899808,
+      "cost_per_flip": 81947.36842105261,
+      "delta": 0.1
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 23.998073217726393,
+      "extra_savings_per_contact": 2598.1585730069846,
+      "cost_per_flip": 6250.501806503413,
+      "delta": 0.1
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 56.329479768786115,
+      "extra_savings_per_contact": 2778.815828064788,
+      "cost_per_flip": 2662.904053360698,
+      "delta": 0.1
+    }
+  ],
+  "weighted": [
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 25076086.14833787,
+      "flips_per_1000": 5.411627506912072,
+      "extra_savings_per_contact": 1119.5981134653496,
+      "cost_per_flip": 27718.094013013746
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 62701949.83183015,
+      "flips_per_1000": 6.061555514125556,
+      "extra_savings_per_contact": 1130.702541248404,
+      "cost_per_flip": 24746.123276516602
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 125407312.17090861,
+      "flips_per_1000": 6.242333428551754,
+      "extra_savings_per_contact": 1148.2633511423835,
+      "cost_per_flip": 24029.475790882352
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 25078656.59014612,
+      "flips_per_1000": 0.46463299792798457,
+      "extra_savings_per_contact": 109.7475985554564,
+      "cost_per_flip": 322835.44360585674
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 62701735.92922832,
+      "flips_per_1000": 1.7734902448480037,
+      "extra_savings_per_contact": 212.3189478912496,
+      "cost_per_flip": 84578.98228408677
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 125405990.30314471,
+      "flips_per_1000": 3.7693056750454983,
+      "extra_savings_per_contact": 358.6361492323431,
+      "cost_per_flip": 39795.12751992166
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 25076484.7262125,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 168.4700237919945,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.5254782674957718,
+      "extra_savings_per_contact": 266.14889813496956,
+      "cost_per_flip": 285454.2409809688
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 125395533.68572727,
+      "flips_per_1000": 2.855077812566843,
+      "extra_savings_per_contact": 422.5129475270892,
+      "cost_per_flip": 52537.97263940182
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 25075975.333789468,
+      "flips_per_1000": 9.783807208484385,
+      "extra_savings_per_contact": 1201.5519817443865,
+      "cost_per_flip": 15331.455005564914
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 9.852244930399452,
+      "extra_savings_per_contact": 1241.207950580575,
+      "cost_per_flip": 15224.956449993408
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 125412813.19646984,
+      "flips_per_1000": 8.626093398659567,
+      "extra_savings_per_contact": 1296.9371082383866,
+      "cost_per_flip": 17389.099916691015
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 25082651.10311441,
+      "flips_per_1000": 61.18180600106282,
+      "extra_savings_per_contact": 1161.781467647384,
+      "cost_per_flip": 2451.7092548296837
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 62703682.81934066,
+      "flips_per_1000": 24.473871785243034,
+      "extra_savings_per_contact": 1147.4807177034104,
+      "cost_per_flip": 6128.985283417444
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 125413600.04862922,
+      "flips_per_1000": 12.236327584791814,
+      "extra_savings_per_contact": 1155.77853955781,
+      "cost_per_flip": 12258.579950607955
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 25076086.14833787,
+      "flips_per_1000": 6.459279854798875,
+      "extra_savings_per_contact": 1511.6080537651733,
+      "cost_per_flip": 23222.403018899793
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 62701949.83183015,
+      "flips_per_1000": 6.925857854706615,
+      "extra_savings_per_contact": 1533.7581071740904,
+      "cost_per_flip": 21657.9668752607
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 125407312.17090861,
+      "flips_per_1000": 7.061556799275141,
+      "extra_savings_per_contact": 1562.8880612388766,
+      "cost_per_flip": 21241.7749037149
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 25078656.59014612,
+      "flips_per_1000": 0.15799489159309085,
+      "extra_savings_per_contact": 36.227989130565774,
+      "cost_per_flip": 949397.7842417756
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 62701735.92922832,
+      "flips_per_1000": 0.8374542898772258,
+      "extra_savings_per_contact": 96.36367235971578,
+      "cost_per_flip": 179114.25353375482
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 125405990.30314471,
+      "flips_per_1000": 2.6164381594992507,
+      "extra_savings_per_contact": 240.33297905684955,
+      "cost_per_flip": 57329.847241147065
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 25076484.7262125,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 70.58137346471788,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.29394413244042417,
+      "extra_savings_per_contact": 153.2208687072036,
+      "cost_per_flip": 510301.0519538151
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 125395533.68572727,
+      "flips_per_1000": 2.2852360533388447,
+      "extra_savings_per_contact": 338.57625484952297,
+      "cost_per_flip": 65638.73337322962
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 25075975.333789468,
+      "flips_per_1000": 10.830550501044803,
+      "extra_savings_per_contact": 1582.721659666099,
+      "cost_per_flip": 13849.711516097894
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 11.285127412564508,
+      "extra_savings_per_contact": 1656.0950351760796,
+      "cost_per_flip": 13291.830434541189
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 125412813.19646984,
+      "flips_per_1000": 9.689286239673105,
+      "extra_savings_per_contact": 1768.9661071456928,
+      "cost_per_flip": 15481.01648456003
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 25082651.10311441,
+      "flips_per_1000": 67.43902093504245,
+      "extra_savings_per_contact": 1575.2106280590176,
+      "cost_per_flip": 2224.2315786950794
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 62703682.81934066,
+      "flips_per_1000": 26.97687530926888,
+      "extra_savings_per_contact": 1558.831753883493,
+      "cost_per_flip": 5560.317801093222
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 125413600.04862922,
+      "flips_per_1000": 13.487767133655352,
+      "extra_savings_per_contact": 1576.4172138830309,
+      "cost_per_flip": 11121.188445321872
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "contacts": 25076086.14833787,
+      "flips_per_1000": 6.0426258378579,
+      "extra_savings_per_contact": 1217.3042626953813,
+      "cost_per_flip": 24823.64522063056
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "contacts": 62701949.83183015,
+      "flips_per_1000": 6.565964061303136,
+      "extra_savings_per_contact": 1217.6373596494868,
+      "cost_per_flip": 22845.083920582674
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "contacts": 125407312.17090861,
+      "flips_per_1000": 6.57863062862838,
+      "extra_savings_per_contact": 1248.3754123069807,
+      "cost_per_flip": 22801.097746275875
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "contacts": 25078656.59014612,
+      "flips_per_1000": 0.6509732883573043,
+      "extra_savings_per_contact": 116.02562771105504,
+      "cost_per_flip": 230424.20124259917
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "contacts": 62701735.92922832,
+      "flips_per_1000": 2.0849428319795464,
+      "extra_savings_per_contact": 215.43143468381794,
+      "cost_per_flip": 71944.41866666563
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "contacts": 125405990.30314471,
+      "flips_per_1000": 4.296835704332521,
+      "extra_savings_per_contact": 362.1355753126313,
+      "cost_per_flip": 34909.41016170441
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.1,
+      "contacts": 25076484.7262125,
+      "flips_per_1000": 0.0,
+      "extra_savings_per_contact": 138.6971128589038,
+      "cost_per_flip": null
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.41522353544913854,
+      "extra_savings_per_contact": 228.17547374393232,
+      "cost_per_flip": 361251.19891806756
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model",
+      "budget": 0.5,
+      "contacts": 125395533.68572727,
+      "flips_per_1000": 2.89420930273654,
+      "extra_savings_per_contact": 392.44538337069423,
+      "cost_per_flip": 51827.626930150356
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.1,
+      "contacts": 25075975.333789468,
+      "flips_per_1000": 9.757099759823411,
+      "extra_savings_per_contact": 1241.45694112469,
+      "cost_per_flip": 15373.42075948138
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 10.629260090433636,
+      "extra_savings_per_contact": 1338.030254871169,
+      "cost_per_flip": 14111.988861294347
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability model",
+      "budget": 0.5,
+      "contacts": 125412813.19646984,
+      "flips_per_1000": 9.414959075907241,
+      "extra_savings_per_contact": 1426.3858173650615,
+      "cost_per_flip": 15932.092618846118
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.1,
+      "contacts": 25082651.10311441,
+      "flips_per_1000": 66.71708044000319,
+      "extra_savings_per_contact": 1255.1020815572815,
+      "cost_per_flip": 2248.299820836597
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.25,
+      "contacts": 62703682.81934066,
+      "flips_per_1000": 26.688085548602796,
+      "extra_savings_per_contact": 1241.643632629247,
+      "cost_per_flip": 5620.485580609695
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Oracle (true reach)",
+      "budget": 0.5,
+      "contacts": 125413600.04862922,
+      "flips_per_1000": 13.343379431306818,
+      "extra_savings_per_contact": 1245.03811093261,
+      "cost_per_flip": 11241.529986628684
+    }
+  ],
+  "at_risk_within_reach": {
+    "0.025": 0.022397565635836104,
+    "0.05": 0.04592739367348383,
+    "0.1": 0.09401316255042105
+  }
+}

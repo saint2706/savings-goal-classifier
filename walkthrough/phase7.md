@@ -15,7 +15,7 @@ This phase turns model scores into statements a savings-product or financial-inc
 | --- | --- | --- |
 | 1 | Which 3–5 findings should a team act on, stated as recommendations? | Five, in `results/business_recommendations.csv` and listed [below](#the-five-recommendations). The lead one: prioritise by income and let the model re-rank. At a 25% contact budget the headline model reaches 36.2% of at-risk households (98.5% of the 36.7% ceiling) against 35.0% for the income rule (95.4%): +1.1 pp, 95% CI 1.0 to 1.3. |
 | 2 | Which expense category carries the most recoverable spend? | None can be named from this data. In rupees, at-risk households out-spend same-income on-track peers in all 11 categories, which follows from the label. By budget share the largest positive excesses are healthcare +4.4 pp (CI 3.8 to 4.9), education +2.8 (2.7 to 3.0), miscellaneous +2.1 (1.7 to 2.5) and transport +1.8 (1.5 to 2.1); groceries run the other way at −9.0 pp (−9.7 to −8.3). Whether the gap is "closable" depends on the benchmark: 92.8% (rupee) vs 22.3% (share). |
-| 3 | Where does the model fail, and what must a stakeholder be told? | Calibration holds across the range (out-of-fold ECE 0.006, max bin error 0.013). Accuracy is 0.978 in the poorest decile, falls to 0.662 in decile 7 and recovers to 0.833 in the richest. 22.0% of households report spending more than twice their income and make up 32.3% of the at-risk group, so the at-risk count is not a prevalence estimate. |
+| 3 | Where does the model fail, and what must a stakeholder be told? | Calibration holds across the range (out-of-fold ECE 0.005, max bin error 0.018). Accuracy is 0.978 in the poorest decile, falls to 0.665 in decile 7 and recovers to 0.833 in the richest. 22.0% of households report spending more than twice their income and make up 32.3% of the at-risk group, so the at-risk count is not a prevalence estimate. |
 
 ---
 
@@ -38,8 +38,8 @@ Four ranking strategies are then defined: the headline model's at-risk score (1 
 | Strategy | Capture @10% | @25% | @50% | @65% | % of ceiling @25% | Precision @25% |
 | --- | --- | --- | --- | --- | --- | --- |
 | Ceiling | 14.7% | 36.7% | 73.5% | 95.5% | 100% | 100% |
-| Full model (with shares) | 14.7% | 36.6% | 70.8% | 87.0% | 99.6% | 99.6% |
-| Headline model | 14.7% | 36.2% | 68.5% | 83.6% | 98.5% | 98.5% |
+| Full model (with shares) | 14.7% | 36.6% | 70.8% | 87.1% | 99.6% | 99.6% |
+| Headline model | 14.7% | 36.2% | 68.7% | 83.7% | 98.5% | 98.5% |
 | Income rule (poorest first) | 14.4% | 35.0% | 65.8% | 80.9% | 95.4% | 95.4% |
 | Random contact | 10.0% | 24.9% | 49.9% | 65.1% | 67.8% | 67.8% |
 
@@ -49,10 +49,10 @@ The income rule is the comparison that matters. Random contact is far behind eve
 
 | Budget | Capture: model − income rule (pp) | 95% CI | Precision: model − income rule (pp) | 95% CI |
 | --- | --- | --- | --- | --- |
-| 10% | +0.29 | 0.22 to 0.36 | +1.95 | 1.50 to 2.46 |
-| 25% | +1.14 | 1.00 to 1.32 | +3.10 | 2.72 to 3.57 |
-| 50% | +2.70 | 2.44 to 2.98 | +3.68 | 3.35 to 4.05 |
-| 65% | +2.71 | 2.46 to 3.05 | +2.84 | 2.57 to 3.18 |
+| 10% | +0.29 | 0.22 to 0.36 | +1.95 | 1.48 to 2.45 |
+| 25% | +1.15 | 1.00 to 1.31 | +3.12 | 2.72 to 3.55 |
+| 50% | +2.81 | 2.53 to 3.12 | +3.83 | 3.47 to 4.23 |
+| 65% | +2.74 | 2.44 to 3.03 | +2.86 | 2.54 to 3.18 |
 
 Every interval excludes zero, so the model does better than the income rule at every budget, and the gap widens as the budget grows into the middle of the income distribution, where income alone ranks households least well.
 
@@ -67,19 +67,19 @@ Households are cut into income deciles and the headline model's out-of-fold call
 | Income decile | Median income (Rs/yr) | At-risk rate | Weighted | Accuracy (headline) |
 | --- | --- | --- | --- | --- |
 | 0 | 13,360 | 97.8% | 97.0% | 0.978 |
-| 1 | 28,100 | 94.5% | 93.7% | 0.946 |
-| 2 | 40,230 | 91.7% | 90.1% | 0.919 |
+| 1 | 28,100 | 94.5% | 93.7% | 0.945 |
+| 2 | 40,230 | 91.7% | 90.1% | 0.918 |
 | 3 | 53,430 | 85.0% | 83.4% | 0.857 |
-| 4 | 67,500 | 78.4% | 77.2% | 0.810 |
-| 5 | 84,737 | 70.5% | 67.8% | 0.750 |
-| 6 | 108,780 | 61.9% | 59.8% | 0.700 |
-| 7 | 145,730 | 48.7% | 47.5% | 0.662 |
-| 8 | 216,000 | 34.5% | 33.2% | 0.687 |
+| 4 | 67,500 | 78.4% | 77.2% | 0.809 |
+| 5 | 84,737 | 70.5% | 67.8% | 0.747 |
+| 6 | 108,780 | 61.9% | 59.8% | 0.698 |
+| 7 | 145,730 | 48.7% | 47.5% | 0.665 |
+| 8 | 216,000 | 34.5% | 33.2% | 0.685 |
 | 9 | 410,000 | 16.9% | 16.6% | 0.833 |
 
-Overall out-of-fold accuracy is 0.815. In the bottom three deciles accuracy is almost exactly the at-risk rate (0.978 vs 97.8% in decile 0): the model calls nearly everyone at risk there, which is correct but adds nothing a team would not already assume. Accuracy is lowest in deciles 6 to 8, where the at-risk rate passes through 50% and the outreach decision is contested.
+Overall out-of-fold accuracy is 0.814. In the bottom three deciles accuracy is almost exactly the at-risk rate (0.978 vs 97.8% in decile 0): the model calls nearly everyone at risk there, which is correct but adds nothing a team would not already assume. Accuracy is lowest in deciles 6 to 8, where the at-risk rate passes through 50% and the outreach decision is contested.
 
-The same cell bins the out-of-fold probabilities into ten equal-width bins and compares predicted with observed on-track rates. The largest bin error is 0.013. `savings_goal.evaluation.metrics.expected_calibration_error` gives 0.0055 for the headline model and 0.0074 for the full model.
+The same cell bins the out-of-fold probabilities into ten equal-width bins and compares predicted with observed on-track rates. The largest bin error is 0.018. `savings_goal.evaluation.metrics.expected_calibration_error` gives 0.0050 for the headline model and 0.0066 for the full model.
 
 > **In plain terms: calibration and ECE.** A model is calibrated when its probabilities mean what they say: of the households it scores at 0.70, about 70% turn out on track. The check sorts households into ten bins by predicted probability and compares the average prediction with the observed rate in each bin. ECE (expected calibration error) is the average of those gaps, weighted by how many households fall in each bin. At 0.006, predicted and observed rates differ by well under one percentage point on average, so a team can use the scores for expected-count arithmetic ("10,000 contacts at an average 80% risk is about 8,000 at-risk households") as well as for ranking.
 
@@ -133,12 +133,22 @@ Each recommendation is built from f-strings over the values computed above (and 
 
 ---
 
+## Added for the second review: recall, precision and ceiling capture, kept apart
+
+The first review asked for actual at-risk recall, contact precision and budget-ceiling capture to be stated separately, and for weighted population estimates to stay distinct from unweighted fitting. The notebook now has a cell (Q1b) that does this with `savings_goal.evaluation.metrics.targeting_table` and `operating_point`, and the results are in `results/business.json` under `targeting`, `targeting_weighted`, `operating_point` and `weighted_fit_check`.
+
+- **Ceiling capture equals precision below the at-risk prevalence.** Ceiling capture is recall divided by `min(1, budget / prevalence)`, which for any budget under 68.1% is hits / (budget × N), the contact precision (up to rounding of the contact count). The old text presented "98.5% of the ceiling" and "precision 98.5%" as two findings; they are one number, and the table now says so. They separate only above a 68% budget, where the ceiling saturates at 1 and ceiling capture equals recall.
+- **Recall and precision at a 25% budget** (sample / survey-weighted): model 0.362 / 0.985 and 0.354 / 0.985; poorest first 0.350 / 0.954 and 0.342 / 0.951; random 0.249 / 0.678 and 0.248 / 0.691.
+- **The deployed threshold is a different operating point.** Contacting everyone with P(at risk) ≥ 0.425 reaches 75.3% of households (78.0% weighted) at recall 0.914 (0.928) and precision 0.826 (0.827). It is not comparable to the budget view without saying which one is meant.
+- **Fitting weighted changes nothing material.** Refitting with survey weights (`oof_predict_proba(..., sample_weight=...)`) moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25% from 0.3540 to 0.3536. Models stay unweighted; weights are used only for population figures.
+- The cell also writes `dataset/oof.parquet` (gitignored, household-level) so [Phase 9](phase9.md) can reuse the out-of-fold scores.
+
 ## What this means for later phases
 
 | Finding | Used in |
 | --- | --- |
 | The headline model is close to the capture ceiling and 1.1 pp ahead of poorest-first at 25% | Phase 8 executive summary; fig 3(a) |
-| Accuracy dips to 0.662 in income decile 7 | Phase 8 "what a stakeholder must be told"; fig 3(b) |
+| Accuracy dips to 0.665 in income decile 7 | Phase 8 "what a stakeholder must be told"; fig 3(b) |
 | Composition excess, not rupee excess, is the only usable peer comparison, and it cannot size a product | Phase 8 recommendations; fig 3(c) |
 | A binary label says who misses the benchmark, not by how much | Phase 8 notebook: quantile regression on the savings rate and ranking by predicted rupee shortfall |
 | The capture curves and decile table in `business.json` | `project/figures/make_figures.py` |
