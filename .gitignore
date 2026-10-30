@@ -21,7 +21,7 @@ artifacts/
 # Output of `sgc demo` (synthetic data).
 demo_out/
 
-# Private review feedback reports.
+# Private working notes.
 feedback/
 
 # --- Build and tooling output ------------------------------------------------

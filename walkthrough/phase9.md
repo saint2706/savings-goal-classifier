@@ -5,7 +5,7 @@
 **Builds on:** [Phase 7](phase7.md) (out-of-fold scores in `dataset/oof.parquet`, capture against a budget), [Phase 4](phase4.md) (tuned parameters)
 **Artifacts:** `results/outreach.json`, `results/outreach.png`; code in `src/savings_goal/evaluation/outreach.py`
 
-The first review asked for costs and heterogeneous response in the outreach simulation, and for no claim that the survey identifies who would benefit from a nudge. IHDS-II records no outreach, so response cannot be estimated from it. This phase therefore does not estimate a benefit. It asks how much the *targeting decision* depends on an assumption the data cannot test, and states every assumption in one place.
+An outreach simulation needs explicit costs and a response to a nudge that differs across households, and the survey cannot say who would benefit from one. IHDS-II records no outreach, so response cannot be estimated from it. This phase therefore does not estimate a benefit. It asks how much the *targeting decision* depends on an assumption the data cannot test, and states every assumption in one place.
 
 ---
 

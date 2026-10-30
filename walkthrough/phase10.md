@@ -5,7 +5,7 @@
 **Builds on:** [Phase 1](phase1.md) (the size × food-share oracle), [Phase 4](phase4.md) (headline model)
 **Artifacts:** `results/external_validity.json`, `results/leakage_curve.png`; code in `src/savings_goal/data/hces.py` and `src/savings_goal/evaluation/{leakage_sim,transport}.py`
 
-IHDS-II is from 2011-12. The first review asked how far the result survives to newer data. No public survey records both income and consumption for the same households after 2011-12, so the classifier cannot be tested out of time, and this phase does not pretend otherwise. It tests three things that can be tested.
+IHDS-II is from 2011-12, so the open question is how far the result survives to newer data. No public survey records both income and consumption for the same households after 2011-12, so the classifier cannot be tested out of time, and this phase does not pretend otherwise. It tests three things that can be tested.
 
 ---
 
