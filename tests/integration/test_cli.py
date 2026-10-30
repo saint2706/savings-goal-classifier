@@ -49,3 +49,25 @@ def test_console_script_entry_point() -> None:
         check=False,
     )
     assert r.returncode == 0 and "build" in r.stdout
+
+
+def test_sgc_demo_runs_without_icpsr_data(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["demo", "--out", str(tmp_path), "--n", "1200"]) == 0
+    printed = capsys.readouterr().out
+    assert "SYNTHETIC" in printed and "Reachability model" in printed
+    assert (tmp_path / "households.parquet").exists() and (tmp_path / "demo_targeting.csv").exists()
+
+
+def test_sgc_build_writes_manifest_with_input_checksum(raw_tsv: Path, tmp_path: Path) -> None:
+    import hashlib
+    import json
+
+    manifest = tmp_path / "run_manifest.json"
+    out = tmp_path / "hh.parquet"
+    args = ["build", "--tsv", str(raw_tsv), "--out", str(out), "--no-features"]
+    assert main([*args, "--manifest", str(manifest)]) == 0
+    info = json.loads(manifest.read_text())
+    assert info["input"]["sha256"] == hashlib.sha256(raw_tsv.read_bytes()).hexdigest()
+    assert info["seed"] == 42 and "xgboost" in info["packages"]

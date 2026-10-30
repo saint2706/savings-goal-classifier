@@ -10,6 +10,11 @@
 \usepackage{cite}
 \usepackage{xcolor}
 
+% Let URLs break after a hyphen (the repository name has two), and give the
+% line-breaker spare stretch for the lines that are mostly one URL or one path.
+\makeatletter\g@addto@macro\UrlBreaks{\do\-}\makeatother
+\emergencystretch=2em
+
 \newcommand{\rs}{Rs.\,}
 
 \bibliographystyle{IEEEtran}
@@ -31,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-A savings-product or financial-inclusion team cannot review tens of thousands of households by hand to decide who needs support, so the triage has to be automated. We study that triage on the India Human Development Survey-II (41,518 households, 2011--12), predicting whether a household retains at least 20\% of its annual income after recorded consumption. The label is an accounting identity over income and total consumption, so expense-to-income ratios and raw rupee categories reconstruct it at 99.75\% agreement. Spending composition (each category's share of total expenditure) looks safer but also leaks: food spending tracks household size, so a formula built from household size, the food share and income ranks households at ROC-AUC 0.895 without fitting any model. We therefore report an income-and-demographics model as the headline and treat spending shares as diagnostic. Under cross-validation grouped by primary sampling unit, the headline XGBoost model reaches ROC-AUC 0.882 and macro-F1 0.782 (0.886 and 0.781 on held-out sampling units), against 0.929 when the shares are added. A single income threshold reaches macro-F1 0.742, and at a 25\% contact budget the model reaches 98.5\% of the attainable at-risk households against 95.4\% for a poorest-first rule, a gain of 1.1 percentage points (95\% CI 1.0--1.3). Income carries 58\% of the model's grouped SHAP attribution. Peer benchmarks cannot tell structural from behavioural shortfall: the share of at-risk households who could close their gap by spending like their peers is 22\% or 93\%, depending on how the benchmark is built.
+A savings-product or financial-inclusion team cannot review tens of thousands of households by hand, so triage has to be automated. We study it on the India Human Development Survey-II (41,518 households, 2011--12), predicting whether a household retains at least 20\% of its annual income after recorded consumption. The label is an accounting identity, so expense-to-income ratios reconstruct it at 99.75\% agreement. Spending shares look safer but also leak: food spend tracks household size, so a formula from household size, food share and income ranks households at ROC-AUC 0.895 with no fitted model. A simulation shows the leak depends on one regression residual, and HCES 2022--23 shows the same mechanism. The headline model therefore uses income and demographics only: ROC-AUC 0.882 under cross-validation grouped by sampling unit and 0.886 on held-out units. At a 25\% contact budget it reaches recall 36.2\% against a ceiling of 36.7\% (precision 98.5\%), 1.1 points above poorest-first (95\% CI 1.0--1.3). Whether that helps depends on who responds to a nudge, which the survey cannot identify. In an explicit cost-and-response what-if, a risk ranking moves fewer households than random contact, because the most at-risk are out of reach, while a reachability ranking moves more. Rankings transfer across states and sectors; calibration does not.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -48,7 +53,7 @@ The problem is constrained in a way that is easy to miss. A household is labelle
 
 \subsection{Scope and objectives}
 
-The project has four objectives: establish by measurement, univariate and multivariate, which representations of household spending can legitimately serve as features for a savings-adequacy target; compare seven model families under PSU-grouped validation fixed in advance and quantify the gain over a single-variable rule rather than over chance; explain the winning model with exact tree SHAP values grouped into feature families and cross-checked by permutation; and translate the results into targeting recommendations that state where the model fails and which spending-based conclusions the data cannot support.
+The project has five objectives: establish by measurement, univariate and multivariate, which representations of household spending can legitimately serve as features for a savings-adequacy target, and when they leak; compare seven model families under PSU-grouped validation fixed in advance and quantify the gain over a single-variable rule rather than over chance, reporting recall, precision and ceiling capture separately; explain the winning model with exact tree SHAP values grouped into feature families; test how the targeting decision depends on cost and on who responds to a nudge, without claiming the survey identifies response; and test how far the findings travel beyond 2011--12 and the surveyed states.
 
 \section{Related Work}
 \label{sec:related_work}
@@ -59,7 +64,7 @@ Ours is a prediction policy problem in the sense of Kleinberg et al. \cite{klein
 
 Two measurement results bear on the data. Deaton and Kozel document the divergence between income and consumption aggregates in Indian surveys \cite{deaton2005}, which we inherit as 55.9\% of households reporting consumption above income. Engel's law, food's budget share falling as income rises, appears here at Spearman $\rho = -0.280$.
 
-On method we use gradient-boosted trees \cite{chen2016} with SHAP attributions from the exact tree algorithm \cite{lundberg2017,lundberg2020}. Because the eleven spending shares are a composition, we follow Aitchison's treatment of the simplex \cite{aitchison1982}, cluster on an isometric log-ratio basis \cite{egozcue2003} and replace zeros multiplicatively \cite{martinfernandez2003}; cluster count is chosen by silhouette \cite{rousseeuw1987}, Davies--Bouldin and Calinski--Harabasz indices.
+Leakage is a known failure of data-mining studies \cite{kaufman2012}, usually traced to a single column; here it arises only jointly. On method we use gradient-boosted trees \cite{chen2016} with SHAP attributions from the exact tree algorithm \cite{lundberg2017,lundberg2020}. Because the eleven spending shares are a composition, we follow Aitchison's treatment of the simplex \cite{aitchison1982}, cluster on an isometric log-ratio basis \cite{egozcue2003} and replace zeros multiplicatively \cite{martinfernandez2003}; cluster count is chosen by silhouette \cite{rousseeuw1987}, Davies--Bouldin and Calinski--Harabasz indices.
 
 \section{Methodology}
 
@@ -103,13 +108,13 @@ Macro-F1 remains the operational ranking metric, but every model is also scored 
     \label{fig:margin}
 \end{figure}
 
-The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tree on income, re-learned inside every training fold (threshold \rs 110,377--126,545, mean \rs 122,249 a year), reaches 0.778 accuracy and 0.742 macro-F1. Logistic regression on income alone reaches ROC-AUC 0.835, and 0.876 with demographics and debt. Adding the food share to income lifts it to 0.875, and to 0.894 once household size is also present, which is the reconstruction route at work (Fig.~\ref{fig:margin}).
+The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tree on income, re-learned in each training fold (threshold \rs 110,377--126,545, mean \rs 122,249 a year), reaches 0.778 accuracy and 0.742 macro-F1. Logistic regression on income alone reaches ROC-AUC 0.835, and 0.876 with demographics and debt. Adding the food share to income lifts it to 0.875, and to 0.894 once household size is also present, which is the reconstruction route at work (Fig.~\ref{fig:margin}).
 
 \subsection{Model comparison}
 
 \begin{table}[t]
     \centering
-    \caption{Five-fold PSU-grouped cross-validation on the training split (33,219 households), all rows including the baselines. XGBoost (tuned) uses the configuration in \texttt{results/model\_final.json}. ``Full'' adds the spending shares and is diagnostic only.}
+    \caption{Five-fold PSU-grouped cross-validation on the training split (33,219 households). XGBoost (tuned) uses \texttt{results/model\_final.json}; ``Full'' adds the spending shares and is diagnostic only. Untuned XGBoost, linear SVM and the decision tree (macro-F1 0.774, 0.774, 0.751) are in \texttt{results/model\_comparison.csv}.}
     \label{tab:models}
     \footnotesize
     \setlength{\tabcolsep}{3pt}
@@ -120,11 +125,8 @@ The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tre
         \midrule
         \textbf{XGBoost (tuned)} & \textbf{0.782} & \textbf{0.882} & 0.942 & 0.011 & 0.929 \\
         HistGradientBoosting & 0.778 & 0.880 & 0.941 & 0.012 & 0.928 \\
-        XGBoost (untuned) & 0.774 & 0.875 & 0.938 & 0.023 & 0.929 \\
         Logistic Regression & 0.773 & 0.876 & 0.938 & 0.103 & 0.920 \\
-        Linear SVM & 0.774 & 0.876 & 0.938 & --- & 0.920 \\
         Random Forest & 0.777 & 0.870 & 0.934 & 0.082 & 0.915 \\
-        Decision Tree & 0.751 & 0.850 & 0.914 & 0.104 & 0.882 \\
         \midrule
         Single income threshold & 0.742 & 0.739 & 0.808 & 0.003 & 0.739 \\
         Majority class & 0.405 & 0.500 & 0.681 & 0.319 & 0.500 \\
@@ -132,7 +134,7 @@ The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tre
     \end{tabular}
 \end{table}
 
-On the deployable set the tuned XGBoost model (\texttt{max\_depth}=4, \texttt{learning\_rate}=0.08, \texttt{n\_estimators}=200, \texttt{subsample}=0.7, \texttt{min\_child\_weight}=1) leads at macro-F1 0.782 and ROC-AUC 0.882 (Table~\ref{tab:models}); histogram gradient boosting is within one fold standard deviation. Tuning was worth 0.007 macro-F1, and depth was the parameter that mattered. PR-AUC is reported for the at-risk class against its 0.681 base rate. The linear models rank close on ROC-AUC but are poorly calibrated (ECE 0.10) because of balanced class weights.
+On the deployable set the tuned XGBoost model (depth 4, learning rate 0.08, 200 trees, subsample 0.7, minimum child weight 1) leads at macro-F1 0.782 and ROC-AUC 0.882 (Table~\ref{tab:models}); histogram gradient boosting is within one fold standard deviation. Tuning was worth 0.007 macro-F1, and depth was the parameter that mattered. PR-AUC is reported for the at-risk class against its 0.681 base rate. The linear models rank close on ROC-AUC but are poorly calibrated (ECE 0.10) because of balanced class weights.
 
 On the held-out PSUs, touched once, the headline model scores ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944, Brier 0.127 and ECE 0.009; the full model scores 0.932 and 0.836. A household-level random split gives almost the same full-model score (0.931), so the gap between the two models comes from the feature set, not from the validation scheme.
 
@@ -166,7 +168,7 @@ The shares are also not identified in a linear model. Refitting on five disjoint
 \begin{figure*}[t]
     \centering
     \includegraphics[width=\textwidth]{figures/fig3_business.png}
-    \caption{Three views of deployment value, all out-of-fold under PSU-grouped CV. (a) At-risk households reached against contact budget, with the ceiling $\min(1, b/0.681)$. (b) Accuracy of the headline model by income decile. (c) Signed mean difference in budget share between at-risk households and on-track households in the same income decile, with 95\% PSU-bootstrap intervals.}
+    \caption{Three views of deployment value, all out-of-fold under PSU-grouped CV. (a) At-risk households reached (recall) against contact budget, with the ceiling $\min(1, b/0.681)$. (b) Accuracy of the headline model by income decile. (c) Outreach what-if at a 25\% budget, uniform response 0.20, a 5-point nudge: households moved to on-track per 1,000 contacts. \emph{Response is assumed, not identified.} Income-gradient and debt-burdened responses give 0.4/1.1/7.2/11.8/28.4 and 0.6/2.5/6.6/10.7/27.4 in the same order.}
     \label{fig:business}
 \end{figure*}
 
@@ -176,28 +178,52 @@ The clusters are close to independent of income (normalised mutual information w
 
 \subsection{What the model is worth}
 
-At a 25\% contact budget no strategy can reach more than 36.7\% of at-risk households, because they are 68.1\% of the population. The headline model reaches 36.2\% (98.5\% of the ceiling) and a poorest-first income rule 35.0\% (95.4\%; Fig.~\ref{fig:business}(a)). The PSU-bootstrap interval on the difference is 1.0 to 1.3 percentage points; at 10\%, 50\% and 65\% budgets it is 0.3, 2.7 and 2.7 points. Against the income rule, not against random contact, the model's precision at 25\% is 3.1 points higher (98.5\% against 95.4\%). Out-of-fold calibration is good (ECE 0.006).
+At a 25\% contact budget no strategy can reach more than 36.7\% of at-risk households, because they are 68.1\% of the population. Table~\ref{tab:targeting} separates three quantities: \emph{recall} (the share of all at-risk households reached), \emph{precision} (the share of contacts that are at risk) and \emph{ceiling capture} (recall over the ceiling $\min(1, b/\text{prevalence})$). Below the at-risk prevalence ceiling capture equals precision, because both are hits per contact, so they are one number under two names and separate only above a 68\% budget. The model's recall gain over a poorest-first rule is 1.1 points at 25\% (PSU-bootstrap 95\% CI 1.0--1.3) and 0.3, 2.8 and 2.7 at 10\%, 50\% and 65\% (Fig.~\ref{fig:business}(a)). A deployed threshold is a different operating point: out of fold it contacts 75.3\% of households at recall 0.914 and precision 0.826 (held out: 0.913, 0.826).
 
-Accuracy is lowest where the decision is contested: 0.98 in the poorest decile, 0.83 in the richest, and 0.66 in decile 7 (Fig.~\ref{fig:business}(b)), where at-risk rates are near one half.
+\begin{table}[t]
+    \centering
+    \caption{Targeting at a 25\% budget (ceiling 36.7\%). Models are fitted unweighted; the ``weighted'' columns apply survey weights to the same scores and estimate the population.}
+    \label{tab:targeting}
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{l c c c c c}
+        \toprule
+        & \multicolumn{3}{c}{Sample} & \multicolumn{2}{c}{Weighted} \\
+        Strategy & Recall & Precision & Ceiling & Recall & Precision \\
+        \midrule
+        \textbf{Headline model} & \textbf{0.362} & \textbf{0.985} & 0.985 & 0.354 & 0.985 \\
+        Poorest first & 0.350 & 0.954 & 0.954 & 0.342 & 0.951 \\
+        Random contact & 0.249 & 0.678 & 0.678 & 0.248 & 0.691 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-To look for recoverable spending we compare each at-risk household with the mean on-track household in its income decile, with PSU-bootstrap intervals. In rupees at-risk households out-spend their peers in every category, which is mechanical: at a given income, being at risk means a larger budget. Composition is more informative (Fig.~\ref{fig:business}(c)). At-risk budgets give more to healthcare ($+4.4$ points, CI 3.8--4.9), education ($+2.8$), miscellaneous ($+2.1$, CI 1.7--2.5) and transport ($+1.8$), and less to food ($-9.0$). Miscellaneous spending is third, and the two largest categories are not legitimate nudge targets. Whether at-risk households could close their gap by spending like their peers depends on the benchmark: 92.8\% could by matching peers' rupee spending where it is lower, 22.3\% by matching their budget shares. IHDS therefore cannot say what fraction of the shortfall is structural.
+Weighting matters for prevalence (at-risk 69.5\% weighted against 68.1\%) but not for the model: refitting with survey weights moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25\% from 0.3540 to 0.3536, so we keep the unweighted fit and use weights only for population figures. Calibration is good (out-of-fold ECE 0.005). Accuracy is lowest where the decision is contested: 0.98 in the poorest decile, 0.83 in the richest and 0.66 in decile 7 (Fig.~\ref{fig:business}(b)).
 
-Ranking by a quantile model's predicted rupee shortfall, instead of a probability, reaches 45.5\% of the total rupee gap at a 25\% budget against 37.0\% for the classifier and 28.7\% for the income rule.
+Peer benchmarks cannot locate recoverable spending. In rupees at-risk households out-spend same-income on-track peers in every category, which is mechanical; in budget shares they give more to healthcare ($+4.4$ points) and education ($+2.8$) and less to food ($-9.0$). Whether they could close their gap by spending like peers is 92.8\% or 22.3\% depending on the benchmark, so IHDS cannot split structural from behavioural shortfall (notebook 07). Ranking by a quantile model's predicted rupee gap reaches 45.5\% of the total gap at 25\% against 37.0\% for the classifier and 28.7\% for poorest-first.
 
-Five recommendations follow, each computed in the notebook that produces it: prioritise by income and use the onboarding model to re-rank within income bands; judge targeting against the ceiling and the income rule rather than random contact; do not size a budgeting product from peer benchmarks; treat miscellaneous spend as one hypothesis among several rather than the lever; and report relative priority only, never a prevalence figure.
+\subsection{Outreach under assumed response}
+
+IHDS records no outreach, so response to a nudge cannot be estimated from it; we ask instead how much the targeting decision depends on that unknown. A contacted household responds with probability $r$; a responder raises its savings rate by $\delta = 5$ points of income; it is moved to on-track only if it was within $\delta$ of the benchmark (4.6\% of at-risk households); each contact costs Rs.\,150. All are assumptions and are varied in the repository: $r$ uniform at 0.20, rising with income rank from 0.05 to 0.35 (access constraints \cite{dupas2013}), or 0.10 against 0.30 for indebted households; $\delta$ of 2.5 and 10 points. We compare the risk model, poorest-first, random contact and a \emph{reachability} model: the headline XGBoost fitted to the benchmark and to the benchmark relaxed by $\delta$, whose difference in $P(\text{on track})$ estimates the chance of lying in the band a nudge could cross.
+
+Per 1,000 contacts at a 25\% budget and uniform response (Fig.~\ref{fig:business}(c)) the risk model moves 0.8 households, poorest-first 2.2, random contact 6.2, the reachability model 10.1 and an oracle that knows each savings rate 25.0. A moved household costs Rs.\,199,615 under the risk ranking, Rs.\,24,028 at random and Rs.\,14,885 under reachability; a programme breaks even only if a moved household is worth more than that to it. The reachability edge over the risk model is 9.3 per 1,000 (PSU-bootstrap 95\% CI 8.4--10.1), 11.3 (10.3--12.2) if response rises with income and 10.1 (8.9--11.0) if debt lowers it, and the ordering holds at 2.5 and 10 points and with survey weights. The most at-risk are the deepest dissavers, out of reach of a small nudge, which is why a risk ranking can do worse than random here. This is a sensitivity analysis, not an estimate of benefit: the survey identifies neither $r$ nor $\delta$, a different objective such as rupees of gap closed would reorder the strategies, and an uplift estimate needs campaign data.
+
+\subsection{External validity}
+
+No public survey records income and consumption for the same households after 2011--12, so the classifier cannot be tested out of time. Three checks stand in. \emph{Mechanism:} HCES 2022--23 \cite{hces} (261,746 households, no income, so the label cannot be rebuilt) shows the ingredient of the leak. Food spend rises with household size with elasticity 0.57 against 0.63 in IHDS-II, residual sd 0.47 against 0.49, and mean food share 0.465 against 0.466. A simulation of the oracle over elasticities and residual sds places both surveys at an implied AUC of 0.87 (empirical IHDS-II 0.895), so the leak is a property of how tightly food tracks size, not of this file. Nominal per-capita spending grew 2.4--2.5 times, so any income threshold is a 2011--12 rupee figure. \emph{Transport:} holding out whole states in five folds gives ROC-AUC 0.871--0.890 (grouped CV 0.882), and the model beats poorest-first at 25\% in every fold (+0.7 to +1.6 recall points). \emph{Calibration:} mean predicted minus observed on-track rate ranges from $-7.1$ to $+3.9$ points across state folds, and is $+9.1$ rural-to-urban and $-4.8$ urban-to-rural. Rankings travel; probabilities need recalibration.
 
 \section{Discussion}
 
-A model trained on spending shares scores 0.93 ROC-AUC, but a three-column formula with no fitted parameters beyond a median scores 0.895, and removing the shares costs only 0.047. The model we recommend uses what a team would know at onboarding: income, household composition, debt and social group. It reaches 0.886 on held-out sampling units and improves on a poorest-first rule by about one percentage point of attainable capture at a 25\% budget, with an interval that excludes zero. That gain is small, consistent with Brown et al.'s experience of proxy means tests \cite{brown2018}.
+A model trained on spending shares scores 0.93 ROC-AUC, but a three-column formula with no fitted parameters beyond a median scores 0.895, and removing the shares costs only 0.047. The model we recommend uses what a team would know at onboarding: income, household composition, debt and social group. It reaches 0.886 on held-out sampling units and improves on a poorest-first rule by about one percentage point of at-risk recall at a 25\% budget, with an interval that excludes zero. That gain is small, consistent with Brown et al.'s experience of proxy means tests \cite{brown2018}.
 
-Three general lessons follow. First, a feature can pass every univariate leakage check and still reconstruct the label jointly with others; composition shares do so whenever one category is close to proportional to a measured covariate. Spending shares belong in a deployed model only if they are observed before the prediction window, which is how the scoring service in the repository enforces them. Second, capture should be reported against its ceiling and against the obvious rule; with a majority at-risk class, lift over random is uninformative. Third, peer-benchmark findings about ``recoverable'' spending are only as good as the benchmark, and here two reasonable constructions disagree by a factor of four.
+Four general lessons follow. First, a feature can pass every univariate leakage check and still reconstruct the label jointly with others; composition shares do so whenever one category is close to proportional to a measured covariate. Spending shares belong in a deployed model only if they are observed before the prediction window, which is how the scoring service in the repository enforces them. Second, capture should be reported against its ceiling and against the obvious rule; with a majority at-risk class, lift over random is uninformative. Third, peer-benchmark findings about ``recoverable'' spending are only as good as the benchmark, and here two reasonable constructions disagree by a factor of four. Fourth, ranking by risk and ranking by response are different decisions: under every assumed response the most at-risk households are the least movable, so a model that captures them well can still be a poor guide to a nudge.
 
-Income under-reporting remains the largest limitation. Consumption exceeds income for 55.9\% of households (57.7\% weighted), 22.0\% report spending more than twice their income, and all of the latter are at risk, 32.3\% of that group. This is a documented property of Indian surveys \cite{deaton2005}; relative rankings hold and absolute prevalence claims do not. The data is from 2011--12; the unit is a household; model fitting is unweighted while population figures use the survey weights; debt is a stock with no repayment flow; and the 20\% benchmark is a convention. IHDS records no intervention, so nothing here estimates who would respond to a nudge; an uplift model needs campaign data.
+Income under-reporting remains the largest limitation. Consumption exceeds income for 55.9\% of households (57.7\% weighted), 22.0\% report spending more than twice their income, and all of the latter are at risk, 32.3\% of that group. This is a documented property of Indian surveys \cite{deaton2005}; relative rankings hold and absolute prevalence claims do not. The data is from 2011--12 and the leakage mechanism, but not the absolute probabilities, survives in 2022--23; the unit is a household; model fitting is unweighted while population figures use the survey weights, which changes nothing material; debt is a stock with no repayment flow; and the 20\% benchmark is a convention. IHDS records no intervention, so the outreach results are assumption-driven and estimate no one's response; an uplift model needs campaign data.
 
 \section{Reproducibility}
 \label{sec:reproducibility}
 
-Code, walkthrough documents and result artifacts are at \url{https://github.com/saint2706/savings-goal-classifier}. ICPSR's terms prohibit redistributing the IHDS-II microdata, so \texttt{dataset/README.md} documents the free registration and download. From a clean clone: \texttt{uv sync}, then \texttt{uv run sgc build --tsv <path>/36151-0002-Data.tsv} (the path is required), then the eight notebooks in numeric order, about 25 minutes on four cores. The build is validated against a Pandera schema; the package is covered by tests on a synthetic survey file, run in CI with ruff and mypy. Every random seed is 42, every split is grouped by PSU, and the figures here are regenerated by \texttt{project/figures/make\_figures.py} from the result files the notebooks write.
+The repository \url{https://github.com/saint2706/savings-goal-classifier} holds the code, walkthroughs and result artifacts under an MIT licence. ICPSR's terms prohibit redistributing the IHDS-II microdata, so three routes are provided. (i) \texttt{uv run sgc demo} runs build, features, grouped CV, targeting and the outreach what-if on a synthetic survey with the real schema in about 15 seconds, with no registration; CI runs it on every push, and its numbers are not results. (ii) \texttt{uv run sgc reproduce --tsv <path>} rebuilds the data from the free ICPSR download, runs the ten notebooks and the figure script (about 25 minutes on four cores), and writes a manifest of package versions, git commit, seed and the input file's SHA-256 (ours begins 5ee026cc), so a reader can confirm they hold the same file. (iii) Every table and figure is regenerated from committed aggregate files with no microdata, and the README maps each claim to its script and artifact. The environment is pinned by \texttt{uv.lock} (Python 3.11--3.13), every seed is 42 and every split is grouped by PSU. The build is validated against a Pandera schema, and the package is tested at 99\% coverage with ruff and mypy in CI. HCES files are read from the public dump in \cite{hces}, with instructions in the repository; our loader reproduces the published monthly per-capita expenditure (Rs.\,3,773 rural, Rs.\,6,459 urban).
 
 \subsection{AI Use Declaration}
 \label{subsec:ai_use}
@@ -207,9 +233,9 @@ Claude Code (Anthropic), an AI coding assistant, was used to write the analysis 
 
 \section{Conclusion}
 
-We built a savings-adequacy classifier for 41,518 Indian households and found that spending composition, the representation usually chosen to avoid leakage, leaks through household size. The model we recommend uses income, demographics and debt, reaches ROC-AUC 0.886 on held-out sampling units, and adds about a percentage point of attainable at-risk capture over contacting the poorest first. It belongs inside an income-ranked campaign, not in front of one.
+We built a savings-adequacy classifier for 41,518 Indian households and found that spending composition, the representation usually chosen to avoid leakage, leaks through household size. The model we recommend uses income, demographics and debt, reaches ROC-AUC 0.886 on held-out sampling units, and adds about a percentage point of at-risk recall over contacting the poorest first. It belongs inside an income-ranked campaign, not in front of one, and the survey cannot say whether the households it ranks first are the ones a nudge would move: under assumed responses they are not.
 
-The broader result is methodological. A normative savings threshold turns most spending-based features into restatements of the label, singly or in combination, and conclusions drawn from them need a multivariate leakage check, grouped validation and uncertainty intervals before they can be trusted. Here those checks rule out a reversed Engel effect, a single miscellaneous-spending lever, and any firm split between structural and behavioural shortfall.
+The broader result is methodological. A normative savings threshold turns most spending-based features into restatements of the label, singly or in combination, and conclusions drawn from them need a multivariate leakage check, grouped validation and uncertainty intervals before they can be trusted. Here those checks rule out a reversed Engel effect, a single miscellaneous-spending lever, and any firm split between structural and behavioural shortfall, and a simulation and a second survey show when the leak should be expected.
 
 \section*{Acknowledgment}
 
@@ -218,7 +244,7 @@ We thank our course instructor for feedback on the framing of this project, and 
 \begin{thebibliography}{99}
 
 \bibitem{ihds2}
-S. Desai, R. Vanneman, and NCAER, ``India Human Development Survey-II (IHDS-II), 2011--12,'' ICPSR study 36151, 2018. doi: 10.3886/ICPSR36151.v6
+S. Desai, R. Vanneman, and NCAER, ``India Human Development Survey-II (IHDS-II), 2011--12,'' ICPSR study 36151, 2018. \url{https://doi.org/10.3886/ICPSR36151.v6}
 
 \bibitem{brown2018}
 C. Brown, M. Ravallion, and D. van de Walle, ``A poor means test? Econometric targeting in Africa,'' \emph{J. Develop. Econ.}, vol. 134, pp. 109--124, 2018.
@@ -241,6 +267,9 @@ P. Dupas and J. Robinson, ``Why don't the poor save more? Evidence from health s
 \bibitem{deaton2005}
 A. Deaton and V. Kozel, ``Data and dogma: the great Indian poverty debate,'' \emph{World Bank Res. Observer}, vol. 20, no. 2, pp. 177--199, 2005.
 
+\bibitem{kaufman2012}
+S. Kaufman, S. Rosset, C. Perlich, and O. Stitelman, ``Leakage in data mining: formulation, detection, and avoidance,'' \emph{ACM Trans. Knowl. Discov. Data}, vol. 6, no. 4, art. 15, 2012.
+
 \bibitem{chen2016}
 T. Chen and C. Guestrin, ``XGBoost: a scalable tree boosting system,'' in \emph{Proc. ACM SIGKDD}, 2016, pp. 785--794.
 
@@ -261,6 +290,9 @@ J. A. Mart\'in-Fern\'andez, C. Barcel\'o-Vidal, and V. Pawlowsky-Glahn, ``Dealin
 
 \bibitem{rousseeuw1987}
 P. J. Rousseeuw, ``Silhouettes: a graphical aid to the interpretation and validation of cluster analysis,'' \emph{J. Comput. Appl. Math.}, vol. 20, pp. 53--65, 1987.
+
+\bibitem{hces}
+National Statistical Office, MoSPI, ``Household Consumption Expenditure Survey 2022--23,'' unit-level data, microdata.gov.in; level files as processed by A. Moharir, \url{https://github.com/advaitmoharir/hces_2022}.
 
 \end{thebibliography}
 

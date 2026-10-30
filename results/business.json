@@ -35,18 +35,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.25,
-      "capture": 0.3618286037789258,
+      "capture": 0.361899370179039,
       "ceiling": 0.36725992498761584,
-      "pct_of_ceiling": 0.9852112336817768,
-      "precision": 0.9851637764932563
+      "pct_of_ceiling": 0.985403921190809,
+      "precision": 0.9853564547206166
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.25,
-      "capture": 0.36582690538532303,
+      "capture": 0.36579152218526645,
       "ceiling": 0.36725992498761584,
-      "pct_of_ceiling": 0.9960980779420975,
-      "precision": 0.9960500963391137
+      "pct_of_ceiling": 0.9960017341875814,
+      "precision": 0.9959537572254336
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -67,18 +67,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.5,
-      "capture": 0.6853725850965962,
+      "capture": 0.6865048474984078,
       "ceiling": 0.7345198499752317,
-      "pct_of_ceiling": 0.9330892624885593,
-      "precision": 0.9330892624885592
+      "pct_of_ceiling": 0.9346307625608171,
+      "precision": 0.934630762560817
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.5,
-      "capture": 0.7075932347321492,
+      "capture": 0.7083362819333381,
       "ceiling": 0.7345198499752317,
-      "pct_of_ceiling": 0.9633412014066189,
-      "precision": 0.9633412014066188
+      "pct_of_ceiling": 0.9643528108290381,
+      "precision": 0.964352810829038
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -99,18 +99,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.65,
-      "capture": 0.8363173165381077,
+      "capture": 0.836564998938504,
       "ceiling": 0.9548758049678012,
-      "pct_of_ceiling": 0.8758388391318687,
-      "precision": 0.8758291029013969
+      "pct_of_ceiling": 0.8760982261632583,
+      "precision": 0.8760884870493201
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.65,
-      "capture": 0.8701436557922299,
+      "capture": 0.871134385393815,
       "ceiling": 0.9548758049678012,
-      "pct_of_ceiling": 0.9112636965616396,
-      "precision": 0.9112535665320339
+      "pct_of_ceiling": 0.9123012446871979,
+      "precision": 0.9122911031237262
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -133,18 +133,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.1,
-      "capture": 0.14328178309375206,
+      "capture": 0.1431295163244157,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 0.9962585199808253,
-      "precision": 0.9962906444136144
+      "pct_of_ceiling": 0.9951997875796377,
+      "precision": 0.9954496257379526
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.1,
-      "capture": 0.14358473751460504,
+      "capture": 0.14361606439398705,
       "ceiling": 0.14381988230977413,
-      "pct_of_ceiling": 0.9983650049534695,
-      "precision": 0.9984231718873541
+      "pct_of_ceiling": 0.9985828251802621,
+      "precision": 0.9995432539348961
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -165,18 +165,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.25,
-      "capture": 0.3541001149125467,
+      "capture": 0.3540020599278351,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 0.9848432893300506,
-      "precision": 0.9849714610802655
+      "pct_of_ceiling": 0.9845705732545349,
+      "precision": 0.9847561579114803
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.25,
-      "capture": 0.3580148633377206,
+      "capture": 0.3576203115274757,
       "ceiling": 0.3595497057744353,
-      "pct_of_ceiling": 0.995731209309687,
-      "precision": 0.9957364399251981
+      "pct_of_ceiling": 0.9946338594748566,
+      "precision": 0.9946555830285319
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -197,18 +197,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.5,
-      "capture": 0.6755543012902515,
+      "capture": 0.675801776087922,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 0.9394449368762142,
-      "precision": 0.9395170405377822
+      "pct_of_ceiling": 0.9397890823360714,
+      "precision": 0.9399267307604682
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.5,
-      "capture": 0.6946406478173788,
+      "capture": 0.6961918298006867,
       "ceiling": 0.7190994115488706,
-      "pct_of_ceiling": 0.9659869507071213,
-      "precision": 0.9660411969894491
+      "pct_of_ceiling": 0.9681440682883565,
+      "precision": 0.9681499920246007
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -229,18 +229,18 @@
     {
       "strategy": "Model (headline, deployable)",
       "budget": 0.65,
-      "capture": 0.8286779983640459,
+      "capture": 0.8293532430028181,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.8864485269890502,
-      "precision": 0.8864819421616134
+      "pct_of_ceiling": 0.8871708456901363,
+      "precision": 0.8871907868199272
     },
     {
       "strategy": "Model (full, with shares)",
       "budget": 0.65,
-      "capture": 0.8599393987203032,
+      "capture": 0.8601173062803037,
       "ceiling": 0.9348292350135318,
-      "pct_of_ceiling": 0.9198892872748631,
-      "precision": 0.9199861656718368
+      "pct_of_ceiling": 0.9200795974976685,
+      "precision": 0.9201234173618719
     },
     {
       "strategy": "Income rule (poorest first)",
@@ -259,42 +259,391 @@
       "precision": 0.6983638980424143
     }
   ],
+  "targeting": [
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.1,
+      "recall": 0.14655721463449153,
+      "precision": 0.9975915221579962,
+      "ceiling": 0.14690396999504635,
+      "ceiling_capture": 0.9976395780143552
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.1,
+      "recall": 0.14684028023494444,
+      "precision": 0.9995183044315993,
+      "ceiling": 0.14690396999504635,
+      "ceiling_capture": 0.9995664531046775
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "recall": 0.1436911754299059,
+      "precision": 0.978082851637765,
+      "ceiling": 0.14690396999504635,
+      "ceiling_capture": 0.9781299677248424
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "recall": 0.09995754015993207,
+      "precision": 0.6803949903660886,
+      "ceiling": 0.14690396999504635,
+      "ceiling_capture": 0.6804277662700515
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.25,
+      "recall": 0.361899370179039,
+      "precision": 0.9853564547206166,
+      "ceiling": 0.36725992498761584,
+      "ceiling_capture": 0.985403921190809
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.25,
+      "recall": 0.36579152218526645,
+      "precision": 0.9959537572254336,
+      "ceiling": 0.36725992498761584,
+      "ceiling_capture": 0.9960017341875814
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "recall": 0.35043521336069633,
+      "precision": 0.9541425818882466,
+      "ceiling": 0.36725992498761584,
+      "ceiling_capture": 0.9541885447275881
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "recall": 0.2491684947986696,
+      "precision": 0.6784200385356455,
+      "ceiling": 0.36725992498761584,
+      "ceiling_capture": 0.6784527193024713
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.5,
+      "recall": 0.6865048474984078,
+      "precision": 0.934630762560817,
+      "ceiling": 0.7345198499752317,
+      "ceiling_capture": 0.9346307625608171
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.5,
+      "recall": 0.7083362819333381,
+      "precision": 0.964352810829038,
+      "ceiling": 0.7345198499752317,
+      "ceiling_capture": 0.9643528108290381
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "recall": 0.6583752034534003,
+      "precision": 0.8963341201406618,
+      "ceiling": 0.7345198499752317,
+      "ceiling_capture": 0.8963341201406619
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "recall": 0.4994692519991508,
+      "precision": 0.679994219374729,
+      "ceiling": 0.7345198499752317,
+      "ceiling_capture": 0.6799942193747291
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.65,
+      "recall": 0.836564998938504,
+      "precision": 0.8760884870493201,
+      "ceiling": 0.9548758049678012,
+      "ceiling_capture": 0.8760982261632583
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.65,
+      "recall": 0.871134385393815,
+      "precision": 0.9122911031237262,
+      "ceiling": 0.9548758049678012,
+      "ceiling_capture": 0.9123012446871979
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.65,
+      "recall": 0.8092137852947421,
+      "precision": 0.8474450661429577,
+      "ceiling": 0.9548758049678012,
+      "ceiling_capture": 0.8474544868398137
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.65,
+      "recall": 0.6507678154412285,
+      "precision": 0.6815133212287398,
+      "ceiling": 0.9548758049678012,
+      "ceiling_capture": 0.6815208973309075
+    }
+  ],
+  "targeting_weighted": [
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.1,
+      "recall": 0.1431295163244157,
+      "precision": 0.9954496257379526,
+      "ceiling": 0.14381988230977413,
+      "ceiling_capture": 0.9951997875796377
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.1,
+      "recall": 0.14361606439398705,
+      "precision": 0.9995432539348961,
+      "ceiling": 0.14381988230977413,
+      "ceiling_capture": 0.9985828251802621
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.1,
+      "recall": 0.13985738704023015,
+      "precision": 0.9725742184332734,
+      "ceiling": 0.14381988230977413,
+      "ceiling_capture": 0.97244820948324
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.1,
+      "recall": 0.10019600642571759,
+      "precision": 0.6969913373424206,
+      "ceiling": 0.14381988230977413,
+      "ceiling_capture": 0.6966770158378038
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.25,
+      "recall": 0.3540020599278351,
+      "precision": 0.9847561579114803,
+      "ceiling": 0.3595497057744353,
+      "ceiling_capture": 0.9845705732545349
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.25,
+      "recall": 0.3576203115274757,
+      "precision": 0.9946555830285319,
+      "ceiling": 0.3595497057744353,
+      "ceiling_capture": 0.9946338594748566
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.25,
+      "recall": 0.3419470840829547,
+      "precision": 0.9510817354997745,
+      "ceiling": 0.3595497057744353,
+      "ceiling_capture": 0.9510425918620452
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.25,
+      "recall": 0.24846529200672807,
+      "precision": 0.6911569832440717,
+      "ceiling": 0.3595497057744353,
+      "ceiling_capture": 0.6910457386456703
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.5,
+      "recall": 0.675801776087922,
+      "precision": 0.9399267307604682,
+      "ceiling": 0.7190994115488706,
+      "ceiling_capture": 0.9397890823360714
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.5,
+      "recall": 0.6961918298006867,
+      "precision": 0.9681499920246007,
+      "ceiling": 0.7190994115488706,
+      "ceiling_capture": 0.9681440682883565
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.5,
+      "recall": 0.6479145538230601,
+      "precision": 0.9010136635007042,
+      "ceiling": 0.7190994115488706,
+      "ceiling_capture": 0.9010083215441865
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.5,
+      "recall": 0.5003013334603189,
+      "precision": 0.695763001359157,
+      "ceiling": 0.7190994115488706,
+      "ceiling_capture": 0.6957331982551873
+    },
+    {
+      "strategy": "Model (headline, deployable)",
+      "budget": 0.65,
+      "recall": 0.8293532430028181,
+      "precision": 0.8871907868199272,
+      "ceiling": 0.9348292350135318,
+      "ceiling_capture": 0.8871708456901363
+    },
+    {
+      "strategy": "Model (full, with shares)",
+      "budget": 0.65,
+      "recall": 0.8601173062803037,
+      "precision": 0.9201234173618719,
+      "ceiling": 0.9348292350135318,
+      "ceiling_capture": 0.9200795974976685
+    },
+    {
+      "strategy": "Income rule (poorest first)",
+      "budget": 0.65,
+      "recall": 0.7990866022668578,
+      "precision": 0.8548006180736994,
+      "ceiling": 0.9348292350135318,
+      "ceiling_capture": 0.8547941937815957
+    },
+    {
+      "strategy": "Random contact",
+      "budget": 0.65,
+      "recall": 0.652835250673704,
+      "precision": 0.6983638980424143,
+      "ceiling": 0.9348292350135318,
+      "ceiling_capture": 0.6983470629951513
+    }
+  ],
+  "operating_point": {
+    "threshold": 0.4254581928253174,
+    "unweighted": {
+      "contacted": 0.7530950431138301,
+      "recall": 0.9142665062628265,
+      "precision": 0.8263984392490485
+    },
+    "weighted": {
+      "contacted": 0.7803078063282058,
+      "recall": 0.9275602132745342,
+      "precision": 0.8265273537678667
+    }
+  },
+  "weighted_fit_check": {
+    "auc_unweighted_fit": [
+      0.8828951461040021,
+      0.8833275512866277
+    ],
+    "auc_weighted_fit": [
+      0.8811306866002133,
+      0.8819296392623919
+    ],
+    "weighted_recall": [
+      {
+        "strategy": "unweighted fit",
+        "budget": 0.1,
+        "recall": 0.1431295163244157,
+        "precision": 0.9954496257379526,
+        "ceiling": 0.14381988230977413,
+        "ceiling_capture": 0.9951997875796377
+      },
+      {
+        "strategy": "weighted fit",
+        "budget": 0.1,
+        "recall": 0.14333181090379735,
+        "precision": 0.9967574742555836,
+        "ceiling": 0.14381988230977413,
+        "ceiling_capture": 0.996606370425714
+      },
+      {
+        "strategy": "unweighted fit",
+        "budget": 0.25,
+        "recall": 0.3540020599278351,
+        "precision": 0.9847561579114803,
+        "ceiling": 0.3595497057744353,
+        "ceiling_capture": 0.9845705732545349
+      },
+      {
+        "strategy": "weighted fit",
+        "budget": 0.25,
+        "recall": 0.3536345495163765,
+        "precision": 0.9837092069344109,
+        "ceiling": 0.3595497057744353,
+        "ceiling_capture": 0.9835484324891378
+      },
+      {
+        "strategy": "unweighted fit",
+        "budget": 0.5,
+        "recall": 0.675801776087922,
+        "precision": 0.9399267307604682,
+        "ceiling": 0.7190994115488706,
+        "ceiling_capture": 0.9397890823360714
+      },
+      {
+        "strategy": "weighted fit",
+        "budget": 0.5,
+        "recall": 0.6754775810105565,
+        "precision": 0.9393400735786883,
+        "ceiling": 0.7190994115488706,
+        "ceiling_capture": 0.9393382474832557
+      },
+      {
+        "strategy": "unweighted fit",
+        "budget": 0.65,
+        "recall": 0.8293532430028181,
+        "precision": 0.8871907868199272,
+        "ceiling": 0.9348292350135318,
+        "ceiling_capture": 0.8871708456901363
+      },
+      {
+        "strategy": "weighted fit",
+        "budget": 0.65,
+        "recall": 0.829122098583443,
+        "precision": 0.8869443438375956,
+        "ceiling": 0.9348292350135318,
+        "ceiling_capture": 0.8869235872490031
+      }
+    ]
+  },
   "edge_vs_income_rule": [
     {
       "budget": 0.1,
       "capture: model - income rule (pp)": 0.2866039204585641,
-      "CI low": 0.2179975060199524,
-      "CI high": 0.36181418678721716,
+      "CI low": 0.2176601147469509,
+      "CI high": 0.36024583462478027,
       "precision: model - income rule (pp)": 1.9508670520231197,
-      "precision CI low": 1.4981625633598858,
-      "precision CI high": 2.4645108480525093
+      "precision CI low": 1.4812102345360323,
+      "precision CI high": 2.449593323519425
     },
     {
       "budget": 0.25,
-      "capture: model - income rule (pp)": 1.1393390418229454,
-      "CI low": 0.9983097882536939,
-      "CI high": 1.3174096201661323,
-      "precision: model - income rule (pp)": 3.1021194605009628,
-      "precision CI low": 2.7228696394039567,
-      "precision CI high": 3.570980614473873
+      "capture: model - income rule (pp)": 1.1464156818342675,
+      "CI low": 0.9987651365819712,
+      "CI high": 1.3080458910213564,
+      "precision: model - income rule (pp)": 3.121387283236998,
+      "precision CI low": 2.7203233178642807,
+      "precision CI high": 3.548295633464612
     },
     {
       "budget": 0.5,
-      "capture: model - income rule (pp)": 2.6997381643195872,
-      "CI low": 2.4444001392444275,
-      "CI high": 2.9846547397479513,
-      "precision: model - income rule (pp)": 3.675514234789734,
-      "precision CI low": 3.3508528784132183,
-      "precision CI high": 4.052890401524154
+      "capture: model - income rule (pp)": 2.8129644045007507,
+      "CI low": 2.5343620978206403,
+      "CI high": 3.1205545721693966,
+      "precision: model - income rule (pp)": 3.829664242015518,
+      "precision CI low": 3.4718963094295945,
+      "precision CI high": 4.234682052469257
     },
     {
       "budget": 0.65,
-      "capture: model - income rule (pp)": 2.710353124336562,
-      "CI low": 2.458145975826091,
-      "CI high": 3.0536138574927723,
-      "precision: model - income rule (pp)": 2.8384036758439257,
-      "precision CI low": 2.573447796643698,
-      "precision CI high": 3.179689443418691
+      "capture: model - income rule (pp)": 2.735121364376192,
+      "CI low": 2.4363891967929105,
+      "CI high": 3.0315797181764075,
+      "precision: model - income rule (pp)": 2.8643420906362405,
+      "precision CI low": 2.5405508018230027,
+      "precision CI high": 3.180266584701668
     }
   ],
   "deciles": [
@@ -303,7 +652,7 @@
       "median_income": 13360.0,
       "at_risk_rate": 0.978082851637765,
       "at_risk_rate_weighted": 0.9696377149308137,
-      "accuracy (headline)": 0.9778420038535646,
+      "accuracy (headline)": 0.978082851637765,
       "n": 4152.0
     },
     {
@@ -311,7 +660,7 @@
       "median_income": 28100.0,
       "at_risk_rate": 0.9448458574181118,
       "at_risk_rate_weighted": 0.9373248331807933,
-      "accuracy (headline)": 0.9455684007707129,
+      "accuracy (headline)": 0.9453275529865125,
       "n": 4152.0
     },
     {
@@ -319,7 +668,7 @@
       "median_income": 40230.0,
       "at_risk_rate": 0.9171683120635685,
       "at_risk_rate_weighted": 0.9014755071936904,
-      "accuracy (headline)": 0.9190946303876716,
+      "accuracy (headline)": 0.9176498916445943,
       "n": 4153.0
     },
     {
@@ -327,7 +676,7 @@
       "median_income": 53430.0,
       "at_risk_rate": 0.8504609849336632,
       "at_risk_rate_weighted": 0.8340939968110104,
-      "accuracy (headline)": 0.8565324938160558,
+      "accuracy (headline)": 0.8569822352147515,
       "n": 4447.0
     },
     {
@@ -335,7 +684,7 @@
       "median_income": 67500.0,
       "at_risk_rate": 0.784443314692425,
       "at_risk_rate_weighted": 0.7724722340512448,
-      "accuracy (headline)": 0.8101169293340111,
+      "accuracy (headline)": 0.8091001525165227,
       "n": 3934.0
     },
     {
@@ -343,7 +692,7 @@
       "median_income": 84736.5,
       "at_risk_rate": 0.7045893719806764,
       "at_risk_rate_weighted": 0.6776561307941773,
-      "accuracy (headline)": 0.75,
+      "accuracy (headline)": 0.7468599033816425,
       "n": 4140.0
     },
     {
@@ -351,7 +700,7 @@
       "median_income": 108780.0,
       "at_risk_rate": 0.6187561214495593,
       "at_risk_rate_weighted": 0.598138015477706,
-      "accuracy (headline)": 0.7000489715964741,
+      "accuracy (headline)": 0.6978452497551421,
       "n": 4084.0
     },
     {
@@ -359,7 +708,7 @@
       "median_income": 145730.0,
       "at_risk_rate": 0.4868832731648616,
       "at_risk_rate_weighted": 0.47483803440328853,
-      "accuracy (headline)": 0.6620938628158844,
+      "accuracy (headline)": 0.6649819494584838,
       "n": 4155.0
     },
     {
@@ -367,7 +716,7 @@
       "median_income": 216000.0,
       "at_risk_rate": 0.34514340805013255,
       "at_risk_rate_weighted": 0.33193737946999313,
-      "accuracy (headline)": 0.6866714871053266,
+      "accuracy (headline)": 0.6852253555073512,
       "n": 4149.0
     },
     {
@@ -375,76 +724,76 @@
       "median_income": 410000.0,
       "at_risk_rate": 0.16907514450867056,
       "at_risk_rate_weighted": 0.16594849749376517,
-      "accuracy (headline)": 0.8326107899807321,
+      "accuracy (headline)": 0.8333333333333334,
       "n": 4152.0
     }
   ],
-  "overall_accuracy_headline": 0.8145864444337396,
+  "overall_accuracy_headline": 0.81408063972253,
   "calibration": [
     {
-      "predicted": 0.032542177865328446,
-      "actual": 0.03143941917005262,
-      "n": 15013,
-      "error": -0.0011027586952758253
+      "predicted": 0.03225432159820604,
+      "actual": 0.03282407098538929,
+      "n": 14989,
+      "error": 0.0005697493871832451
     },
     {
-      "predicted": 0.14623175182999754,
-      "actual": 0.1509286412512219,
-      "n": 5115,
-      "error": 0.004696889421224371
+      "predicted": 0.14606375512959058,
+      "actual": 0.14296844565640826,
+      "n": 5134,
+      "error": -0.003095309473182317
     },
     {
-      "predicted": 0.24819338490688725,
-      "actual": 0.25646551724137934,
-      "n": 3712,
-      "error": 0.008272132334492088
+      "predicted": 0.2477920135885729,
+      "actual": 0.26410466067048244,
+      "n": 3669,
+      "error": 0.016312647081909548
     },
     {
-      "predicted": 0.34946226410608255,
-      "actual": 0.36277173913043476,
-      "n": 2944,
-      "error": 0.013309475024352202
+      "predicted": 0.3490990562568037,
+      "actual": 0.3561457269322438,
+      "n": 2937,
+      "error": 0.00704667067544007
     },
     {
-      "predicted": 0.4488564785060368,
-      "actual": 0.44148936170212766,
-      "n": 2632,
-      "error": -0.007367116803909168
+      "predicted": 0.44861479808530463,
+      "actual": 0.44469357249626307,
+      "n": 2676,
+      "error": -0.003921225589041566
     },
     {
-      "predicted": 0.5504240244391221,
-      "actual": 0.5593354430379747,
-      "n": 2528,
-      "error": 0.008911418598852583
+      "predicted": 0.5503475339074803,
+      "actual": 0.5437898089171974,
+      "n": 2512,
+      "error": -0.006557724990282843
     },
     {
-      "predicted": 0.6512984491088554,
-      "actual": 0.6379585326953748,
-      "n": 2508,
-      "error": -0.013339916413480535
+      "predicted": 0.6506485346973436,
+      "actual": 0.6554986204178164,
+      "n": 2537,
+      "error": 0.004850085720472741
     },
     {
-      "predicted": 0.750262206658219,
-      "actual": 0.7404664938911514,
-      "n": 2701,
-      "error": -0.009795712767067588
+      "predicted": 0.7502349290510882,
+      "actual": 0.7322463768115942,
+      "n": 2760,
+      "error": -0.017988552239494027
     },
     {
-      "predicted": 0.849816048182703,
-      "actual": 0.8458856345885635,
-      "n": 2868,
-      "error": -0.003930413594139481
+      "predicted": 0.850459713636145,
+      "actual": 0.8467514124293786,
+      "n": 2832,
+      "error": -0.0037083012067664622
     },
     {
-      "predicted": 0.9324523152792222,
-      "actual": 0.9285237140948563,
-      "n": 1497,
-      "error": -0.0039286011843658875
+      "predicted": 0.9332058952473428,
+      "actual": 0.9354619565217391,
+      "n": 1472,
+      "error": 0.0022560612743963704
     }
   ],
   "ece": {
-    "deployable": 0.005526666644219396,
-    "full": 0.007364844388848414
+    "deployable": 0.005003144998224481,
+    "full": 0.006614696919852507
   },
   "benchmarks": [
     {
@@ -610,43 +959,43 @@
       0.0,
       0.036727761658764416,
       0.07338475691741561,
-      0.1100063689760102,
+      0.1100417521760668,
       0.14655721463449153,
-      0.18303729389285966,
+      0.18296652749274644,
       0.2193050739508881,
-      0.25532517160852025,
-      0.29088528766541644,
-      0.32672846932276556,
-      0.3618286037789258,
-      0.39682258863491615,
-      0.4315688910905102,
-      0.46550137994480223,
-      0.4989385039983016,
-      0.5317033472507253,
-      0.5642558913028094,
-      0.5957469393531951,
-      0.6267072394027315,
-      0.6569244922510792,
-      0.6853725850965962,
-      0.7135729955417168,
-      0.740534993984856,
-      0.7666831788266931,
-      0.7897884084636615,
+      0.25497133960795415,
+      0.2909914372655863,
+      0.3266930861227089,
+      0.361899370179039,
+      0.39675182223480293,
+      0.43146274149034036,
+      0.46532446394451915,
+      0.4984077559974524,
+      0.5316679640506687,
+      0.5643974241030358,
+      0.5960653881537046,
+      0.627308753803694,
+      0.6570660250513056,
+      0.6865048474984078,
+      0.7139622107423396,
+      0.7402519283844031,
+      0.7659401316255042,
+      0.7908499044653599,
       0.8140966669025547,
-      0.8363173165381077,
-      0.8584318165734909,
-      0.8776448942042319,
-      0.8948411294317458,
-      0.9114358502582973,
-      0.9268275422829241,
-      0.9406977567051165,
-      0.9534710919255538,
-      0.9644752671431605,
-      0.9741348807586158,
-      0.9823083999716934,
-      0.9884650767815442,
-      0.9943386879909419,
-      0.9976647087962636,
+      0.836564998938504,
+      0.857688769372302,
+      0.8782464086051942,
+      0.8954426438327082,
+      0.912568112660109,
+      0.9274644398839431,
+      0.9413346543061355,
+      0.9529757271247612,
+      0.964510650343217,
+      0.9743825631590121,
+      0.9823437831717501,
+      0.9889250583822801,
+      0.9940910055905456,
+      0.99780624159649,
       1.0
     ],
     "Model (full, with shares)": [
@@ -655,41 +1004,41 @@
       0.07345552331752883,
       0.11014790177623664,
       0.14684028023494444,
-      0.18356804189370887,
-      0.22022503715236005,
-      0.2567758828108414,
-      0.2933267284693228,
-      0.32966527492746445,
-      0.36582690538532303,
-      0.4018823862430118,
-      0.4376901847003043,
+      0.18349727549359565,
+      0.22015427075224683,
+      0.2567051164107282,
+      0.2931498124690397,
+      0.329523742127238,
+      0.36579152218526645,
+      0.40191776944306845,
+      0.43754865190007786,
       0.4728964687566343,
-      0.5082089024131342,
-      0.5432382704691813,
-      0.577736890524379,
-      0.6113509305781615,
-      0.6442219234307551,
-      0.6762437194819899,
-      0.7075932347321492,
-      0.7375274219800438,
-      0.7661170476257873,
-      0.7949897388719835,
-      0.8212086901139339,
-      0.8463661453541859,
-      0.8701436557922299,
-      0.8918335574269337,
+      0.5079612200127379,
+      0.5428490552685585,
+      0.5775599745240959,
+      0.6115986129785578,
+      0.6447172882315476,
+      0.6773052154836884,
+      0.7083362819333381,
+      0.7379166371806666,
+      0.7668247116269196,
+      0.7946712900714741,
+      0.8218102045148963,
+      0.8472507253556012,
+      0.871134385393815,
+      0.8925766046281226,
       0.9123558134597693,
-      0.9299058806878494,
-      0.9458283207133253,
-      0.9604061991366499,
-      0.9721180383553889,
-      0.9809284551694856,
-      0.9868374495789399,
-      0.9922864623876584,
-      0.9959663151935461,
-      0.9981246903969995,
+      0.930578161488925,
+      0.946500601514401,
+      0.9605477319368764,
+      0.9715872903545396,
+      0.9805038567688061,
+      0.9875097303800155,
+      0.9925695279881113,
+      0.9958247823933196,
+      0.9981954567971127,
       0.9994338687990942,
-      0.999823083999717,
+      0.9998584671997736,
       1.0
     ],
     "Income rule (poorest first)": [

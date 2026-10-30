@@ -55,6 +55,8 @@ COTOTAL vs 11-category sum: within 1% for 97.72%; label agreement 0.9975
 | `06_clustering_personas.ipynb` | `results/persona*`, `cluster_selection.png` |
 | `07_business_translation.ipynb` | `results/business_*` |
 | `08_savings_rate_regression.ipynb` | `results/savings_rate_regression.*` |
+| `09_outreach_simulation.ipynb` | `results/outreach.*` (needs notebook 07 first) |
+| `10_external_validity.ipynb` | `results/external_validity.json`, `leakage_curve.png` |
 
 ```bash
 for nb in notebooks/0*.ipynb; do
@@ -64,7 +66,25 @@ uv run python project/figures/make_figures.py
 uv run sgc train            # optional: fit the two scoring tiers into artifacts/
 ```
 
-The full run takes about 25 minutes on four cores. Most of that is the two randomised searches in notebook 04 and the interaction decomposition in notebook 05.
+The full run takes about 25 minutes on four cores. Most of that is the two randomised searches in notebook 04 and the interaction decomposition in notebook 05. `uv run sgc reproduce --tsv <path>` does all of the above in one command (add `--fast` to skip notebooks 04 and 05) and writes `results/run_manifest.json`.
+
+**Check you hold the same file.** `sha256sum 36151-0002-Data.tsv` should print `5ee026ccd5f1c3ce91d59a0af3e3c15d0728e703031c5870b72f9f68cfc5b65e` (the DS0002 file the authors used, ICPSR release v6). A different hash means a different release of the study and numbers that may differ in the last digits.
+
+**No registration yet?** `uv run sgc demo` runs build, features, grouped CV, targeting, the outreach what-if and the leakage curve on a synthetic survey with the real schema (~15 s). It checks that the code runs; its numbers say nothing about Indian households.
+
+## 4. Optional: HCES 2022-23 (external-validity check, notebook 10)
+
+Notebook 10 compares the leakage mechanism on the Household Consumption Expenditure Survey 2022-23. It is skipped, with a message, if the files are absent. HCES records consumption but not income, so it cannot rebuild the savings label.
+
+The microdata are public from the NSO (<https://microdata.gov.in/nada43/index.php/catalog/224>, registration required). The loader reads the level-wise parquet files produced by <https://github.com/advaitmoharir/hces_2022> (`04_clean/`), of which three are needed:
+
+| File | Size | Holds |
+| --- | --- | --- |
+| `level_01.parquet` | 3.7 MB | sector, survey multiplier |
+| `level_03.parquet` | 3.9 MB | household size |
+| `level_14.parquet` | 30.9 MB | item-level consumption values |
+
+Place them in `dataset/hces/` (gitignored). The loader reproduces the published MPCE, Rs 3,773 (rural) and Rs 6,459 (urban) per month; if your copy does not, stop and check the files before reading anything else from the notebook.
 
 ---
 

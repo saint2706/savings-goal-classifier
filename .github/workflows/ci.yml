@@ -29,3 +29,7 @@ jobs:
         # The real IHDS-II file cannot be redistributed; the suite builds a
         # synthetic DS0002 in tests/conftest.py.
         run: uv run pytest
+      - name: End-to-end demo
+        # Runs build -> features -> grouped CV -> targeting -> outreach on the
+        # synthetic survey, so a broken pipeline fails CI without the ICPSR file.
+        run: uv run sgc demo --out demo_out
