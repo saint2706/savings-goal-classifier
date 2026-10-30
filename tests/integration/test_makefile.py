@@ -81,6 +81,9 @@ def env(**extra: str) -> dict[str, str]:
         k: v for k, v in os.environ.items() if k not in CLEAN and not k.startswith(("MK_", "SGC_"))
     }
     e["PYTHON"] = PYTHON
+    # The sandbox has no .gitignore for bytecode: importing scripts/mk*.py would leave an untracked
+    # scripts/__pycache__ that dirties the tree and shows up in clean previews and listings.
+    e["PYTHONDONTWRITEBYTECODE"] = "1"
     e.update(
         GIT_AUTHOR_NAME="Test",
         GIT_AUTHOR_EMAIL="t@example.com",

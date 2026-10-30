@@ -59,8 +59,10 @@ def rel(cfg: Config, path: Path) -> str:
         return str(path)
 
 
-def is_tracked_location(cfg: Config, path: Path) -> bool:
-    return any(path == cfg.root / p or is_inside(path, cfg.root / p) for p in PROTECTED)
+def is_tracked_location(cfg: Config, path: Path, *, follow: bool = True) -> bool:
+    return any(
+        path == cfg.root / p or is_inside(path, cfg.root / p, follow=follow) for p in PROTECTED
+    )
 
 
 def refuse_tracked(cfg: Config, path: Path, setting: str) -> Path:
@@ -87,13 +89,15 @@ def check_removable(cfg: Config, path: Path, *, allow_inside_protected: bool = F
     # A symlink is removed as a link, never followed: judge the link's own location.
     resolved = (path.parent.resolve() / path.name) if path.is_symlink() else path.resolve()
     root = cfg.root
-    if resolved in {root, home, Path(resolved.anchor)} or not is_inside(resolved, root):
+    if resolved in {root, home, Path(resolved.anchor)} or not is_inside(
+        resolved, root, follow=False
+    ):
         raise MkError(f"refusing to remove {resolved}: not strictly inside the repository")
     if any(root / p == resolved or is_inside(root / p, resolved) for p in PROTECTED):
         raise MkError(
             f"refusing to remove {rel(cfg, resolved)}: it is or contains protected source/config"
         )
-    if is_tracked_location(cfg, resolved) and not allow_inside_protected:
+    if is_tracked_location(cfg, resolved, follow=False) and not allow_inside_protected:
         raise MkError(f"refusing to remove {rel(cfg, resolved)}: inside a protected directory")
     for keep in KEEP:
         kp = (root / keep).resolve()

@@ -641,9 +641,15 @@ def file_lock(
         lock.unlink(missing_ok=True)
 
 
-def is_inside(child: Path, parent: Path) -> bool:
+def is_inside(child: Path, parent: Path, *, follow: bool = True) -> bool:
+    """``follow=False`` places a symlink ``child`` where the link lives, not where it points."""
+    here = (
+        child.parent.resolve() / child.name
+        if not follow and child.is_symlink()
+        else child.resolve()
+    )
     try:
-        child.resolve().relative_to(parent.resolve())
+        here.relative_to(parent.resolve())
     except ValueError:
         return False
     return True
