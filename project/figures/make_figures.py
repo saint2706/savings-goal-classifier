@@ -31,12 +31,11 @@ OUT = Path(__file__).resolve().parent
 def result(name):
     return json.loads((RESULTS / f"{name}.json").read_text())
 
-from savings_goal.viz import (  # noqa: E402  (shared palette, validated for colour-vision deficiency)
-    AQUA, AXIS, BLUE, COL, CONTEXT, INK, INK_2, MUTED, ORANGE, RED, SURFACE, WIDE, YELLOW,
-    rounded_barh, strip, use,
+from savings_goal.viz import (  # noqa: E402  (shared editorial palette: neutral greys plus one accent)
+    ACCENT, ACCENT_DEEP, AQUA, BLUE, BLUE_RAMP, COL, CONTEXT, INK, INK_2, MUTED, SURFACE, WIDE,
+    rounded_barh, series_style, strip, use,
 )
 
-MAGENTA = "#e87ba4"  # categorical slot 5, used only for the five-family stacked bar in Fig. 2
 use(report=True)
 
 
@@ -54,7 +53,7 @@ def fig_margin():
         ("Income only (LR)", base["income only"], CONTEXT),
         ("Income + demographics (LR)", base["deployable (income, demographics, debt)"], CONTEXT),
         ("Headline: XGBoost, deployable", auc[("deployable", "XGBoost (tuned)")], BLUE),
-        ("XGBoost + spending shares", auc[("full", "XGBoost (tuned)")], ORANGE),
+        ("XGBoost + spending shares", auc[("full", "XGBoost (tuned)")], AQUA),
     ]
 
     fig, ax = plt.subplots(figsize=(COL, 1.85))
@@ -66,13 +65,13 @@ def fig_margin():
     strip(ax)
     ax.spines["left"].set_visible(False)
     for y, (label, val, colour) in zip(ys, rungs):
-        rounded_barh(ax, y, 0.5, val, 0.5, colour)
+        rounded_barh(ax, y, 0.5, val, 0.5, colour, radius_pt=0)
         ax.text(val + 0.006, y, f"{val:.3f}", va="center", ha="left", zorder=6,
                 fontsize=6.3, color=INK if colour != CONTEXT else INK_2,
                 bbox=dict(facecolor=SURFACE, edgecolor="none", pad=0.4))
-    ax.axvline(oracle, color=RED, linewidth=1.0, zorder=4)
+    ax.axvline(oracle, color=ACCENT, linewidth=1.0, zorder=4)
     ax.text(oracle - 0.005, len(rungs) - 0.05, f"model-free oracle {oracle:.3f}\n(size × food share × income)",
-            ha="right", va="center", fontsize=5.8, color=RED)
+            ha="right", va="center", fontsize=5.8, color=ACCENT_DEEP)
     ax.tick_params(axis="y", length=0)
     fig.savefig(OUT / "fig1_feature_ladder.png")
     plt.close(fig)
@@ -81,9 +80,9 @@ def fig_margin():
 # ---------------------------------------------------------------------------
 # Figure 2 — SHAP for the headline model
 # ---------------------------------------------------------------------------
-FAMILY_COLOURS = {
-    "Income": BLUE, "Household size family": ORANGE, "Social/geo (categoricals)": AQUA,
-    "Head age & education": YELLOW, "Debt": MAGENTA,
+FAMILY_COLOURS = {  # fixed per family (not by rank), darkest to lightest down the ladder
+    "Income": ACCENT, "Household size family": BLUE, "Social/geo (categoricals)": BLUE_RAMP[4],
+    "Debt": BLUE_RAMP[2], "Head age & education": BLUE_RAMP[0],
 }
 FAMILY_LABELS = {
     "Income": "Income", "Household size family": "Household size", "Social/geo (categoricals)": "Social/geo",
@@ -108,8 +107,8 @@ def fig_shap():
     strip(ax1)
     ax1.spines["left"].set_visible(False)
     for y, (name, val) in zip(ys, top.items()):
-        colour = BLUE if name == "Log_Income" else CONTEXT
-        rounded_barh(ax1, y, 0, val, 0.52, colour)
+        colour = ACCENT if name == "Log_Income" else CONTEXT
+        rounded_barh(ax1, y, 0, val, 0.52, colour, radius_pt=0)
         ax1.text(val + top.max() * 0.015, y, f"{val:.2f}", va="center", ha="left",
                  fontsize=6.0, color=INK if name == "Log_Income" else INK_2)
     ax1.tick_params(axis="y", length=0)
@@ -120,7 +119,7 @@ def fig_shap():
     left = 0.0
     for name, share in shares.items():
         colour = FAMILY_COLOURS.get(name, CONTEXT)
-        rounded_barh(ax2, 0, left, left + share - 0.6, 1.0, colour, radius_pt=1.5)
+        rounded_barh(ax2, 0, left, left + share - 0.6, 1.0, colour, radius_pt=0)
         r, g, b = (int(colour[i:i + 2], 16) / 255 for i in (1, 3, 5))
         lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
         if share > 6:
@@ -161,8 +160,8 @@ def fig_business():
               linestyle="--", zorder=2, label="Ceiling")
     ax_a.plot(frac, np.array(curves["Random contact"]) * 100, color=MUTED, linewidth=1.0, zorder=2,
               label="Random")
-    ax_a.plot(frac, np.array(curves[INC]) * 100, color=ORANGE, linewidth=1.4, zorder=3, label="Income rule")
-    ax_a.plot(frac, np.array(curves[H]) * 100, color=BLUE, linewidth=1.6, zorder=4, label="Model")
+    ax_a.plot(frac, np.array(curves[INC]) * 100, color=BLUE, linewidth=1.4, zorder=3, label="Income rule")
+    ax_a.plot(frac, np.array(curves[H]) * 100, color=ACCENT, linewidth=1.6, zorder=4, label="Model")
     leg = ax_a.legend(loc="lower right", frameon=False, fontsize=5.8, handlelength=1.2, borderpad=0.1,
                       labelspacing=0.25)
     for text in leg.get_texts():
@@ -183,6 +182,9 @@ def fig_business():
     overall = bus["overall_accuracy_headline"]
     ax_b.plot(dec["Income_Decile"], dec["accuracy (headline)"], color=BLUE, linewidth=1.5,
               marker="o", markersize=3.0, markeredgecolor=SURFACE, markeredgewidth=0.7, zorder=4)
+    worst_row = dec.loc[dec["accuracy (headline)"].idxmin()]
+    ax_b.plot([worst_row["Income_Decile"]], [worst_row["accuracy (headline)"]], "o", color=ACCENT,
+              markersize=4.2, markeredgecolor=SURFACE, markeredgewidth=0.7, zorder=5)
     ax_b.axhline(overall, color=MUTED, linewidth=0.8, zorder=2)
     ax_b.text(-0.3, overall - 0.008, f"overall {overall:.3f}", ha="left", va="top",
               fontsize=6.0, color=MUTED)
@@ -206,7 +208,7 @@ def fig_business():
     order = ["Risk model", "Income rule (poorest first)", "Random contact", "Reachability model",
              "Oracle (true reach)"]
     shown = ["Risk model", "Income rule", "Random", "Reachability model", "Oracle (true reach)"]
-    colours = [RED, ORANGE, CONTEXT, BLUE, MUTED]
+    colours = [ACCENT, BLUE, CONTEXT, AQUA, BLUE_RAMP[2]]
     scen = sorted(out["scenario"].unique())
     base = [s_ for s_ in scen if s_.startswith("uniform")][0]
     ys = np.arange(len(order))[::-1]
@@ -233,14 +235,15 @@ def fig_personas():
     per = result("personas")
     prof = pd.read_csv(RESULTS / "persona_profiles.csv").set_index("Persona")
     within = pd.DataFrame(per["within_decile"]).set_index("Income_Decile")
-    colours = [BLUE, ORANGE, AQUA, YELLOW, MAGENTA, RED]
     inter = per["interaction"]
 
     fig, ax = plt.subplots(figsize=(COL, 1.85))
     for i, col in enumerate(within.columns):
         share = prof.loc[int(col), "pct_of_sample"]
-        ax.plot(within.index, within[col], color=colours[i % len(colours)], linewidth=1.4,
-                marker="o", markersize=2.8, markeredgecolor=SURFACE, markeredgewidth=0.6, zorder=4,
+        style = series_style(i)
+        ax.plot(within.index, within[col], color=style["color"], linestyle=style["linestyle"],
+                linewidth=1.4, marker=style["marker"], markersize=2.8, markeredgecolor=SURFACE,
+                markeredgewidth=0.6, zorder=4,
                 label=f"C{col} · {per['labels'][col]} ({share:.1f}%)")
     ax.text(-0.2, 0.68, f"Cluster | decile: LR p = {inter['p persona | decile']:.1g}\n"
             f"pseudo-R² {inter['pseudo R2 decile only']:.3f} → {inter['pseudo R2 + persona']:.3f}",

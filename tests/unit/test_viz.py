@@ -1385,3 +1385,20 @@ def test_report_figure_script_imports_still_resolve() -> None:
     ]
     assert wanted
     assert all(hasattr(viz, name) for name in wanted)
+
+
+def test_report_figure_script_regenerates_all_four_figures(tmp_path: Path) -> None:
+    script = ROOT / "project" / "figures" / "make_figures.py"
+    if not (ROOT / "results" / "business.json").exists():
+        pytest.skip("committed results/ not available")
+    redirect = "OUT = Path(__file__).resolve().parent"
+    source = script.read_text(encoding="utf-8")
+    assert source.count(redirect) == 1
+    source = source.replace(redirect, f"OUT = Path({str(tmp_path)!r})")
+    exec(compile(source, str(script), "exec"), {"__file__": str(script), "__name__": "__main__"})
+    assert sorted(p.name for p in tmp_path.glob("fig*.png")) == [
+        "fig1_feature_ladder.png",
+        "fig2_shap.png",
+        "fig3_business.png",
+        "fig4_personas.png",
+    ]
