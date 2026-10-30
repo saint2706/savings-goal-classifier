@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DATASET = ROOT / "dataset"
-RESULTS = ROOT / "results"
+
+# The Makefile points these at a sandbox so a notebook run cannot overwrite the
+# committed results; unset, everything lands where it always did.
+DATASET = Path(os.environ.get("SGC_DATA_DIR") or ROOT / "dataset").resolve()
+RESULTS = Path(os.environ.get("SGC_RESULTS_DIR") or ROOT / "results").resolve()
 HOUSEHOLDS_PATH = DATASET / "households.parquet"
 FEATURES_PATH = DATASET / "features.parquet"
 
-SEED = 42
+SEED = int(os.environ.get("SGC_SEED") or 42)
 THRESHOLD = 0.20
 N_SPLITS = 5
 

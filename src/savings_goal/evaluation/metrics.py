@@ -22,6 +22,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from savings_goal.config import SEED
+
 Array = NDArray[Any]
 
 
@@ -184,7 +186,7 @@ def operating_point(
 
 
 def bootstrap_indices(
-    groups: Array, n_boot: int = 1000, seed: int = 42
+    groups: Array, n_boot: int = 1000, seed: int = SEED
 ) -> Iterator[NDArray[np.intp]]:
     """Yield row indices of PSU-clustered bootstrap samples (whole groups, with replacement)."""
     groups = np.asarray(groups)
@@ -200,7 +202,7 @@ def grouped_bootstrap(
     statistic: Callable[[NDArray[np.intp]], float],
     groups: Array,
     n_boot: int = 1000,
-    seed: int = 42,
+    seed: int = SEED,
 ) -> NDArray[np.float64]:
     """The statistic on each PSU-clustered bootstrap replicate.
 

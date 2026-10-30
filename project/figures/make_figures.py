@@ -16,6 +16,7 @@ source files, and re-running this script regenerates the figures from them.
 """
 
 import json
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -24,8 +25,11 @@ import pandas as pd
 from matplotlib.patches import Patch
 
 ROOT = Path(__file__).resolve().parents[2]
-RESULTS = ROOT / "results"
+RESULTS = Path(os.environ.get("SGC_RESULTS_DIR") or ROOT / "results")
 OUT = Path(__file__).resolve().parent
+if os.environ.get("SGC_FIGURES_DIR"):  # `make figures` builds into build/, not over the committed PNGs
+    OUT = Path(os.environ["SGC_FIGURES_DIR"])
+OUT.mkdir(parents=True, exist_ok=True)
 
 
 def result(name):

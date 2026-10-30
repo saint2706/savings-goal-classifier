@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from savings_goal.config import EXPENSE_CATEGORIES, GROUP_COL, SHARE_COLS, THRESHOLD
+from savings_goal.config import EXPENSE_CATEGORIES, GROUP_COL, SEED, SHARE_COLS, THRESHOLD
 from savings_goal.evaluation.metrics import bootstrap_indices, percentile_ci
 
 
@@ -53,7 +53,7 @@ class BenchmarkTable:
 
 
 def benchmark_with_ci(
-    df: pd.DataFrame, n_boot: int = 500, seed: int = 42, decile: str = "Income_Decile"
+    df: pd.DataFrame, n_boot: int = 500, seed: int = SEED, decile: str = "Income_Decile"
 ) -> BenchmarkTable:
     """Mean signed excess per category with 95% PSU-bootstrap CIs (benchmarks re-estimated per draw)."""
     share_x, rupee_x = signed_excess(df, decile)

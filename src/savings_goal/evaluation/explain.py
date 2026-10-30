@@ -15,7 +15,7 @@ import shap
 from numpy.typing import NDArray
 from sklearn.base import clone
 
-from savings_goal.config import CATEGORICALS, DEBT_COLS, SHARE_COLS, SIZE_FAMILY
+from savings_goal.config import CATEGORICALS, DEBT_COLS, SEED, SHARE_COLS, SIZE_FAMILY
 
 
 def feature_families(feature_names: list[str]) -> dict[str, list[str]]:
@@ -103,7 +103,7 @@ def grouped_permutation_importance(
     families: Mapping[str, list[str]],
     score: Callable[[NDArray[Any], NDArray[np.float64]], float],
     n_repeats: int = 5,
-    seed: int = 42,
+    seed: int = SEED,
 ) -> pd.DataFrame:
     """Drop in ``score`` when all columns of a family are permuted jointly (same row order)."""
     rng = np.random.default_rng(seed)
@@ -166,7 +166,7 @@ def interaction_decomposition(
 
 
 def coefficient_stability(
-    make_model: Callable[[], Any], X: pd.DataFrame, y: pd.Series, n_parts: int = 5, seed: int = 42
+    make_model: Callable[[], Any], X: pd.DataFrame, y: pd.Series, n_parts: int = 5, seed: int = SEED
 ) -> pd.DataFrame:
     """Fit the same linear model on disjoint subsamples; report coefficient sd and sign flips."""
     rng = np.random.default_rng(seed)
