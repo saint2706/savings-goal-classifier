@@ -10,6 +10,11 @@
 \usepackage{cite}
 \usepackage{xcolor}
 
+% Let URLs break after a hyphen (the repository name has two), and give the
+% line-breaker spare stretch for the lines that are mostly one URL or one path.
+\makeatletter\g@addto@macro\UrlBreaks{\do\-}\makeatother
+\emergencystretch=2em
+
 \newcommand{\rs}{Rs.\,}
 
 \bibliographystyle{IEEEtran}
@@ -103,7 +108,7 @@ Macro-F1 remains the operational ranking metric, but every model is also scored 
     \label{fig:margin}
 \end{figure}
 
-The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tree on income, re-learned inside every training fold (threshold \rs 110,377--126,545, mean \rs 122,249 a year), reaches 0.778 accuracy and 0.742 macro-F1. Logistic regression on income alone reaches ROC-AUC 0.835, and 0.876 with demographics and debt. Adding the food share to income lifts it to 0.875, and to 0.894 once household size is also present, which is the reconstruction route at work (Fig.~\ref{fig:margin}).
+The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tree on income, re-learned in each training fold (threshold \rs 110,377--126,545, mean \rs 122,249 a year), reaches 0.778 accuracy and 0.742 macro-F1. Logistic regression on income alone reaches ROC-AUC 0.835, and 0.876 with demographics and debt. Adding the food share to income lifts it to 0.875, and to 0.894 once household size is also present, which is the reconstruction route at work (Fig.~\ref{fig:margin}).
 
 \subsection{Model comparison}
 
@@ -129,7 +134,7 @@ The majority classifier reaches 0.681 accuracy and 0.405 macro-F1. A depth-1 tre
     \end{tabular}
 \end{table}
 
-On the deployable set the tuned XGBoost model (\texttt{max\_depth}=4, \texttt{learning\_rate}=0.08, \texttt{n\_estimators}=200, \texttt{subsample}=0.7, \texttt{min\_child\_weight}=1) leads at macro-F1 0.782 and ROC-AUC 0.882 (Table~\ref{tab:models}); histogram gradient boosting is within one fold standard deviation. Tuning was worth 0.007 macro-F1, and depth was the parameter that mattered. PR-AUC is reported for the at-risk class against its 0.681 base rate. The linear models rank close on ROC-AUC but are poorly calibrated (ECE 0.10) because of balanced class weights.
+On the deployable set the tuned XGBoost model (depth 4, learning rate 0.08, 200 trees, subsample 0.7, minimum child weight 1) leads at macro-F1 0.782 and ROC-AUC 0.882 (Table~\ref{tab:models}); histogram gradient boosting is within one fold standard deviation. Tuning was worth 0.007 macro-F1, and depth was the parameter that mattered. PR-AUC is reported for the at-risk class against its 0.681 base rate. The linear models rank close on ROC-AUC but are poorly calibrated (ECE 0.10) because of balanced class weights.
 
 On the held-out PSUs, touched once, the headline model scores ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944, Brier 0.127 and ECE 0.009; the full model scores 0.932 and 0.836. A household-level random split gives almost the same full-model score (0.931), so the gap between the two models comes from the feature set, not from the validation scheme.
 
@@ -218,7 +223,7 @@ Income under-reporting remains the largest limitation. Consumption exceeds incom
 \section{Reproducibility}
 \label{sec:reproducibility}
 
-Code, walkthroughs and result artifacts (MIT licence) are at \url{https://github.com/saint2706/savings-goal-classifier}. ICPSR's terms prohibit redistributing the IHDS-II microdata, so three routes are provided. (i) \texttt{uv run sgc demo} runs build, features, grouped CV, targeting and the outreach what-if on a synthetic survey with the real schema in about 15 seconds, with no registration; CI runs it on every push, and its numbers are not results. (ii) \texttt{uv run sgc reproduce --tsv <path>} rebuilds the data from the free ICPSR download, runs the ten notebooks and the figure script (about 25 minutes on four cores), and writes a manifest of package versions, git commit, seed and the input file's SHA-256 (ours begins 5ee026cc), so a reader can confirm they hold the same file. (iii) Every table and figure is regenerated from committed aggregate files with no microdata, and the README maps each claim to its script and artifact. The environment is pinned by \texttt{uv.lock} (Python 3.11--3.13), every seed is 42 and every split is grouped by PSU. The build is validated against a Pandera schema, and the package is tested at 99\% coverage with ruff and mypy in CI. HCES files are read from the public dump in \cite{hces}, with instructions in \texttt{dataset/README.md}; our loader reproduces the published monthly per-capita expenditure (Rs.\,3,773 rural, Rs.\,6,459 urban).
+The repository \url{https://github.com/saint2706/savings-goal-classifier} holds the code, walkthroughs and result artifacts under an MIT licence. ICPSR's terms prohibit redistributing the IHDS-II microdata, so three routes are provided. (i) \texttt{uv run sgc demo} runs build, features, grouped CV, targeting and the outreach what-if on a synthetic survey with the real schema in about 15 seconds, with no registration; CI runs it on every push, and its numbers are not results. (ii) \texttt{uv run sgc reproduce --tsv <path>} rebuilds the data from the free ICPSR download, runs the ten notebooks and the figure script (about 25 minutes on four cores), and writes a manifest of package versions, git commit, seed and the input file's SHA-256 (ours begins 5ee026cc), so a reader can confirm they hold the same file. (iii) Every table and figure is regenerated from committed aggregate files with no microdata, and the README maps each claim to its script and artifact. The environment is pinned by \texttt{uv.lock} (Python 3.11--3.13), every seed is 42 and every split is grouped by PSU. The build is validated against a Pandera schema, and the package is tested at 99\% coverage with ruff and mypy in CI. HCES files are read from the public dump in \cite{hces}, with instructions in the repository; our loader reproduces the published monthly per-capita expenditure (Rs.\,3,773 rural, Rs.\,6,459 urban).
 
 \subsection{AI Use Declaration}
 \label{subsec:ai_use}
@@ -239,7 +244,7 @@ We thank our course instructor for feedback on the framing of this project, and 
 \begin{thebibliography}{99}
 
 \bibitem{ihds2}
-S. Desai, R. Vanneman, and NCAER, ``India Human Development Survey-II (IHDS-II), 2011--12,'' ICPSR study 36151, 2018. doi: 10.3886/ICPSR36151.v6
+S. Desai, R. Vanneman, and NCAER, ``India Human Development Survey-II (IHDS-II), 2011--12,'' ICPSR study 36151, 2018. \url{https://doi.org/10.3886/ICPSR36151.v6}
 
 \bibitem{brown2018}
 C. Brown, M. Ravallion, and D. van de Walle, ``A poor means test? Econometric targeting in Africa,'' \emph{J. Develop. Econ.}, vol. 134, pp. 109--124, 2018.
