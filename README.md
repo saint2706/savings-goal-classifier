@@ -330,7 +330,7 @@ ICPSR DS0002 TSV → sgc build (Polars + Pandera) → dataset/households.parquet
         → make_figures.py → report.tex
 ```
 
-The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `data/` (build and schema), `features/` (engineering and transforms), `models/` (pipelines, clusters, regression, uplift), `evaluation/` (`cv.py`, `metrics.py`, `leakage.py`, `explain.py`, `business.py`), `viz.py` (the shared plot style), `cli.py` and `api.py`. The notebooks call the package, print aggregates and write `results/*.json`.
+The analysis code lives in the `savings_goal` package (`src/savings_goal/`): `data/` (build and schema), `features/` (engineering and transforms), `models/` (pipelines, clusters, regression, uplift), `evaluation/` (`cv.py`, `metrics.py`, `leakage.py`, `explain.py`, `business.py`), `viz.py` (the shared Swiss Editorial plot style: palette, type and chart helpers), `cli.py` and `api.py`. The notebooks call the package, print aggregates and write `results/*.json`.
 
 ## 6. Repository structure
 
