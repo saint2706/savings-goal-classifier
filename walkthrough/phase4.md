@@ -206,3 +206,7 @@ One caveat travels with every figure here. Phase 1 found that 55.9% of IHDS hous
 | 6: Clustering | Independent of model choice. |
 | 7: Business translation | Use the deployable model's out-of-fold or held-out scores, and compare targeting with the income rule and with the ceiling at each budget. Its probabilities are well calibrated (held-out ECE 0.009), so expected counts can be read from them directly. The at-risk threshold of 0.425 (held-out precision 0.826, recall 0.913) is one available operating point. |
 | 8: Savings-rate regression | Reuses the same split, grouped folds and deployable feature set, so its results line up with this phase's. |
+
+## Added for the second review
+
+Models here are fitted unweighted, with survey weights used only for population figures. [Phase 7](phase7.md) (Cell 5) refits the headline model with survey weights and finds no material change: out-of-fold ROC-AUC 0.8829 to 0.8811, weighted recall at a 25% budget 0.3540 to 0.3536.

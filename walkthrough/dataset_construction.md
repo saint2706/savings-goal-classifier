@@ -334,3 +334,7 @@ All six point the same way: households the benchmark calls savers are more likel
 | Shares sum to exactly 1 | Phases 1, 2 and 6 handle the compositional constraint (log-ratio transforms, ILR for clustering) |
 | `Has_*` reserved | Used only as an external check on the benchmark |
 | Debt has a long tail and 7.6% missing | Missing is kept as its own signal; capping happens inside the model pipeline |
+
+## Added for the second review
+
+An optional second source, HCES 2022-23, is used only for the external-validity check in [Phase 10](phase10.md) (notebook 10). It records consumption but not income, so it cannot rebuild this label. Its files go in `dataset/hces/` (gitignored); see `dataset/README.md` section 4.

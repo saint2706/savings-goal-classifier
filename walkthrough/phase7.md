@@ -13,7 +13,7 @@ This phase turns model scores into statements a savings-product or financial-inc
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Which 3–5 findings should a team act on, stated as recommendations? | Five, in `results/business_recommendations.csv` and listed [below](#the-five-recommendations). The lead one: prioritise by income and let the model re-rank. At a 25% contact budget the headline model reaches 36.2% of at-risk households (98.5% of the 36.7% ceiling) against 35.0% for the income rule (95.4%): +1.1 pp, 95% CI 1.0 to 1.3. |
+| 1 | Which 3–5 findings should a team act on, stated as recommendations? | Five, in `results/business_recommendations.csv` and listed [below](#the-five-recommendations). The lead one: prioritise by income and let the model re-rank. At a 25% contact budget the headline model's recall is 36.2% of at-risk households (ceiling 36.7%) against 35.0% for the income rule: +1.1 pp, 95% CI 1.0 to 1.3. Precision is 98.5% against 95.4%, which equals ceiling capture while the budget is below the at-risk prevalence; recall, precision and ceiling capture are kept apart, sample and survey-weighted, in the Cell 5 section below. |
 | 2 | Which expense category carries the most recoverable spend? | None can be named from this data. In rupees, at-risk households out-spend same-income on-track peers in all 11 categories, which follows from the label. By budget share the largest positive excesses are healthcare +4.4 pp (CI 3.8 to 4.9), education +2.8 (2.7 to 3.0), miscellaneous +2.1 (1.7 to 2.5) and transport +1.8 (1.5 to 2.1); groceries run the other way at −9.0 pp (−9.7 to −8.3). Whether the gap is "closable" depends on the benchmark: 92.8% (rupee) vs 22.3% (share). |
 | 3 | Where does the model fail, and what must a stakeholder be told? | Calibration holds across the range (out-of-fold ECE 0.005, max bin error 0.018). Accuracy is 0.978 in the poorest decile, falls to 0.665 in decile 7 and recovers to 0.833 in the richest. 22.0% of households report spending more than twice their income and make up 32.3% of the at-risk group, so the at-risk count is not a prevalence estimate. |
 
@@ -60,7 +60,17 @@ Every interval excludes zero, so the model does better than the income rule at e
 
 The survey-weighted version (`capture_weighted` in `business.json`) counts the budget in population weight: households are taken in score order until their weights reach the budget share of all households. The at-risk share is 69.5% weighted, so the ceiling at 25% is 36.0%. The weighted picture matches the unweighted one: at 25% the model reaches 98.5% of that ceiling and the income rule 95.1%, with precision 98.5% against 95.1%.
 
-### Cell 5: Where the at-risk households are, and where the model is reliable
+### Cell 5: Recall, precision and ceiling capture, kept apart (added for the second review)
+
+The first review asked for actual at-risk recall, contact precision and budget-ceiling capture to be stated separately, and for weighted population estimates to stay distinct from unweighted fitting. The notebook now has a cell (Q1b) that does this with `savings_goal.evaluation.metrics.targeting_table` and `operating_point`, and the results are in `results/business.json` under `targeting`, `targeting_weighted`, `operating_point` and `weighted_fit_check`.
+
+- **Ceiling capture equals precision below the at-risk prevalence.** Ceiling capture is recall divided by `min(1, budget / prevalence)`, which for any budget under 68.1% is hits / (budget × N), the contact precision (up to rounding of the contact count). The old text presented "98.5% of the ceiling" and "precision 98.5%" as two findings; they are one number, and the table now says so. They separate only above a 68% budget, where the ceiling saturates at 1 and ceiling capture equals recall.
+- **Recall and precision at a 25% budget** (sample / survey-weighted): model 0.362 / 0.985 and 0.354 / 0.985; poorest first 0.350 / 0.954 and 0.342 / 0.951; random 0.249 / 0.678 and 0.248 / 0.691.
+- **The deployed threshold is a different operating point.** Contacting everyone with P(at risk) ≥ 0.425 reaches 75.3% of households (78.0% weighted) at recall 0.914 (0.928) and precision 0.826 (0.827). It is not comparable to the budget view without saying which one is meant.
+- **Fitting weighted changes nothing material.** Refitting with survey weights (`oof_predict_proba(..., sample_weight=...)`) moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25% from 0.3540 to 0.3536. Models stay unweighted; weights are used only for population figures.
+- The cell also writes `dataset/oof.parquet` (gitignored, household-level) so [Phase 9](phase9.md) can reuse the out-of-fold scores.
+
+### Cell 7: Where the at-risk households are, and where the model is reliable
 
 Households are cut into income deciles and the headline model's out-of-fold calls at 0.5 are scored per decile.
 
@@ -83,7 +93,7 @@ The same cell bins the out-of-fold probabilities into ten equal-width bins and c
 
 > **In plain terms: calibration and ECE.** A model is calibrated when its probabilities mean what they say: of the households it scores at 0.70, about 70% turn out on track. The check sorts households into ten bins by predicted probability and compares the average prediction with the observed rate in each bin. ECE (expected calibration error) is the average of those gaps, weighted by how many households fall in each bin. At 0.006, predicted and observed rates differ by well under one percentage point on average, so a team can use the scores for expected-count arithmetic ("10,000 contacts at an average 80% risk is about 8,000 at-risk households") as well as for ranking.
 
-### Cell 7: Peer benchmarks and gap closure (Q2)
+### Cell 9: Peer benchmarks and gap closure (Q2)
 
 IHDS does not record which spending a household could have avoided. The notebook therefore compares each at-risk household with the mean on-track household in the same income decile, using `savings_goal.evaluation.business.benchmark_with_ci`. That function computes signed excess per category (negative means the household spends less than its peers; nothing is clipped before averaging), in budget-share points and in rupees, and re-estimates the peer means inside each of 300 PSU-bootstrap draws.
 
@@ -109,15 +119,15 @@ The rupee column cannot identify a lever. Every rupee interval is above zero, in
 
 `savings_goal.evaluation.business.gap_closure` then asks, household by household, whether matching peers' spending where the household spends more would cover its rupee gap to the 20% benchmark. The median gap is Rs 37,114 a year. Matching peers' rupee spending would close the gap for 92.8% of at-risk households (91.8% weighted); matching peers' budget shares, applied to the household's own total, would close it for 22.3%. The two answers differ because the rupee benchmark restates the label. The split between a "structural" and a "behavioural" shortfall here comes from the choice of benchmark, and the data cannot settle it.
 
-### Cell 9: Measurement caveats
+### Cell 11: Measurement caveats
 
 22.0% of households (23.8% weighted) report spending more than twice their reported income; they are 32.3% of the at-risk group. Indian household surveys tend to under-report income relative to item-by-item consumption, so part of the at-risk group reflects measurement rather than observed distress. Moving the benchmark changes the at-risk share: 61.7% at a 10% savings threshold, 68.1% at 20%, 74.7% at 30%. Phase 1 found 93.6% and 93.4% label agreement with the 20% definition at those two alternatives, so rankings are stable while the level moves.
 
-### Cell 11: The recommendations
+### Cell 13: The recommendations
 
 Each recommendation is built from f-strings over the values computed above (and the Phase 3 income threshold from `results/baseline.json`), written to `results/business_recommendations.csv`, and printed. The cell then writes `results/business.json` with the capture tables (unweighted and weighted), the bootstrap edge, decile table, calibration bins, ECE, the benchmark table, the gap-closure figures, the measurement caveats and a 41-point capture curve per strategy that Phase 8's figure script reads.
 
-### Cell 12: Figure
+### Cell 14: Figure
 
 `results/business_translation.png` has three panels: capture curves for the four strategies with the ceiling line, the signed composition excess per category with 95% intervals, and the calibration curve of the headline model against the diagonal. `project/figures/fig3_business.png` redraws the same content for the report, with accuracy by decile in place of calibration.
 
@@ -125,23 +135,13 @@ Each recommendation is built from f-strings over the values computed above (and 
 
 ## The five recommendations
 
-1. Prioritise by income first; the onboarding model re-ranks within income bands. The reference is a single income threshold (about Rs 122,249 a year, re-learned per fold). At a 25% budget the headline model reaches 98.5% of the ceiling against 95.4% for poorest-first: +1.1 pp of capture (CI 1.0 to 1.3). Caveat: the model refines an income ranking; it does not find a hidden at-risk segment.
-2. Judge targeting against the ceiling and the income rule, not against random contact. With 68.1% at risk, no list reaches more than 36.7% of them with a 25% budget. Precision at 25%: 98.5% for the model, 95.4% for the income rule (+3.1 pp, CI 2.7 to 3.6), 67.8% at random. Caveat: lift over random looks large only because the target class is the majority.
+1. Prioritise by income first; the onboarding model re-ranks within income bands. The reference is a single income threshold (about Rs 122,249 a year, re-learned per fold). At a 25% budget the headline model's recall is 36.2% (ceiling 36.7%) against 35.0% for poorest-first: +1.1 pp (CI 1.0 to 1.3). Caveat: the model refines an income ranking; it does not find a hidden at-risk segment.
+2. Judge targeting against the ceiling and the income rule, not against random contact. With 68.1% at risk, no list reaches more than 36.7% of them with a 25% budget. Precision at 25% (equal to ceiling capture below the 68.1% prevalence, and a different quantity from the +1.1 pp recall edge): 98.5% for the model, 95.4% for the income rule (+3.1 pp, CI 2.72 to 3.55), 67.8% at random. Caveat: lift over random looks large only because the target class is the majority.
 3. Do not size a budgeting product from peer benchmarks. The share of at-risk households that could close the gap by spending like peers is 92.8% or 22.3% depending on whether the benchmark is in rupees or budget shares. Median gap Rs 37,114 a year. Caveat: IHDS cannot separate structural from behavioural shortfall.
 4. Miscellaneous is not the lever; composition differs most in healthcare and education. Healthcare +4.4 pp, education +2.8, miscellaneous +2.1, transport +1.8, groceries −9.0. Caveat: excess over peers is a hypothesis about slack. Healthcare and education are hard to cut, and the rupee totals (miscellaneous Rs 51 crore a year) are sample totals.
 5. Report relative priority only, never an absolute prevalence figure. 32.3% of the at-risk group report spending more than twice their income, and the at-risk share moves from 61.7% to 74.7% across the 10% to 30% thresholds. Caveat: a statement that "X% of Indian households save inadequately" is not supported by this work.
 
 ---
-
-## Added for the second review: recall, precision and ceiling capture, kept apart
-
-The first review asked for actual at-risk recall, contact precision and budget-ceiling capture to be stated separately, and for weighted population estimates to stay distinct from unweighted fitting. The notebook now has a cell (Q1b) that does this with `savings_goal.evaluation.metrics.targeting_table` and `operating_point`, and the results are in `results/business.json` under `targeting`, `targeting_weighted`, `operating_point` and `weighted_fit_check`.
-
-- **Ceiling capture equals precision below the at-risk prevalence.** Ceiling capture is recall divided by `min(1, budget / prevalence)`, which for any budget under 68.1% is hits / (budget × N), the contact precision (up to rounding of the contact count). The old text presented "98.5% of the ceiling" and "precision 98.5%" as two findings; they are one number, and the table now says so. They separate only above a 68% budget, where the ceiling saturates at 1 and ceiling capture equals recall.
-- **Recall and precision at a 25% budget** (sample / survey-weighted): model 0.362 / 0.985 and 0.354 / 0.985; poorest first 0.350 / 0.954 and 0.342 / 0.951; random 0.249 / 0.678 and 0.248 / 0.691.
-- **The deployed threshold is a different operating point.** Contacting everyone with P(at risk) ≥ 0.425 reaches 75.3% of households (78.0% weighted) at recall 0.914 (0.928) and precision 0.826 (0.827). It is not comparable to the budget view without saying which one is meant.
-- **Fitting weighted changes nothing material.** Refitting with survey weights (`oof_predict_proba(..., sample_weight=...)`) moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25% from 0.3540 to 0.3536. Models stay unweighted; weights are used only for population figures.
-- The cell also writes `dataset/oof.parquet` (gitignored, household-level) so [Phase 9](phase9.md) can reuse the out-of-fold scores.
 
 ## What this means for later phases
 

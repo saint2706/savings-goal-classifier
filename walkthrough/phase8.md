@@ -122,7 +122,7 @@ The target is normative. No large household survey asks people for their own sav
 - The 20% line is a convention. At 10% the at-risk share is 61.7%, at 30% it is 74.7%. About 93.5% of households keep the same label either way, so rankings hold and levels do not.
 - The probabilities can be used for planning arithmetic. Out-of-fold calibration error is 0.006 and no probability bin is off by more than 1.3 points.
 - Spending data can only be used if it was recorded before the period being predicted. The scoring service enforces this (below).
-- Nothing here says who would respond to outreach. IHDS records no intervention, so risk is not the same as benefit from contact.
+- Nothing here says who would respond to outreach. IHDS records no intervention, so risk is not the same as benefit from contact. [Phase 9](phase9.md) shows how much that matters: under assumed responses a risk ranking moves fewer households than random contact.
 - The data is from 2011–12: sound for method, not current for market sizing.
 
 ### Scoring service and uplift scaffold
@@ -155,6 +155,10 @@ Who to contact is a different question from who would respond. Answering it need
 | Do not split shortfall into structural and behavioural | Phase 7 | 92.8% closable under a rupee benchmark, 22.3% under a share benchmark: the answer belongs to the benchmark. |
 | Model the savings rate with median regression and rank by rupee shortfall | Phase 8 | Pinball loss 0.474 vs 0.739 for a constant; 45.5% of the rupee gap at 25% vs 37.0% for the classifier. |
 | Two-tier scoring service with a date check on spending data | Phase 8 | Same-period shares reconstruct the label (Phase 1), so the spending tier accepts only shares observed before the prediction window. |
+| State recall, precision and ceiling capture separately; fit unweighted and report weighted figures | Phase 7 (Cell 5) | Below the 68.1% at-risk prevalence ceiling capture equals precision, so one number was doing two jobs. At 25%: recall 0.362 (sample) and 0.354 (weighted). Refitting with survey weights moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall from 0.3540 to 0.3536. |
+| Treat outreach as an assumption-driven what-if, not an estimate of benefit | Phase 9 | IHDS records no outreach. Households moved to on-track per 1,000 contacts at 25% (5 pp nudge, uniform response 0.20): risk model 0.8, poorest first 2.2, random 6.2, reachability model 10.1, oracle 25.0; the reachability edge over the risk model is 9.3 (CI 8.4 to 10.1). The most at-risk are the deepest dissavers, out of reach of a small nudge. |
+| Test the leakage mechanism, not the AUC, on a newer survey, and report calibration apart from ranking | Phase 10 | HCES 2022-23 has no income. Food-on-size elasticity 0.565 vs 0.630, residual sd 0.472 vs 0.485, implied oracle AUC 0.868 in both. Leave-states-out ROC-AUC 0.871 to 0.890 but mean predicted minus observed on-track rate from -7.1 to +3.9 pp, so rankings travel and probabilities do not. |
+| Keep the code path runnable without the restricted file | README § 7, Phase 10 | `sgc demo` builds a synthetic survey with the real schema and runs the pipeline in about 15 seconds (run in CI); `sgc reproduce` rebuilds everything and writes a manifest with the input file's SHA-256. |
 
 > **In plain terms: the technical terms in the table.**
 > - Leakage: a feature that contains the answer. Spending categories plus income add up to the savings rate, so a model given them scores near-perfectly and predicts nothing new.
@@ -206,7 +210,7 @@ Supporting figures from the notebooks, for a technical reviewer:
 - Peer benchmarks cannot separate structural from behavioural shortfall.
 - The clusters are keyed on which categories are recorded as zero, which may reflect a healthy year or a recall gap rather than a budgeting style.
 - The rupee-shortfall ranking favours households whose consumption far exceeds reported income, the group most affected by under-reporting; within at-risk households its predicted gap sizes correlate with actual ones at only 0.31.
-- No intervention data: nothing here estimates who would respond to outreach.
+- No intervention data: nothing here estimates who would respond to outreach. [Phase 9](phase9.md) is an assumption-driven what-if, not an estimate.
 
 ---
 

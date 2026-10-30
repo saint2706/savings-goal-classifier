@@ -249,3 +249,7 @@ Writes `results/phase1_eda.png`, four panels:
 | 5: Explainability | Read share effects relative to the other shares (closure). Check whether the area gradient survives once income is held constant. |
 | 6: Clustering | Euclidean distance on raw shares is not meaningful; use a log-ratio basis, with care for the zero-inflated categories. |
 | 7 and 8: Business translation and reporting | Lean on relative comparisons, since 55.9% of households report spending above income. Apply `WT` to any population-level figure. |
+
+## Added for the second review
+
+[Phase 10](phase10.md) generalises the leakage finding. A simulation (`savings_goal.evaluation.leakage_sim`) puts the oracle's ROC-AUC on one curve against the residual spread of food spend given household size, and HCES 2022-23 shows the same mechanism (food-on-size elasticity 0.57 against 0.63 here), so the warning is about how tightly food tracks size, not about this file.

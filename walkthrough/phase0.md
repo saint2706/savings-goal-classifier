@@ -162,3 +162,7 @@ The classifier still captures slightly more at-risk households by count (36.2% v
 | Distance matters for budgeting | Phase 8 adds a median regression and a rupee-shortfall ranking. |
 
 > **In plain terms: why a majority target caps lift.** Targeting models usually hunt for something rare, such as fraud or churn, and a good one concentrates the rare cases at the top of its ranking. **Lift** is the factor by which contacting model-selected households beats contacting households at random. Here the households to reach are 68% of everyone, so a random 25% of the population is already 67.8% at risk, and no ranking can do better than 100%, a lift of about 1.47. The headline model reaches 98.5% precision at that budget, close to the cap. [Phase 7](phase7.md) works through it.
+
+## Added for the second review
+
+The framing in Q1 treats outreach as the decision this project informs. [Phase 9](phase9.md) tests how much that decision depends on who responds to a nudge, which IHDS does not record, and [Phase 10](phase10.md) tests how far the 2011-12 framing travels to a newer survey and to other states.
