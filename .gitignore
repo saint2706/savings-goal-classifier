@@ -1,4 +1,31 @@
-# LaTeX build artifacts
+# --- Restricted and third-party data: never committed ------------------------
+# IHDS-II (ICPSR study 36151): "You agree not to redistribute data or other
+# materials without the written agreement of ICPSR." Everything below is the raw
+# download or a household-level file derived from it. Reproduce it by downloading
+# DS0002 from https://www.icpsr.umich.edu/web/DSDR/studies/36151 (free,
+# registration required) and running:
+#   uv run sgc build --tsv <path>/36151-0002-Data.tsv
+dataset/ICPSR_36151/
+dataset/*.tsv
+dataset/*.csv
+dataset/*.parquet
+36151-*
+
+# HCES 2022-23 level files (third-party clean dump of public NSS microdata, used
+# only for the external-validity check; see dataset/README.md).
+dataset/hces/
+
+# Fitted models are derived from the microdata; rebuild with `uv run sgc train`.
+artifacts/
+
+# Output of `sgc demo` (synthetic data).
+demo_out/
+
+# Private review feedback reports.
+feedback/
+
+# --- Build and tooling output ------------------------------------------------
+# LaTeX
 *.aux
 *.log
 *.out
@@ -8,41 +35,27 @@
 *.bbl
 *.blg
 
-# IHDS-II derived microdata — NOT redistributable.
-# ICPSR study 36151 terms of use: "You agree not to redistribute data or other
-# materials without the written agreement of ICPSR." These files are household-level
-# records derived from that study, so they must not be committed to a public repo.
-# Reproduce them by downloading DS0002 from https://www.icpsr.umich.edu/web/DSDR/studies/36151
-# (free, registration required) and running:
-#   uv run sgc build --tsv <path>/36151-0002-Data.tsv
-dataset/households.csv
-dataset/features.csv
-
-# Raw ICPSR download and any derived household-level files (same redistribution terms).
-dataset/*.tsv
-dataset/*.parquet
-36151-*
-
-# Fitted models are derived from the microdata; rebuild with `uv run sgc train`.
-artifacts/
-
-# Python tooling
+# Python
 .venv/
 __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.ipynb_checkpoints/
 .coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+dist/
+build/
 
-# Locally downloaded agent skills; not part of this project.
+# --- Local environment -------------------------------------------------------
+.env
+.DS_Store
+Thumbs.db
+
+# Agent tooling: downloaded skills, and the git worktrees the desktop app creates.
 .claude/skills/
+.claude/worktrees/
 .agents/
 skills-lock.json
-
-# HCES 2022-23 level files (third-party clean dump of public NSS microdata; used for
-# the external-validity check only and never committed).
-dataset/hces/
-oof.parquet
-
-# Output of `sgc demo` (synthetic data).
-demo_out/
