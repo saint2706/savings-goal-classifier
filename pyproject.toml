@@ -3,7 +3,7 @@ name = "savings-goal"
 version = "0.2.0"
 description = "Leakage-free prediction of household savings adequacy on IHDS-II (ICPSR 36151)"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 dependencies = [
     "numpy>=2.2.6,<3",
     "pandas>=2.2.3,<3",

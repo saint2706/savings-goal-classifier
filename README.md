@@ -372,7 +372,7 @@ Three ways in, from least to most effort:
 
 ```bash
 git clone <repo-url> && cd savings-goal-classifier
-uv sync                                                    # Python 3.11–3.13
+uv sync                                                    # Python 3.11–3.14
 uv run sgc build --tsv path/to/36151-0002-Data.tsv         # --tsv is required
 for nb in notebooks/0*.ipynb; do
     uv run jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=6000 "$nb"
