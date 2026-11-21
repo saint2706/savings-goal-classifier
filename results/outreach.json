@@ -1299,5 +1299,127 @@
     "0.025": 0.022397565635836104,
     "0.05": 0.04592739367348383,
     "0.1": 0.09401316255042105
-  }
+  },
+  "debt_missing_sensitivity": [
+    {
+      "missing_response": 0.3,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.30)",
+      "strategy": "Random contact",
+      "flips_per_1000": 6.608863198458574,
+      "cost_per_flip": 22696.793002915452,
+      "reach_minus_risk": 10.077071290944122
+    },
+    {
+      "missing_response": 0.3,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.30)",
+      "strategy": "Income rule (poorest first)",
+      "flips_per_1000": 2.5337186897880537,
+      "cost_per_flip": 59201.52091254754,
+      "reach_minus_risk": 10.077071290944122
+    },
+    {
+      "missing_response": 0.3,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.30)",
+      "strategy": "Risk model",
+      "flips_per_1000": 0.6454720616570327,
+      "cost_per_flip": 232388.05970149254,
+      "reach_minus_risk": 10.077071290944122
+    },
+    {
+      "missing_response": 0.3,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.30)",
+      "strategy": "Reachability model",
+      "flips_per_1000": 10.722543352601155,
+      "cost_per_flip": 13989.21832884097,
+      "reach_minus_risk": 10.077071290944122
+    },
+    {
+      "missing_response": 0.3,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.30)",
+      "strategy": "Oracle (true reach)",
+      "flips_per_1000": 27.418111753371868,
+      "cost_per_flip": 5470.836261419536,
+      "reach_minus_risk": 10.077071290944122
+    },
+    {
+      "missing_response": 0.2,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.20)",
+      "strategy": "Random contact",
+      "flips_per_1000": 6.38728323699422,
+      "cost_per_flip": 23484.162895927602,
+      "reach_minus_risk": 9.855491329479769
+    },
+    {
+      "missing_response": 0.2,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.20)",
+      "strategy": "Income rule (poorest first)",
+      "flips_per_1000": 2.475915221579961,
+      "cost_per_flip": 60583.657587548645,
+      "reach_minus_risk": 9.855491329479769
+    },
+    {
+      "missing_response": 0.2,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.20)",
+      "strategy": "Risk model",
+      "flips_per_1000": 0.626204238921002,
+      "cost_per_flip": 239538.46153846153,
+      "reach_minus_risk": 9.855491329479769
+    },
+    {
+      "missing_response": 0.2,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.20)",
+      "strategy": "Reachability model",
+      "flips_per_1000": 10.48169556840077,
+      "cost_per_flip": 14310.661764705883,
+      "reach_minus_risk": 9.855491329479769
+    },
+    {
+      "missing_response": 0.2,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.20)",
+      "strategy": "Oracle (true reach)",
+      "flips_per_1000": 26.512524084778427,
+      "cost_per_flip": 5657.703488372092,
+      "reach_minus_risk": 9.855491329479769
+    },
+    {
+      "missing_response": 0.1,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.10)",
+      "strategy": "Random contact",
+      "flips_per_1000": 6.165703275529865,
+      "cost_per_flip": 24328.125,
+      "reach_minus_risk": 9.633911368015413
+    },
+    {
+      "missing_response": 0.1,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.10)",
+      "strategy": "Income rule (poorest first)",
+      "flips_per_1000": 2.418111753371869,
+      "cost_per_flip": 62031.87250996016,
+      "reach_minus_risk": 9.633911368015413
+    },
+    {
+      "missing_response": 0.1,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.10)",
+      "strategy": "Risk model",
+      "flips_per_1000": 0.6069364161849712,
+      "cost_per_flip": 247142.8571428571,
+      "reach_minus_risk": 9.633911368015413
+    },
+    {
+      "missing_response": 0.1,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.10)",
+      "strategy": "Reachability model",
+      "flips_per_1000": 10.240847784200385,
+      "cost_per_flip": 14647.22483537159,
+      "reach_minus_risk": 9.633911368015413
+    },
+    {
+      "missing_response": 0.1,
+      "scenario": "debt-burdened 0.30/0.10 (missing=0.10)",
+      "strategy": "Oracle (true reach)",
+      "flips_per_1000": 25.606936416184976,
+      "cost_per_flip": 5857.787810383746,
+      "reach_minus_risk": 9.633911368015413
+    }
+  ]
 }

@@ -66,7 +66,7 @@ Actual at-risk recall, contact precision and budget-ceiling capture are three di
 
 - **Ceiling capture equals precision below the at-risk prevalence.** Ceiling capture is recall divided by `min(1, budget / prevalence)`, which for any budget under 68.1% is hits / (budget × N), the contact precision (up to rounding of the contact count). So "98.5% of the ceiling" and "precision 98.5%" are one number, not two findings. They separate only above a 68% budget, where the ceiling saturates at 1 and ceiling capture equals recall.
 - **Recall and precision at a 25% budget** (sample / survey-weighted): model 0.362 / 0.985 and 0.354 / 0.985; poorest first 0.350 / 0.954 and 0.342 / 0.951; random 0.249 / 0.678 and 0.248 / 0.691.
-- **The deployed threshold is a different operating point.** Contacting everyone with P(at risk) ≥ 0.425 reaches 75.3% of households (78.0% weighted) at recall 0.914 (0.928) and precision 0.826 (0.827). It is not comparable to the budget view without saying which one is meant.
+- **The deployed threshold is a different operating point.** Contacting everyone with P(at risk) ≥ 0.437 reaches 74.6% of households (77.3% weighted) at recall 0.910 (0.923) and precision 0.830 (0.830). It is not comparable to the budget view without saying which one is meant.
 - **Fitting weighted changes nothing material.** Refitting with survey weights (`oof_predict_proba(..., sample_weight=...)`) moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall at 25% from 0.3540 to 0.3536. Models stay unweighted; weights are used only for population figures.
 - The cell also writes `dataset/oof.parquet` (gitignored, household-level) so [Phase 9](phase9.md) can reuse the out-of-fold scores.
 

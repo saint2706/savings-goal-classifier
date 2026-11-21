@@ -15,9 +15,9 @@ This phase explains two models on the 8,299 held-out households (472 PSUs). The 
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Which features matter most globally? | In the headline model, income: mean \|SHAP\| 1.948 for `Log_Income`, 3.9 times the next column (`Household_Size`, 0.495). Summed by family, income is 58.0% of attribution, the household-size family 14.5%, social and geographic categoricals 10.9%, debt 8.7%, head age and education 8.0%. Permuting each family on the held-out set gives the same order, with income at 82% of the ROC-AUC loss (0.385 of 0.471). In the full model the share family is 19.1% of SHAP attribution and 16.0% of permutation importance; income is still first (51.8% and 73.8%). |
-| 2 | Are there notable interaction effects? | Yes. Over all 8,299 held-out households, interactions are 31.6% of total attribution in the headline model and 42.8% in the full model. Every top pair in the headline model involves income: size × income (0.242), education × income (0.125), debt × income (0.064). In the full model the top pair is food share × income (0.338). |
-| 3 | Can individual predictions be explained in plain business language? | Yes. SHAP values add up to the model's output (largest additivity error 6.5e-06 on the log-odds scale), so each household's explanation is a short list of signed pushes. The notebook prints three cases (most confident on track, most confident at risk, borderline) as contributions only, without any household's raw values. |
+| 1 | Which features matter most globally? | In the headline model, income: mean \|SHAP\| 1.962 for `Log_Income`, 4.0 times the next column (`Household_Size`, 0.486). Summed by family, income is 58.2% of attribution, the household-size family 14.2%, social and geographic categoricals 10.7%, debt 8.6%, head age and education 8.3%. Permuting each family on the held-out set gives the same order, with income at 81.5% of the ROC-AUC loss (0.386 of 0.473). In the full model the share family is 20.6% of SHAP attribution and 16.7% of permutation importance; income is still first (51.4% and 73.2%). |
+| 2 | Are there notable interaction effects? | Yes. Over all 8,299 held-out households, interactions are 32.1% of total attribution in the headline model and 45.7% in the full model. Every top pair in the headline model involves income: size × income (0.242), education × income (0.131), debt × income (0.060). In the full model the top pair is food share × income (0.308). |
+| 3 | Can individual predictions be explained in plain business language? | Yes. SHAP values add up to the model's output (largest additivity error 5.9e-06 on the log-odds scale), so each household's explanation is a short list of signed pushes. The notebook prints three cases (most confident on track, most confident at risk, borderline) as contributions only, without any household's raw values. |
 
 A fourth result frames the rest: no coefficient on the expense shares can be read as an effect. With all 11 shares in a logistic regression, 3 of 10 share coefficients flip sign across five disjoint training subsamples. Dropping `Groceries_Share` as a reference part leaves 1 flip, but the median coefficient spread barely changes (ratio 0.97) and 6 of 10 shares get less stable.
 
@@ -32,7 +32,7 @@ The notebook loads the engineered features (`savings_goal.io.load_features`), re
 | Model | Feature set | Encoded columns | Tuned parameters | Held-out ROC-AUC |
 | --- | --- | --- | --- | --- |
 | Headline | deployable | 35 | depth 4, lr 0.08, 200 trees, subsample 0.7, min_child_weight 1 | 0.886 |
-| Diagnostic | full | 51 | depth 4, lr 0.15, 200 trees, subsample 0.9, min_child_weight 5 | 0.932 |
+| Diagnostic | full | 51 | depth 4, lr 0.08, 700 trees, subsample 0.7, min_child_weight 20 | 0.931 |
 
 Both held-out scores match Phase 4, which confirms the same models were rebuilt. The cell also transforms the held-out rows through the fitted preprocessing step and keeps the encoded column names, because SHAP attributes to the 35 or 51 encoded columns rather than to the raw features.
 
@@ -65,7 +65,7 @@ The phase therefore explains the tree model with SHAP, which needs no matrix inv
 
 ### Cell 5: global importance per column, per family, and by permutation
 
-For each model the cell calls `savings_goal.evaluation.explain.tree_shap`, which runs `shap.TreeExplainer` and checks additivity: SHAP values plus the base value reproduce the raw model margin to within 6.5e-06 (headline) and 8.7e-06 (full).
+For each model the cell calls `savings_goal.evaluation.explain.tree_shap`, which runs `shap.TreeExplainer` and checks additivity: SHAP values plus the base value reproduce the raw model margin to within 5.9e-06 (headline) and 1.8e-05 (full).
 
 > **In plain terms: the additivity check.** The base value is the model's starting point before any feature is considered. The margin is the model's output before it is converted to a probability. SHAP promises base value plus contributions equals margin for every household. The check adds them up and compares; a gap of a few millionths is rounding error.
 
@@ -73,13 +73,13 @@ Top columns in the headline model by mean |SHAP|:
 
 | Column | Mean \|SHAP\| |
 | --- | --- |
-| `Log_Income` | 1.948 |
-| `Household_Size` | 0.495 |
-| `Debt_To_Income` | 0.301 |
-| `Max_Adult_Education` | 0.260 |
-| `Occupation_Non_Ag_Labour` | 0.158 |
-| `Dependency_Ratio` | 0.125 |
-| `Area_Type_Less_Developed_Village` | 0.109 |
+| `Log_Income` | 1.962 |
+| `Household_Size` | 0.486 |
+| `Debt_To_Income` | 0.288 |
+| `Max_Adult_Education` | 0.270 |
+| `Occupation_Non_Ag_Labour` | 0.152 |
+| `Dependency_Ratio` | 0.121 |
+| `Area_Type_Less_Developed_Village` | 0.121 |
 
 > **In plain terms: mean |SHAP|.** Each household gets one SHAP value per feature, positive or negative. Dropping the signs and averaging over households measures how far a feature moves predictions, regardless of direction.
 
@@ -89,27 +89,27 @@ Headline model:
 
 | Family | Columns | Grouped mean \|SHAP\| | Share of SHAP | ROC-AUC drop when permuted | Share of permutation |
 | --- | --- | --- | --- | --- | --- |
-| Income | 1 | 1.948 | 58.0% | 0.385 | 81.7% |
-| Household size family | 3 | 0.487 | 14.5% | 0.039 | 8.3% |
-| Social/geo (categoricals) | 26 | 0.364 | 10.9% | 0.022 | 4.6% |
-| Debt | 3 | 0.291 | 8.7% | 0.014 | 3.0% |
-| Head age & education | 2 | 0.268 | 8.0% | 0.011 | 2.4% |
+| Income | 1 | 1.962 | 58.2% | 0.386 | 81.5% |
+| Household size family | 3 | 0.478 | 14.2% | 0.040 | 8.4% |
+| Social/geo (categoricals) | 26 | 0.361 | 10.7% | 0.022 | 4.7% |
+| Debt | 3 | 0.289 | 8.6% | 0.014 | 2.9% |
+| Head age & education | 2 | 0.279 | 8.3% | 0.012 | 2.5% |
 
 Full model:
 
 | Family | Columns | Share of SHAP | ROC-AUC drop when permuted | Share of permutation |
 | --- | --- | --- | --- | --- |
-| Income | 1 | 51.8% | 0.414 | 73.8% |
-| Spending mix (shares) | 11 | 19.1% | 0.090 | 16.0% |
-| Household size family | 3 | 10.9% | 0.033 | 5.9% |
-| Social/geo (categoricals) | 26 | 7.1% | 0.014 | 2.4% |
-| Head age & education | 2 | 4.4% | 0.004 | 0.7% |
-| Debt | 3 | 3.5% | 0.004 | 0.7% |
-| Participation indicators | 5 | 3.3% | 0.003 | 0.5% |
+| Income | 1 | 51.4% | 0.413 | 73.2% |
+| Spending mix (shares) | 11 | 20.6% | 0.094 | 16.7% |
+| Household size family | 3 | 11.0% | 0.034 | 6.0% |
+| Social/geo (categoricals) | 26 | 7.7% | 0.014 | 2.5% |
+| Head age & education | 2 | 4.2% | 0.004 | 0.7% |
+| Debt | 3 | 3.7% | 0.004 | 0.8% |
+| Participation indicators | 5 | 1.5% | 0.001 | 0.2% |
 
 The two methods agree on the order in both models. Permutation gives income a larger share because it measures lost ranking ability: without income, the headline model's held-out ROC-AUC falls from 0.886 to about 0.50, while the other families each cost 0.04 or less.
 
-For the shares, the grouped value (0.973) is about half the sum of the 11 per-column values (1.815). The share columns push in opposite directions for the same household, because a larger food share forces the others down, so their contributions partly cancel. Adding per-column scores would overstate the family by almost a factor of two.
+For the shares, the grouped value (1.113) is about half the sum of the 11 per-column values (2.190). The share columns push in opposite directions for the same household, because a larger food share forces the others down, so their contributions partly cancel. Adding per-column scores would overstate the family by almost a factor of two.
 
 > **In plain terms: permutation importance.** Shuffle one family's values across households, so each household gets someone else's income (say), and see how much worse the model ranks households. A big drop means the model relied on that information. It measures the same thing as SHAP from a different direction, which is why agreement between the two is reassuring.
 
@@ -123,8 +123,8 @@ One beeswarm plot per model (`shap_summary.png` for the headline model, `shap_su
 
 | Model | Main effects | Interactions | Interaction share | Top pairs (mean \|interaction SHAP\|) |
 | --- | --- | --- | --- | --- |
-| Headline | 3.870 | 1.790 | 31.6% | size × income 0.242; education × income 0.125; debt-to-income × income 0.064; less-developed village × income 0.046 |
-| Full | 6.444 | 4.827 | 42.8% | food share × income 0.338; size × income 0.188; utilities share × income 0.172; education × income 0.089 |
+| Headline | 3.849 | 1.816 | 32.1% | size × income 0.242; education × income 0.131; debt-to-income × income 0.060; less-developed village × income 0.047 |
+| Full | 6.975 | 5.877 | 45.7% | food share × income 0.308; size × income 0.177; utilities share × income 0.162; food share × utilities share 0.087 |
 
 In the headline model all of the top six pairs involve `Log_Income`, so income changes how much household size, education and debt matter. The size × income pair fits the arithmetic of the target: a savings rate is one minus spending over income, and spending grows with household size, so an extra member costs a low-income household a larger fraction of its income.
 
@@ -140,7 +140,7 @@ The left panel plots each held-out household's SHAP value for `Log_Income` in th
 
 > **In plain terms: a dependence plot, and the log scale.** One dot per household: its value for a feature along the bottom, that feature's SHAP contribution up the side. It shows which way and how hard the model pushes as the feature rises. The axis is in natural-log rupees: each step of 1 multiplies income by about 2.7, so 9 is about Rs 8,100, 11.5 about Rs 99,000, and 14 about Rs 1.2 million.
 
-The right panel plots the full model's SHAP value for `Groceries_Share` against the share itself, coloured by log(household size / food share / income). SHAP rises from about −3 at a 10% food share to about +1 above 60%, crossing zero near 45%. A naive reading would be that, at a given income, food-heavy budgets are prudent budgets. The data supports a mechanical reading instead. Food spending tracks household size (Phase 1: elasticity 0.63, R² 0.29), so at a given size, total spending is roughly food spending divided by the food share. A higher food share therefore implies a smaller total budget, and with income known, a smaller budget relative to income means a higher savings rate. The colour in the panel is that implied budget relative to income. The food-share SHAP value rises as it falls, with a Spearman correlation of 0.27 between the SHAP value and the negative of the implied ratio. The size × food-share oracle from Phase 1 uses the same route and reaches ROC-AUC 0.895 with no model at all.
+The right panel plots the full model's SHAP value for `Groceries_Share` against the share itself, coloured by log(household size / food share / income). SHAP rises from about −3 at a 10% food share to about +1 above 60%, crossing zero near 45%. A naive reading would be that, at a given income, food-heavy budgets are prudent budgets. The data supports a mechanical reading instead. Food spending tracks household size (Phase 1: elasticity 0.63, R² 0.29), so at a given size, total spending is roughly food spending divided by the food share. A higher food share therefore implies a smaller total budget, and with income known, a smaller budget relative to income means a higher savings rate. The colour in the panel is that implied budget relative to income. The food-share SHAP value rises as it falls, with a Spearman correlation of 0.22 between the SHAP value and the negative of the implied ratio. The size × food-share oracle from Phase 1 uses the same route and reaches ROC-AUC 0.895 with no model at all.
 
 > **In plain terms: conditional and unconditional.** Across all households, high food shares go with low income (poorer households spend proportionally more on food). Inside a model that already knows income and household size, a high food share mostly tells the model that total spending is small. The same column answers two different questions depending on what else is held fixed. A recommendation such as "target households with high food shares" would need the second reading, and the second reading here is arithmetic about the label rather than behaviour.
 
@@ -150,17 +150,17 @@ The right panel plots the full model's SHAP value for `Groceries_Share` against 
 
 | Case | Predicted P(on track) | Actual | Largest contributions |
 | --- | --- | --- | --- |
-| Most confident on track | 98.9% | on track | income +4.48; adult education +0.41; dependency ratio +0.28; business occupation −0.17; debt-to-income +0.16 |
-| Most confident at risk | 0.0% | at risk | income −5.29; debt-to-income −1.09; household size −0.78; adult education +0.20; head age −0.17 |
-| Borderline | 50.0% | at risk | income +2.15; Sikh religion −0.66; household size −0.54; adult education −0.31; debt-to-income +0.20 |
+| Most confident on track | 99.3% | on track | income +4.55; adult education +0.50; dependency ratio +0.27; less-developed village +0.20; debt-to-income +0.18 |
+| Most confident at risk | 0.0% | at risk | income −5.41; debt-to-income −0.91; household size −0.84; adult education −0.26; head age −0.16 |
+| Borderline | 50.0% | on track | household size +1.23; adult education −0.46; no regular worker −0.31; less-developed village +0.27; dependency ratio −0.16 |
 
-The confident cases read as one sentence each: "very high income, with smaller pushes from adult education and the dependency ratio" or "very low income, heavy debt relative to income, and a large household". The borderline case shows the limits: a moderately positive income push is cancelled by several smaller negatives, and one of the larger ones is a religion indicator, which describes the household's group rather than anything it could change. An explanation can be legible and still give the household nothing to act on.
+The confident cases read as one sentence each: "very high income, with smaller pushes from adult education and the dependency ratio" or "very low income, heavy debt relative to income, and a large household". The borderline case shows the limits: a positive household-size push is cancelled by several smaller negatives, including occupation and dependency indicators that describe the household's structure rather than anything it could easily change. An explanation can be legible and still give the household nothing to act on.
 
-> **In plain terms: reading an individual explanation.** Start from the average household's score, then add each listed push. Income +4.48 means income alone moved this household a long way toward on track. The final probability is what the summed score becomes after conversion to the 0 to 1 scale. Only the five largest pushes are shown, so the listed numbers do not add up to the full score.
+> **In plain terms: reading an individual explanation.** Start from the average household's score, then add each listed push. Income +4.55 means income alone moved this household a long way toward on track. The final probability is what the summed score becomes after conversion to the 0 to 1 scale. Only the five largest pushes are shown, so the listed numbers do not add up to the full score.
 
 ### Cell 13: write results
 
-Writes the top 20 columns per model by mean |SHAP| to `results/shap_importance.csv`, and to `results/explain.json` (via `savings_goal.io.write_result`): the family tables, permutation tables, interaction totals and top 10 pairs, top 15 columns per model, the coefficient-stability table, and the food-share SHAP correlation (0.27).
+Writes the top 20 columns per model by mean |SHAP| to `results/shap_importance.csv`, and to `results/explain.json` (via `savings_goal.io.write_result`): the family tables, permutation tables, interaction totals and top 10 pairs, top 15 columns per model, the coefficient-stability table, and the food-share SHAP correlation (0.22).
 
 ---
 
@@ -170,4 +170,4 @@ Writes the top 20 columns per model by mean |SHAP| to `results/shap_importance.c
 | --- | --- |
 | 6: Spending clusters | Spending mix carries about a fifth of the full model's attribution, and part of that is the size × food-share route to the label. Clusters built on spending shares should be checked against income before being read as behaviour, and any link they show with `Goal_Met` may run through the same budget-size arithmetic. |
 | 7: Business translation | Lead with income, which is 58% of the headline model's SHAP attribution and 82% of its permutation importance. Area-type effects are small once income is known and income's effect does not vary by area. A high food share is not a behavioural signal to target. Any statement about a share has to be relative ("food taking a larger part of the budget, and everything else less"). |
-| 8: Reporting | `shap_summary.png` and `shap_dependence.png` are the explainability figures. The interaction share (31.6% headline) shows the model is not additive, mostly through income. |
+| 8: Reporting | `shap_summary.png` and `shap_dependence.png` are the explainability figures. The interaction share (32.1% headline) shows the model is not additive, mostly through income. |

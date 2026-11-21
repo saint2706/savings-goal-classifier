@@ -56,13 +56,25 @@ def constrained_poor(lo: float = 0.05, hi: float = 0.35) -> Scenario:
     return Scenario(f"income-gradient {lo:.2f}-{hi:.2f}", f)
 
 
-def debt_burdened(no_debt: float = 0.30, debt: float = 0.10) -> Scenario:
-    """Indebted households divert extra income to repayment, so respond less."""
+def debt_burdened(
+    no_debt: float = 0.30, debt: float = 0.10, missing: float | None = None
+) -> Scenario:
+    """Indebted households divert extra income to repayment, so respond less.
+
+    When ``missing`` is given and ``Debt_Missing`` is present, unknown-debt households
+    receive ``missing`` instead of being grouped with ``Has_Debt == 0``.
+    """
 
     def f(df: pd.DataFrame) -> Array:
-        return np.where(df["Has_Debt"].to_numpy() == 1, debt, no_debt)
+        r = np.where(df["Has_Debt"].to_numpy() == 1, debt, no_debt)
+        if missing is not None and "Debt_Missing" in df.columns:
+            r = np.where(df["Debt_Missing"].to_numpy() == 1, missing, r)
+        return r
 
-    return Scenario(f"debt-burdened {no_debt:.2f}/{debt:.2f}", f)
+    name = f"debt-burdened {no_debt:.2f}/{debt:.2f}"
+    if missing is not None:
+        name += f" (missing={missing:.2f})"
+    return Scenario(name, f)
 
 
 SCENARIOS: tuple[Scenario, ...] = (uniform(), constrained_poor(), debt_burdened())

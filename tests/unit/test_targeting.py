@@ -167,3 +167,81 @@ def test_flips_per_1000_agrees_with_simulate_and_supports_bootstrap_rows() -> No
     assert outreach.flips_per_1000(df, score, scen, 0.25, 0.05) == pytest.approx(sim)
     idx = np.arange(len(df))[::-1]  # a resample is just a row selection
     assert outreach.flips_per_1000(df, score, scen, 0.25, 0.05, idx) == pytest.approx(sim)
+
+
+def test_debt_burdened_handles_missing_debt_optionally() -> None:
+    df = pd.DataFrame({"Has_Debt": [0, 1, 0], "Debt_Missing": [0, 0, 1]})
+    base = outreach.debt_burdened()
+    assert base.name == "debt-burdened 0.30/0.10"
+    np.testing.assert_allclose(base.response(df), [0.30, 0.10, 0.30])
+
+    mid = outreach.debt_burdened(0.30, 0.10, missing=0.20)
+    assert mid.name == "debt-burdened 0.30/0.10 (missing=0.20)"
+    np.testing.assert_allclose(mid.response(df), [0.30, 0.10, 0.20])
+
+    low = outreach.debt_burdened(0.30, 0.10, missing=0.10)
+    np.testing.assert_allclose(low.response(df), [0.30, 0.10, 0.10])
+
+
+def test_recalibrate_intercept_matches_mean_and_preserves_order() -> None:
+    from sklearn.metrics import roc_auc_score
+
+    rng = np.random.default_rng(7)
+    p_cal = rng.uniform(0.05, 0.95, 400)
+    y_cal = (rng.random(400) < 0.2).astype(float)
+    p_eval = np.array([0.0, 0.1, 0.5, 0.9, 1.0])
+    p_recal, alpha = transport.recalibrate_intercept(p_cal, y_cal, p_eval)
+
+    p_cal_recal, _ = transport.recalibrate_intercept(p_cal, y_cal, p_cal)
+    assert p_cal_recal.mean() == pytest.approx(y_cal.mean(), abs=1e-6)
+    assert alpha < 0  # shifted down toward 0.2 from ~0.5
+    assert (np.diff(p_recal) > 0).all()
+    assert roc_auc_score(y_cal, p_cal_recal) == pytest.approx(roc_auc_score(y_cal, p_cal))
+
+    # Degenerate all-zero / all-one edge cases clip cleanly without failing
+    extreme, _ = transport.recalibrate_intercept(
+        np.array([0.0, 0.0]), np.array([1.0, 1.0]), np.array([0.0, 1.0])
+    )
+    assert np.all(np.isfinite(extreme) & (extreme >= 0.0) & (extreme <= 1.0))
+    assert extreme[0] == pytest.approx(1.0 - 1e-6, abs=1e-9)
+    assert extreme[1] == pytest.approx(1.0, abs=1e-9)
+
+
+def test_recalibration_shift_test_reduces_drift_and_partitions_psus(features: pd.DataFrame) -> None:
+    df = features.dropna(subset=["Log_Income", "Household_Size"]).copy()
+    df["STATEID"] = df["IDPSU"] % 4
+    cols = ["Log_Income", "Household_Size"]
+    train = (df["STATEID"] < 2).to_numpy()
+    test = ~train
+    # Induce a large prevalence shift on the target slice so calibration drifts before fixing
+    rng = np.random.default_rng(11)
+    df_shifted = df.copy()
+    mask_flip = test & (df_shifted["Goal_Met"] == 1) & (rng.random(len(df_shifted)) < 0.7)
+    df_shifted.loc[mask_flip, "Goal_Met"] = 0
+
+    res = transport.recalibration_shift_test(
+        df_shifted, train, test, LogisticRegression(), cols, cal_frac=0.20, seed=42
+    )
+    n_test_psus = df_shifted.loc[test, "IDPSU"].nunique()
+    assert res["n_cal_groups"] + res["n_eval_groups"] == n_test_psus
+    assert res["n_cal"] + res["n_eval"] == test.sum()
+    assert abs(res["citl_after"]) < abs(res["citl_before"])
+    assert res["ece_after"] < res["ece_before"]
+
+    folds = transport.leave_group_recalibration(
+        df_shifted, "STATEID", LogisticRegression(), cols, n_splits=3, cal_frac=0.20, seed=42
+    )
+    assert len(folds) == 3
+    assert {"fold", "groups_held_out", "intercept_shift", "ece_before", "ece_after"} <= set(
+        folds.columns
+    )
+
+
+def test_shift_test_respects_explicit_seed(features: pd.DataFrame) -> None:
+    df = features.dropna(subset=["Log_Income", "Household_Size"]).copy()
+    train = (df["IDPSU"] % 2 == 0).to_numpy()
+    test = ~train
+    cols = ["Log_Income", "Household_Size"]
+    a = transport.shift_test(df, train, test, LogisticRegression(), cols, seed=42)
+    b = transport.shift_test(df, train, test, LogisticRegression(), cols, seed=42)
+    assert a == b

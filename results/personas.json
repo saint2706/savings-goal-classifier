@@ -6,49 +6,49 @@
       "silhouette": 0.3705035449251424,
       "davies_bouldin": 1.4099411075637847,
       "calinski_harabasz": 16154.242400978279,
-      "inertia": 149432.1530223363
+      "inertia": 149432.15302233648
     },
     {
       "k": 3,
       "silhouette": 0.41150363334026113,
       "davies_bouldin": 0.9757811764162759,
       "calinski_harabasz": 17243.82912114125,
-      "inertia": 113384.13119177322
+      "inertia": 113384.13119177321
     },
     {
       "k": 4,
       "silhouette": 0.28292391131880834,
       "davies_bouldin": 1.2224262215221395,
       "calinski_harabasz": 15377.07212957322,
-      "inertia": 98320.08015802498
+      "inertia": 98320.08015802497
     },
     {
       "k": 5,
       "silhouette": 0.2935616468990181,
       "davies_bouldin": 1.2856630750391067,
       "calinski_harabasz": 13604.315649475324,
-      "inertia": 89826.24285858592
+      "inertia": 89826.2428585861
     },
     {
       "k": 6,
       "silhouette": 0.2357633979475211,
       "davies_bouldin": 1.308231900472744,
       "calinski_harabasz": 12765.910544226252,
-      "inertia": 81799.07777239833
+      "inertia": 81799.07777239845
     },
     {
       "k": 7,
       "silhouette": 0.2513414987041063,
       "davies_bouldin": 1.216535382238573,
       "calinski_harabasz": 12415.752104205138,
-      "inertia": 74277.55442740623
+      "inertia": 74277.55442740618
     },
     {
       "k": 8,
       "silhouette": 0.23846666151387821,
       "davies_bouldin": 1.210677687828929,
       "calinski_harabasz": 11861.587475482289,
-      "inertia": 69185.13098859116
+      "inertia": 69185.1309885912
     }
   ],
   "k_by_index": {
@@ -136,17 +136,17 @@
     "epsilon squared": 0.03346750410661785
   },
   "interaction": {
-    "LR persona | decile": 774.0764956432613,
+    "LR persona | decile": 774.0764956432686,
     "df persona": 2,
-    "p persona | decile": 8.155013523367114e-169,
+    "p persona | decile": 8.15501352333737e-169,
     "LR interaction": 133.5110103933548,
     "df interaction": 18,
     "p interaction": 1.1305726930621692e-19,
     "persona odds ratios (vs persona 0), income-adjusted": {
-      "C(Persona)[T.1]": 0.33564587119535744,
-      "C(Persona)[T.2]": 0.5396733445370944
+      "C(Persona)[T.1]": 0.33564587119535766,
+      "C(Persona)[T.2]": 0.5396733445370947
     },
-    "pseudo R2 decile only": 0.2653553542828012,
+    "pseudo R2 decile only": 0.265355354282801,
     "pseudo R2 + persona": 0.28024009048391363
   },
   "within_decile": [
