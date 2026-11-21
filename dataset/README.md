@@ -59,7 +59,7 @@ COTOTAL vs 11-category sum: within 1% for 97.72%; label agreement 0.9975
 | `10_external_validity.ipynb` | `results/external_validity.json`, `leakage_curve.png` |
 
 ```bash
-for nb in notebooks/0*.ipynb; do
+for nb in notebooks/[0-9][0-9]_*.ipynb; do
     uv run jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=6000 "$nb"
 done
 uv run python project/figures/make_figures.py

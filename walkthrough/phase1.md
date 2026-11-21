@@ -19,7 +19,7 @@ Six questions answered on 41,518 IHDS-II households (42,152 raw, 634 dropped ups
 | 2 | Distribution of income, expenses and savings: skew, outliers, implausible values? | Heavily skewed: `INCOME` skew 15.8, `Clothing_Footwear` 112.3, `Utilities` 48.0. 55.89% of households report consumption above income (57.69% survey-weighted) and 22.01% spend more than twice their income. Median savings rate is −10.8%. 90.45% record no rent. |
 | 3 | Missing values or duplicate rows? | `Debt_To_Income` is missing for 3,150 households (7.59%), flagged by `Debt_Missing`. Everything else is under 0.5% (`Has_*` 0.32–0.42%, `Caste_Group` 0.21%, `Max_Adult_Education` 6 rows). Zero duplicate household identifiers. |
 | 4 | How correlated are expense categories with income and with each other? | Spearman correlation of raw rupee categories with income runs from 0.09 (healthcare) to 0.58 (groceries). Among the shares, `Groceries_Share` falls with income (−0.280) and `Insurance_Share` (+0.332) and `Transport_Share` (+0.328) rise. 56% of share pairs correlate negatively because the shares sum to one. |
-| 5 | Is the target derivable from any candidate feature, singly or jointly? | Raw rupee categories and expense/income ratios reconstruct `Goal_Met` for 99.75% of households and are excluded. No single share carries the label (largest \|marginal AUC − 0.5\| = 0.10, healthcare). Jointly, the shares do: log food spend on log household size gives R² 0.29 (elasticity 0.63), and the size × food-share oracle reaches ROC-AUC 0.895 with no model. In the ablation, removing all shares and participation indicators keeps 94.3% of the full model's ROC-AUC (0.878 vs 0.931). The headline model therefore uses income, demographics and debt only (13 features); the 29-feature set with spending shares is diagnostic. |
+| 5 | Is the target derivable from any candidate feature, singly or jointly? | Raw rupee categories and expense/income ratios reconstruct `Goal_Met` for 99.75% of households and are excluded. No single share carries the label (largest \|marginal AUC − 0.5\| = 0.10, healthcare). Jointly, the shares do: log food spend on log household size gives R² 0.29 (elasticity 0.63), and the size × food-share oracle reaches ROC-AUC 0.895 with no model. In the ablation, removing all shares and participation indicators keeps 94.4% of the full model's ROC-AUC (0.879 vs 0.931). The headline model therefore uses income, demographics and debt only (13 features); the 29-feature set with spending shares is diagnostic. |
 | 6 | Class balance of `Goal_Met`? | 13,256 met vs 28,262 not met: 31.93% positive, 2.13 : 1. Survey-weighted 30.47%. The positive rate moves from 44.1% at a 0% threshold to 18.8% at 40%. Attainment rises from less-developed villages (26.7%) to metro areas (42.1%), and the gradient holds weighted. |
 
 ---
@@ -173,7 +173,7 @@ with `k` = median food spend per person = Rs 8,848 per year. The 24 households w
 | All features | 29 | 0.931 (0.003) | 0.837 | 0.966 | 100% |
 | No `Groceries_Share` | 28 | 0.929 (0.003) | 0.835 | 0.965 | 99.8% |
 | No size family (`Household_Size`, `Age_Dependents`, `Dependency_Ratio`) | 26 | 0.921 (0.003) | 0.824 | 0.961 | 98.9% |
-| No shares or indicators | 13 | 0.878 (0.007) | 0.775 | 0.940 | 94.3% |
+| No shares or indicators | 13 | 0.879 (0.006) | 0.775 | 0.940 | 94.4% |
 
 Removing the food share alone costs almost nothing because the other shares and size columns carry the same route. Removing the size family costs 0.010. Removing every share and participation indicator costs 0.053 ROC-AUC and leaves a model built only from income, demographics, debt and the four categoricals.
 
@@ -183,9 +183,9 @@ Removing the food share alone costs almost nothing because the other shares and 
 
 ### Cell 14: the decision and `results/leakage.json`
 
-The notebook applies a fixed rule: reframe the project if the oracle reaches ROC-AUC 0.85 or the share-free model keeps at least 90% of the full model's ROC-AUC. Both hold (0.895 and 94.3%).
+The notebook applies a fixed rule: reframe the project if the oracle reaches ROC-AUC 0.85 or the share-free model keeps at least 90% of the full model's ROC-AUC. Both hold (0.895 and 94.4%).
 
-The headline model is therefore the 13-feature "deployable" set: `Log_Income`, `Household_Size`, `Age_Dependents`, `Dependency_Ratio`, `Head_Age`, `Max_Adult_Education`, `Debt_To_Income`, `Has_Debt`, `Debt_Missing`, and the four categoricals. These are all known when a household is first onboarded. The 29-feature "full" set with spending shares stays in the project as a diagnostic: with size and income the shares approximately rebuild total spend, so their extra 0.053 ROC-AUC is largely the label restated. All test results, the reconciliation, the food–size fit, the oracle, the ablation table and the decision are written to `results/leakage.json` with `savings_goal.io.write_result`.
+The headline model is therefore the 13-feature "deployable" set: `Log_Income`, `Household_Size`, `Age_Dependents`, `Dependency_Ratio`, `Head_Age`, `Max_Adult_Education`, `Debt_To_Income`, `Has_Debt`, `Debt_Missing`, and the four categoricals. These are all known when a household is first onboarded. The 29-feature "full" set with spending shares stays in the project as a diagnostic: with size and income the shares approximately rebuild total spend, so their extra 0.052 ROC-AUC is largely the label restated. All test results, the reconciliation, the food–size fit, the oracle, the ablation table and the decision are written to `results/leakage.json` with `savings_goal.io.write_result`.
 
 ### Cell 16: class balance and threshold sensitivity (Q6)
 
@@ -252,4 +252,4 @@ Writes `results/phase1_eda.png`, four panels:
 
 ## How far the leakage finding travels
 
-[Phase 10](phase10.md) generalises the leakage finding. A simulation (`savings_goal.evaluation.leakage_sim`) puts the oracle's ROC-AUC on one curve against the residual spread of food spend given household size, and HCES 2022-23 shows the same mechanism (food-on-size elasticity 0.57 against 0.63 here), so the warning is about how tightly food tracks size, not about this file.
+[Phase 10](phase10.md) generalises the leakage finding. A simulation (`savings_goal.evaluation.leakage_sim`) puts the oracle's ROC-AUC on one curve against the residual spread of food spend given household size, and HCES 2022-23 shows the same mechanism (food-on-size elasticity 0.565 against 0.630 here), so the warning is about how tightly food tracks size, not about this file.

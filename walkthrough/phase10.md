@@ -15,7 +15,7 @@ IHDS-II is from 2011-12, so the open question is how far the result survives to 
 | --- | --- | --- |
 | 1 | Does the leakage mechanism still hold in a newer survey? | Yes. In HCES 2022-23 (261,746 households), the elasticity of food spend on household size is 0.565 against 0.630 in IHDS-II, the residual sd is 0.472 against 0.485, the mean household food share is 0.465 against 0.466, and the simulated oracle ROC-AUC is 0.868 in both. The rank correlation between the implied and actual budget is lower (0.556 against 0.670). |
 | 2 | When does a spending-share representation leak at all? | When food spend is tightly tied to household size. The simulation puts any survey on one curve: oracle AUC falls from 1.00 (food exactly proportional to size) to 0.89 at residual sd 0.4, 0.83 at 0.6 and 0.74 at 1.0, for elasticity 0.63. IHDS-II (0.485) and HCES (0.472) sit near 0.87 (the empirical IHDS-II oracle is 0.895, higher because real food spend also moves with the budget). |
-| 3 | Does the model transport across states and sectors? | Discrimination yes, calibration no. Leaving whole states out (5 folds), ROC-AUC is 0.871 to 0.890 (grouped CV 0.882) and the model beats a poorest-first rule at a 25% budget in every fold (+0.7 to +1.6 pp recall). Mean predicted minus observed on-track rate ranges from -7.1 to +3.9 pp across folds; rural-to-urban is 0.866 with +9.1 pp, urban-to-rural 0.882 with -4.8 pp. |
+| 3 | Does the model transport across states and sectors? | Discrimination yes, calibration before recalibration no. Leaving whole states out (5 folds), ROC-AUC is 0.871 to 0.890 (grouped CV 0.882) and the model beats a poorest-first rule at a 25% budget in every fold (+0.7 to +1.6 pp recall). Mean predicted minus observed on-track rate ranges from -7.1 to +3.9 pp across folds; rural-to-urban is 0.866 with +9.1 pp, urban-to-rural 0.882 with -4.8 pp. Fitting a 1-parameter logit intercept shift on 10% of target PSUs (zero PSU overlap with evaluation) narrows state-fold calibration-in-the-large to -0.8 to +1.4 pp (worst-fold ECE 0.069 → 0.022), rural-to-urban drift to -0.4 pp (ECE 0.091 → 0.018), and urban-to-rural drift to -2.3 pp (ECE 0.051 → 0.030) while preserving ROC-AUC. |
 
 ---
 
@@ -28,6 +28,10 @@ Definitions differ between the surveys (IHDS "Groceries" against the HCES food b
 ## What nominal growth implies
 
 Weighted MPCE rose from Rs 1,600 (rural) and Rs 2,572 (urban) in IHDS-II to Rs 3,773 and Rs 6,459, factors of 2.36 and 2.51, before any price deflator (neither file carries a CPI). The Rs 122,249 income threshold that Phase 3 learns is a 2011-12 rupee figure; a deployment today must re-base it.
+
+## Target recalibration (10% of target PSUs)
+
+`savings_goal.evaluation.transport.recalibration_shift_test` and `leave_group_recalibration` split each held-out target slice by PSU (`IDPSU`), reserve 10% of target PSUs to solve for a single additive log-odds offset α matching the calibration mean (`recalibrate_intercept`), and evaluate on the remaining 90% of target PSUs. Because shifting log-odds by a constant is strictly monotone, ROC-AUC and targeting rankings are unchanged while calibration-in-the-large and ECE drop sharply across every state fold and sector shift (`results/external_validity.json` under `recalibration_states` and `recalibration_sector`).
 
 ## Reading the result correctly
 

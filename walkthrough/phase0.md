@@ -17,7 +17,7 @@ Phase 0 fixes what is predicted and why, before any modelling. One constraint sh
 | --- | --- | --- |
 | 1 | What business decision does this project inform? | Whether a savings-product or financial-inclusion team should treat a household as on track or at risk against a normative 20% savings benchmark, and so which households to contact first. It is a triage decision, not a savings forecast. At a 25% contact budget the headline model reaches 98.5% of the best possible at-risk capture, against 95.4% for a poorest-first income rule. |
 | 2 | What is the precise definition of the target? | `Goal_Met = 1` if `(INCOME − COTOTAL) / INCOME >= 0.20`, else 0, both in annual rupees from IHDS-II. 31.93% of 41,518 households meet it (30.47% survey-weighted). |
-| 3 | Classification or regression? | Binary classification is the primary framing, because the decision is binary and the continuous savings rate has an extreme left tail (minimum −1,647, standard deviation 13.08). Notebook 08 adds a median (quantile) regression on the savings rate: ranked by predicted rupee shortfall, it reaches 45.5% of the total rupee gap at a 25% budget, against 37.0% for the classifier and 28.7% for the income rule. |
+| 3 | Classification or regression? | Binary classification is the primary framing, because the decision is binary and the continuous savings rate has an extreme left tail (minimum −1,647, standard deviation 13.08). Notebook 08 adds a median (quantile) regression on the savings rate: ranked by predicted rupee shortfall, it reaches 45.5% of the total rupee gap at a 25% budget, against 37.2% for the classifier and 28.7% for the income rule. |
 
 ---
 
@@ -28,8 +28,8 @@ The decision is whether a savings-product team, financial-inclusion programme or
 The benchmark is normative, and that changes who gets flagged. Under a customer-relative rule, a household that wanted to save 5% and did would be on track. Under this one, the same household is at risk. The model therefore measures something closer to savings capacity than goal alignment, and later phases show it:
 
 - A single income threshold, re-learned in each fold (mean Rs 122,249), reaches macro-F1 0.742 ([Phase 3](phase3.md)).
-- The headline model reaches CV macro-F1 0.782 and held-out macro-F1 0.781 ([Phase 4](phase4.md)), a gain of about 0.04 over the income rule.
-- Income accounts for 58.0% of the headline model's grouped SHAP attribution and 82% of its permutation importance ([Phase 5](phase5.md)).
+- The headline model reaches CV macro-F1 0.780 and held-out macro-F1 0.781 ([Phase 4](phase4.md)), a gain of about 0.04 over the income rule.
+- Income accounts for 58.2% of the headline model's grouped SHAP attribution and 82% of its permutation importance ([Phase 5](phase5.md)).
 
 Most of what the classifier does is separate households that are not poor from households that are.
 
@@ -46,7 +46,7 @@ Most of what the classifier does is separate households that are not poor from h
 ### Why the decision is still worth supporting
 
 1. Finding households with structurally inadequate savings is the question a financial-inclusion programme asks, even when income is most of the answer. The model adds to income: at a 25% contact budget it reaches 98.5% of the at-risk capture ceiling against 95.4% for the poorest-first rule, a gain of 1.1 percentage points (95% CI 1.0 to 1.3) ([Phase 7](phase7.md)). The gap is small because the income rule is already close to the ceiling.
-2. Household size, debt, education and location carry information beyond income. Interactions account for 31.6% of the headline model's SHAP attribution, the largest being income × household size ([Phase 5](phase5.md)): the same income means something different for a household of two and a household of eight.
+2. Household size, debt, education and location carry information beyond income. Interactions account for 32.1% of the headline model's SHAP attribution, the largest being income × household size ([Phase 5](phase5.md)): the same income means something different for a household of two and a household of eight.
 
 > **In plain terms: "beyond income".** A feature carries independent signal if it still helps once the model already knows income. The test is incremental: score a model on income alone, add the feature, and see whether the score moves. Many features look predictive on their own only because rich and poor households differ in them; those add nothing once income is in.
 
@@ -92,7 +92,7 @@ Two consequences of the definition:
 
 Never usable as features: the 11 raw rupee categories, `Category_Total`, `COTOTAL`, `Savings`, `Savings_Rate`. Raw categories with income, and expense-to-income ratios, each reproduce `Goal_Met` for 99.75% of households.
 
-The constraint reaches further than those columns. Spending shares (each category over total spending) pass every one-at-a-time test, but household size predicts food rupees well enough that size, food share and income together back out total spend. The size × food-share oracle, a formula with no model, ranks households with ROC-AUC 0.895 ([Phase 1](phase1.md)). The headline model therefore uses income, demographics and debt only (13 features, the deployable set). The 29-feature full set with spending shares reaches ROC-AUC 0.929 in CV and 0.932 held out, and is reported as a diagnostic, because part of its extra skill is a restatement of the label.
+The constraint reaches further than those columns. Spending shares (each category over total spending) pass every one-at-a-time test, but household size predicts food rupees well enough that size, food share and income together back out total spend. The size × food-share oracle, a formula with no model, ranks households with ROC-AUC 0.895 ([Phase 1](phase1.md)). The headline model therefore uses income, demographics and debt only (13 features, the deployable set). The 29-feature full set with spending shares reaches ROC-AUC 0.929 in CV and 0.931 held out, and is reported as a diagnostic, because part of its extra skill is a restatement of the label.
 
 The six `Has_*` columns (bank savings, fixed deposit, pension/LIC, securities, post office account, gold) record which savings instruments a household holds. They are outside the consumption arithmetic, so they are not leakage, and they are not features either: they are kept back to check the normative target against reported saving behaviour.
 
@@ -114,7 +114,7 @@ Binary classification is the primary framing. A median regression on the savings
 
 ### Why classification is still the primary framing
 
-1. The decision is binary. A team either includes a household in an outreach campaign or does not. A predicted savings rate would be thresholded anyway; doing it inside the model keeps the threshold explicit. [Phase 4](phase4.md) tunes the operating threshold on the at-risk score: at 0.425 the held-out at-risk recall is 0.913 with precision 0.826.
+1. The decision is binary. A team either includes a household in an outreach campaign or does not. A predicted savings rate would be thresholded anyway; doing it inside the model keeps the threshold explicit. [Phase 4](phase4.md) tunes the operating threshold on the at-risk score: at 0.437 the held-out at-risk recall is 0.912 with precision 0.832.
 2. The continuous target is badly behaved. `Savings_Rate` has a median of −0.108, a minimum of −1,647 and a standard deviation of 13.08. A least-squares regression would be pulled toward a long left tail of households with tiny reported incomes, the least reliable part of the data. The binary label treats a household at −150% and one at −15% the same way, as at risk, and does not ask the model to separate two numbers that are mostly measurement error.
 
    > **In plain terms: why −1,647 breaks an ordinary regression.** A savings rate of −1,647 means a household reported consuming 1,648 times its stated income, almost certainly because income was recorded far too low. Ordinary regression minimises squared error, so being wrong by 1,000 costs a million times more than being wrong by 1, and one absurd row can drag the fitted line toward itself. Classification sidesteps it: −1,647 and −0.15 are both "no".
@@ -140,7 +140,7 @@ Share of the total rupee gap below the 20% benchmark reached by each ranking:
 | Contact budget | Predicted rupee shortfall | Classifier at-risk score | Income rule (poorest first) |
 | --- | --- | --- | --- |
 | 10% | 23.7% | 17.0% | 12.4% |
-| 25% | 45.5% | 37.0% | 28.7% |
+| 25% | 45.5% | 37.2% | 28.7% |
 | 50% | 69.6% | 64.6% | 54.7% |
 
 The classifier still captures slightly more at-risk households by count (36.2% vs 35.0% of at-risk households at a 25% budget), so the two answer different questions. The classifier is the better tool for "who is at risk"; the shortfall ranking is the better tool for "where is the largest rupee gap". Classification stays primary because the decision is binary, and the regression is the companion view for sizing the gap.

@@ -13,7 +13,7 @@ Phase 8 has two parts. Part A is a short notebook that models how far each house
 
 | # | Question | Answer |
 | --- | --- | --- |
-| 1 | Does ranking by predicted rupee shortfall (quantile regression on `Savings_Rate`) reach more of the gap than a classifier? | Yes. At a 25% contact budget, ranking by the median model's predicted shortfall reaches 45.5% of the total rupee gap, against 37.0% for the classifier and 28.7% for the income rule. It reaches about as many at-risk households as the income rule (35.0%, vs 36.2% for the classifier). |
+| 1 | Does ranking by predicted rupee shortfall (quantile regression on `Savings_Rate`) reach more of the gap than a classifier? | Yes. At a 25% contact budget, ranking by the median model's predicted shortfall reaches 45.5% of the total rupee gap, against 37.2% for the classifier and 28.7% for the income rule. It reaches about as many at-risk households as the income rule (35.0%, vs 36.2% for the classifier). |
 | 2 | Does the write-up explain reasoning rather than just reporting numbers? | Yes: [Why each decision was made](#why-each-decision-was-made) maps each material decision to the phase that made it and the evidence behind it. |
 | 3 | Which 3–4 visualisations communicate the findings fastest to a non-technical reader? | The four report figures in `project/figures/`: the ROC-AUC ladder with the model-free oracle (fig 1), SHAP for the headline model (fig 2), the campaign view (fig 3) and cluster attainment within income deciles (fig 4). See the [visual appendix](#visual-appendix). |
 
@@ -48,12 +48,12 @@ The predicted rate becomes a rupee figure with `savings_goal.models.regression.r
 | Strategy | At-risk reached @10% | @25% | @50% | Rupee gap reached @10% | @25% | @50% |
 | --- | --- | --- | --- | --- | --- | --- |
 | Predicted rupee shortfall (median model) | 14.3% | 35.0% | 67.1% | 23.7% | 45.5% | 69.6% |
-| Classifier at-risk score | 14.7% | 36.2% | 68.7% | 17.0% | 37.0% | 64.6% |
+| Classifier at-risk score | 14.7% | 36.2% | 68.7% | 16.9% | 37.2% | 64.7% |
 | Income rule (poorest first) | 14.4% | 35.0% | 65.8% | 12.4% | 28.7% | 54.7% |
 
 Precision at 25% is 95.4% for the shortfall ranking, 98.5% for the classifier and 95.4% for the income rule.
 
-The two rankings answer different questions. The classifier is best at finding households below the line; the shortfall ranking gives up about a point of at-risk capture and puts households with the largest rupee gaps first. Its advantage over the classifier is 6.7 pp of the gap at 10%, 8.5 pp at 25% and 5.0 pp at 50%.
+The two rankings answer different questions. The classifier is best at finding households below the line; the shortfall ranking gives up about a point of at-risk capture and puts households with the largest rupee gaps first. Its advantage over the classifier is 6.8 pp of the gap at 10%, 8.3 pp at 25% and 4.9 pp at 50%.
 
 Among at-risk households only, the Spearman correlation between predicted and actual rupee shortfall is 0.31. The model orders the size of the gap far less well than it orders the savings rate across all households (0.78), so individual shortfall predictions are rough even when the ranking gains in aggregate.
 
@@ -75,20 +75,20 @@ Written for a savings-product or financial-inclusion team deciding which househo
 
 The survey covers 41,518 Indian households interviewed in 2011–12 (India Human Development Survey, round II). 68.1% of them (69.5% after survey weighting) keep less than 20% of their annual income after recorded consumption; we call these households at risk.
 
-A model that uses only what a team could ask at onboarding (income, household size and composition, age and education of the head and adults, debt, occupation, area, social group) ranks households well. Shown a random on-track household and a random at-risk household from villages it never saw, it scores the on-track one higher 88.6% of the time (ROC-AUC 0.886), and its probabilities match observed rates closely (calibration error 0.009).
+A model that uses only what a team could ask at onboarding (income, household size and composition, age and education of the head and adults, debt, occupation, area, social group) ranks households well. Shown a random on-track household and a random at-risk household from villages it never saw, it scores the on-track one higher 88.6% of the time (ROC-AUC 0.886), and its probabilities match observed rates closely (calibration error 0.008).
 
 Its value over a simple rule is modest. Contacting the poorest households first already reaches 95.4% of the at-risk households any 25% contact list could reach; the model reaches 98.5%, a gain of 1.1 percentage points of capture (95% interval 1.0 to 1.3). Income does most of the work.
 
 Spending patterns would appear to add a lot (ROC-AUC 0.93), but measured over the same year as the outcome they mostly restate it: with household size and income, food spending reconstructs the size of the household budget, and a formula with no model reaches 0.895 from those three facts alone.
 
-If the goal is rupees rather than headcount, ranking households by predicted rupee shortfall reaches 45.5% of the total gap with a 25% contact budget, against 37.0% for the risk score and 28.7% for poorest-first.
+If the goal is rupees rather than headcount, ranking households by predicted rupee shortfall reaches 45.5% of the total gap with a 25% contact budget, against 37.2% for the risk score and 28.7% for poorest-first.
 
 Recommended use: prioritise by income, let the onboarding model re-rank within income bands, report relative priority rather than prevalence, and do not size a budgeting product from these data.
 
 > **In plain terms: the measures used in this summary.**
 > - ROC-AUC: pick one household that is on track and one that is not; ROC-AUC is how often the model gives the first a higher score. A coin flip scores 0.50, a perfect ranking 1.00. It measures the order of the list, which is what a contact list needs.
 > - Macro-F1: how good the model's yes/no calls are, scoring "right about at-risk" and "right about on-track" equally. A model that calls everyone at risk is right 68% of the time and scores 0.405; the income rule scores 0.742 and the headline model 0.781.
-> - Calibration error (ECE): the average gap between the predicted and observed rate. At 0.009, a household scored at 70% belongs to a group where about 70% are on track.
+> - Calibration error (ECE): the average gap between the predicted and observed rate. At 0.008, a household scored at 70% belongs to a group where about 70% are on track.
 > - Percentage points (pp): the difference between two percentages. 98.5% vs 95.4% is a gap of 3.1 pp.
 
 ### The business question
@@ -99,19 +99,19 @@ The target is normative. No large household survey asks people for their own sav
 
 ### What we found
 
-1. Income dominates. Risk falls from 97.8% in the poorest tenth of households to 16.9% in the richest. In the headline model income accounts for 58.0% of the explanation (SHAP) and 82% of permutation importance (the drop in score when a feature group is shuffled). A single income cut-off, around Rs 122,249 a year, already reaches macro-F1 0.742.
+1. Income dominates. Risk falls from 97.8% in the poorest tenth of households to 16.9% in the richest. In the headline model income accounts for 58.2% of the explanation (SHAP) and 82% of permutation importance (the drop in score when a feature group is shuffled). A single income cut-off, around Rs 122,249 a year, already reaches macro-F1 0.742.
 2. The model refines an income ranking. Its edge over poorest-first is +0.3 pp of capture at a 10% budget, +1.1 at 25%, +2.8 at 50% and +2.7 at 65%, all with intervals above zero. Its precision edge at 25% is 3.1 pp (98.5% vs 95.4%). After survey weighting, its capture at 10% and 25% is level with the income rule (39.0% vs 39.1% at 25%); the precision edge remains.
-3. About a third of the model's behaviour comes from combinations of features (31.6% of attribution is interactions), led by income with household size. The same income means different things for a family of three and a family of eight.
-4. Spending shares cannot be used to score households in the same period as the outcome. Food spending relative to household size, divided by income, ranks households at ROC-AUC 0.895 with no model at all; the ablation shows the model loses only 0.002 without the food share but 0.053 without all shares and spending indicators. The spending model (0.929 in cross-validation, 0.932 on held-out villages) is a diagnostic, not a forecast.
+3. About a third of the model's behaviour comes from combinations of features (32.1% of attribution is interactions), led by income with household size. The same income means different things for a family of three and a family of eight.
+4. Spending shares cannot be used to score households in the same period as the outcome. Food spending relative to household size, divided by income, ranks households at ROC-AUC 0.895 with no model at all; the ablation shows the model loses only 0.002 without the food share but 0.052 without all shares and spending indicators. The spending model (0.929 in cross-validation, 0.931 on held-out villages) is a diagnostic, not a forecast.
 5. Peer comparisons cannot size a budgeting product. At the same income, at-risk households spend more rupees than on-track households in all 11 categories, because "at risk" means a larger budget. In budget shares they spend more on healthcare (+4.4 pp), education (+2.8), miscellaneous (+2.1) and transport (+1.8), and 9.0 pp less on food. Whether matching peers would close the gap depends on how "matching" is defined: 92.8% of at-risk households under a rupee benchmark, 22.3% under a share benchmark.
 6. The spending clusters are groups defined by which categories a household records as zero: 69.7% record spending in all core categories, 18.6% record no healthcare spending and 11.7% record no transport spending. They agree with the raw zero pattern at an adjusted Rand index of 0.858 and are nearly independent of income. They describe the data; they are not behavioural personas to target.
-7. Where the goal is rupees, a different ranking helps. Ranking by predicted rupee shortfall reaches 45.5% of the total gap at a 25% budget (risk score 37.0%, income rule 28.7%) while reaching 35.0% of at-risk households.
+7. Where the goal is rupees, a different ranking helps. Ranking by predicted rupee shortfall reaches 45.5% of the total gap at a 25% budget (risk score 37.2%, income rule 28.7%) while reaching 35.0% of at-risk households.
 
 | Recommendation | Evidence |
 | --- | --- |
 | Prioritise by income; use the onboarding model to re-rank within income bands | +1.1 pp capture over poorest-first at 25% (CI 1.0 to 1.3); +3.1 pp precision |
 | Judge any targeting result against the ceiling and the income rule, not random contact | With 68.1% at risk, a 25% list reaches at most 36.7% of them; random contact reaches 24.9% |
-| Rank by predicted rupee shortfall when the programme is sized in rupees | 45.5% of the gap at 25% vs 37.0% (risk score) and 28.7% (income rule) |
+| Rank by predicted rupee shortfall when the programme is sized in rupees | 45.5% of the gap at 25% vs 37.2% (risk score) and 28.7% (income rule) |
 | Do not size a budgeting product from peer benchmarks | 92.8% vs 22.3% "closable" depending on the benchmark |
 | Report relative priority only, never a prevalence figure | 32.3% of the at-risk group report spending over twice their income; at-risk share is 61.7% to 74.7% across 10%–30% thresholds |
 
@@ -143,17 +143,17 @@ Who to contact is a different question from who would respond. Answering it need
 | Normative 20% target, with the threshold configurable | Phase 0, Phase 1 | No survey records a self-set goal. Threshold sensitivity is published: at-risk share 61.7% at 10%, 74.7% at 30%, with 93.6% and 93.4% label agreement. |
 | Group all validation by survey PSU (`IDPSU`) | Dataset construction, Phase 1 | Households in a PSU share prices and local shocks. 2,461 PSUs; `PSUID` alone repeats across districts (39 distinct values). One grouped fold (8,299 households, 472 PSUs) is held out first. |
 | Exclude raw rupee categories and expense-to-income ratios | Phase 1 | Either one, with income, reconstructs the label for 99.75% of households. |
-| Headline model on the 13 deployable features; spending shares diagnostic only | Phase 1 (leakage check, ablation) | No single share carries the label (max marginal AUC distance from 0.5 is 0.10), but jointly with size and income they do: food spend scales with size at elasticity 0.63 (R² 0.29), and the size × food-share oracle reaches ROC-AUC 0.895. Dropping all shares and indicators keeps 94.3% of the full model's AUC (0.878 vs 0.931). |
+| Headline model on the 13 deployable features; spending shares diagnostic only | Phase 1 (leakage check, ablation) | No single share carries the label (max marginal AUC distance from 0.5 is 0.10), but jointly with size and income they do: food spend scales with size at elasticity 0.63 (R² 0.29), and the size × food-share oracle reaches ROC-AUC 0.895. Dropping all shares and indicators keeps 94.4% of the full model's AUC (0.879 vs 0.931). |
 | Keep missing debt as missing; winsorise debt at the 99th percentile inside each fold | Dataset construction, Phase 2 | 7.6% of households have no debt answer, and they meet the benchmark more often (0.367 vs 0.315). Fitting the cap inside each fold keeps held-out values from setting it. |
 | Raw shares over the CLR log-ratio transform | Phase 2 | Logistic regression ROC-AUC 0.920 on raw shares vs 0.911 with CLR. |
 | Macro-F1 as the selection metric, and a single income threshold as the reference | Phase 3 | The majority class scores 0.681 accuracy and 0.405 macro-F1 while never finding an on-track household. The income threshold (re-learned per fold, mean Rs 122,249) scores 0.742. |
-| Tuned XGBoost (depth 4, learning rate 0.08, 200 trees, subsample 0.7) | Phase 4 | Grouped-CV macro-F1 0.782 and ROC-AUC 0.882, the best of the candidate models; ECE 0.011 vs 0.103 for logistic regression. Held out: ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944, Brier 0.127, ECE 0.009. |
-| Explain with grouped SHAP and permutation importance, not coefficients | Phases 2, 5 | The 11 shares sum to one, so their coefficients are not identified (VIF about 10¹⁵). Income: 58.0% of grouped SHAP, 82% of permutation importance; interactions 31.6%. |
+| Tuned XGBoost (depth 4, learning rate 0.08, 200 trees, subsample 0.7) | Phase 4 | Grouped-CV macro-F1 0.780 and ROC-AUC 0.882, the best of the candidate models; ECE 0.011 vs 0.103 for logistic regression. Held out: ROC-AUC 0.886, macro-F1 0.781, at-risk PR-AUC 0.944, Brier 0.127, ECE 0.008. |
+| Explain with grouped SHAP and permutation importance, not coefficients | Phases 2, 5 | The 11 shares sum to one, so their coefficients are not identified (VIF about 10¹⁵). Income: 58.2% of grouped SHAP, 82% of permutation importance; interactions 32.1%. |
 | Describe the k = 3 clusters as zero-pattern groups, not personas | Phase 6 | ILR basis; all three selection indices pick k = 3. Adjusted Rand index 0.858 with the zero pattern; NMI 0.012 with income decile. |
 | Measure targeting against the ceiling and the income rule, with PSU-bootstrap intervals | Phase 7 | 98.5% vs 95.4% of ceiling at 25%; +1.1 pp (CI 1.0 to 1.3). Random contact is not a meaningful comparison when 68% are at risk. |
 | Judge spending levers by signed budget-share excess against mean peers | Phase 7 | Rupee excess is positive in all 11 categories by construction. Share excess: healthcare +4.4, education +2.8, miscellaneous +2.1, transport +1.8, food −9.0 pp. |
 | Do not split shortfall into structural and behavioural | Phase 7 | 92.8% closable under a rupee benchmark, 22.3% under a share benchmark: the answer belongs to the benchmark. |
-| Model the savings rate with median regression and rank by rupee shortfall | Phase 8 | Pinball loss 0.474 vs 0.739 for a constant; 45.5% of the rupee gap at 25% vs 37.0% for the classifier. |
+| Model the savings rate with median regression and rank by rupee shortfall | Phase 8 | Pinball loss 0.474 vs 0.739 for a constant; 45.5% of the rupee gap at 25% vs 37.2% for the classifier. |
 | Two-tier scoring service with a date check on spending data | Phase 8 | Same-period shares reconstruct the label (Phase 1), so the spending tier accepts only shares observed before the prediction window. |
 | State recall, precision and ceiling capture separately; fit unweighted and report weighted figures | Phase 7 (Cell 5) | Below the 68.1% at-risk prevalence ceiling capture equals precision, so one number was doing two jobs. At 25%: recall 0.362 (sample) and 0.354 (weighted). Refitting with survey weights moves out-of-fold ROC-AUC from 0.8829 to 0.8811 and weighted recall from 0.3540 to 0.3536. |
 | Treat outreach as an assumption-driven what-if, not an estimate of benefit | Phase 9 | IHDS records no outreach. Households moved to on-track per 1,000 contacts at 25% (5 pp nudge, uniform response 0.20): risk model 0.8, poorest first 2.2, random 6.2, reachability model 10.1, oracle 25.0; the reachability edge over the risk model is 9.3 (CI 8.4 to 10.1). The most at-risk are the deepest dissavers, out of reach of a small nudge. |
@@ -177,7 +177,7 @@ Four report figures, built by `project/figures/make_figures.py` from `results/*.
 | Figure | Question it answers | What it shows |
 | --- | --- | --- |
 | `project/figures/fig1_feature_ladder.png` | How much does each ingredient add? | ROC-AUC from grouped CV for a ladder of models: single income threshold 0.739, income-only logistic regression 0.835, income plus demographics 0.876, headline XGBoost 0.882, XGBoost with spending shares 0.929. A vertical line marks the model-free oracle at 0.895, above every model that does not see spending shares. |
-| `project/figures/fig2_shap.png` | What drives the score? | The ten largest mean absolute SHAP values for the headline model on held-out PSUs (income 1.95, household size 0.50, debt-to-income 0.30), and a bar splitting attribution by family: income 58.0%, household size 14.5%, social and geographic 10.9%, debt 8.7%, head age and education 8.0%. |
+| `project/figures/fig2_shap.png` | What drives the score? | The ten largest mean absolute SHAP values for the headline model on held-out PSUs (income 1.96, household size 0.49, debt-to-income 0.29), and a bar splitting attribution by family: income 58.2%, household size 14.2%, social and geographic 10.7%, debt 8.6%, head age and education 8.3%. |
 | `project/figures/fig3_business.png` | What is the model worth to a campaign? | (a) capture curves for the model, the income rule and random contact against the ceiling, annotated 98.5% vs 95.4% of ceiling at 25%; (b) accuracy by all ten income deciles with the overall 0.814 line and the decile 7 low of 0.665; (c) signed budget-share excess per category with 95% intervals. |
 | `project/figures/fig4_personas.png` | Do the clusters matter once income is known? | Share meeting the benchmark within each income decile for the three clusters, with the likelihood-ratio test for cluster given decile and the pseudo-R² gain from 0.265 to 0.280. |
 
@@ -218,7 +218,7 @@ Supporting figures from the notebooks, for a technical reviewer:
 
 | Next step | Needs |
 | --- | --- |
-| Deploy the onboarding tier | Fitted artifacts from `sgc train`; a decision on budget and operating threshold (held-out: threshold 0.425 gives 91.3% at-risk recall at 82.6% precision) |
+| Deploy the onboarding tier | Fitted artifacts from `sgc train`; a decision on budget and operating threshold (held-out: threshold 0.437 gives 91.2% at-risk recall at 83.2% precision) |
 | Use the spending tier | Spending recorded before the prediction window |
 | Rank by expected benefit instead of risk | A randomised or logged campaign, then `savings_goal.models.uplift` |
 | Current prevalence or market sizing | IHDS-3 or another recent survey, with weights applied |

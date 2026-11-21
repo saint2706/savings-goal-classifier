@@ -268,7 +268,7 @@ The ablation in [Phase 1](phase1.md) confirms it under PSU-grouped cross-validat
 | All features | 29 | 0.931 | 100% |
 | No `Groceries_Share` | 28 | 0.929 | 99.8% |
 | No size family (`Household_Size`, `Age_Dependents`, `Dependency_Ratio`) | 26 | 0.921 | 98.9% |
-| No shares or participation indicators (deployable) | 13 | 0.878 | 94.3% |
+| No shares or participation indicators (deployable) | 13 | 0.879 | 94.4% |
 
 Removing one route barely moves the score because the other shares and size columns carry the same information. Removing all spending-mix columns costs 0.053 ROC-AUC, which is the part of the full model's skill that comes from reconstructing total spend.
 
