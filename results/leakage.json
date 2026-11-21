@@ -80,43 +80,43 @@
     {
       "feature set": "all features",
       "n features": 29,
-      "ROC-AUC": 0.9308693771211061,
-      "ROC-AUC sd": 0.0033078482154180505,
-      "F1 (macro)": 0.8371671029261426,
-      "PR-AUC (at-risk)": 0.9662294494389216,
+      "ROC-AUC": 0.9312386380295008,
+      "ROC-AUC sd": 0.0034275657883677904,
+      "F1 (macro)": 0.83589883134245,
+      "PR-AUC (at-risk)": 0.9665349264334901,
       "AUC retained": 1.0
     },
     {
       "feature set": "no Groceries_Share",
       "n features": 28,
-      "ROC-AUC": 0.9291073802945947,
-      "ROC-AUC sd": 0.002886852790503571,
-      "F1 (macro)": 0.8349281057287659,
-      "PR-AUC (at-risk)": 0.9654368673033001,
-      "AUC retained": 0.9981071492200542
+      "ROC-AUC": 0.9290830871063122,
+      "ROC-AUC sd": 0.003210390069534522,
+      "F1 (macro)": 0.8338605083979285,
+      "PR-AUC (at-risk)": 0.9654742169406083,
+      "AUC retained": 0.9976852862035989
     },
     {
       "feature set": "no size family",
       "n features": 26,
-      "ROC-AUC": 0.9210297809028456,
-      "ROC-AUC sd": 0.003221995758520358,
-      "F1 (macro)": 0.8242248685899017,
-      "PR-AUC (at-risk)": 0.9611101663540472,
-      "AUC retained": 0.989429670305955
+      "ROC-AUC": 0.9212630909724204,
+      "ROC-AUC sd": 0.0027610331291364446,
+      "F1 (macro)": 0.825565096471729,
+      "PR-AUC (at-risk)": 0.9612088212086846,
+      "AUC retained": 0.9892878724639383
     },
     {
       "feature set": "no shares or indicators (deployable)",
       "n features": 13,
-      "ROC-AUC": 0.8781991141225417,
-      "ROC-AUC sd": 0.006690814885317552,
-      "F1 (macro)": 0.7748656525056765,
-      "PR-AUC (at-risk)": 0.9398000390458583,
-      "AUC retained": 0.9434182020666988
+      "ROC-AUC": 0.8788296025080742,
+      "ROC-AUC sd": 0.006163865682346164,
+      "F1 (macro)": 0.77529214015476,
+      "PR-AUC (at-risk)": 0.9401550858493841,
+      "AUC retained": 0.9437211544053584
     }
   ],
   "food_size_fit": {
-    "r2": 0.2920391323894237,
-    "elasticity": 0.6296937317472555,
+    "r2": 0.2920391323894235,
+    "elasticity": 0.6296937317467344,
     "n": 41494
   },
   "oracle": {

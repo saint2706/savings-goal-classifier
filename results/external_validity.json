@@ -259,7 +259,7 @@
       "calibration_in_the_large": 0.09098828761610389,
       "recall@25% model": 0.3908969210174029,
       "precision@25% model": 0.9684908789386402,
-      "recall@25% income rule": 0.37472110664881747
+      "recall@25% income rule": 0.3746095493083445
     },
     {
       "shift": "train urban -> test rural",
@@ -272,6 +272,120 @@
       "recall@25% model": 0.346046222406467,
       "precision@25% model": 0.9877237095104274,
       "recall@25% income rule": 0.3374442947455695
+    }
+  ],
+  "recalibration_states": [
+    {
+      "fold": 0,
+      "groups_held_out": 7,
+      "n_cal": 796.0,
+      "n_cal_groups": 51.0,
+      "n_eval": 7515.0,
+      "n_eval_groups": 461.0,
+      "intercept_shift": -0.16655866216999085,
+      "ROC-AUC": 0.8909517857645023,
+      "ece_before": 0.025748847041500832,
+      "ece_after": 0.014594989342031786,
+      "citl_before": 0.024675695702424838,
+      "citl_after": 0.0044360055007317545,
+      "brier_before": 0.11668507802344155,
+      "brier_after": 0.11567439635773574
+    },
+    {
+      "fold": 1,
+      "groups_held_out": 8,
+      "n_cal": 907.0,
+      "n_cal_groups": 48.0,
+      "n_eval": 7426.0,
+      "n_eval_groups": 437.0,
+      "intercept_shift": 0.018847661071339433,
+      "ROC-AUC": 0.870740337737925,
+      "ece_before": 0.022283126902759083,
+      "ece_after": 0.02153071983254027,
+      "citl_before": -0.0002850278651386762,
+      "citl_after": 0.0021032498828351676,
+      "brier_before": 0.13851218953395147,
+      "brier_after": 0.13851060299118279
+    },
+    {
+      "fold": 2,
+      "groups_held_out": 5,
+      "n_cal": 859.0,
+      "n_cal_groups": 49.0,
+      "n_eval": 7417.0,
+      "n_eval_groups": 440.0,
+      "intercept_shift": 0.647635911891615,
+      "ROC-AUC": 0.8792028075768423,
+      "ece_before": 0.06940912716899322,
+      "ece_after": 0.02182328463160949,
+      "citl_before": -0.06940912716899322,
+      "citl_after": 0.01073255855090538,
+      "brier_before": 0.14263145650193643,
+      "brier_after": 0.13670145971110084
+    },
+    {
+      "fold": 3,
+      "groups_held_out": 7,
+      "n_cal": 854.0,
+      "n_cal_groups": 49.0,
+      "n_eval": 7426.0,
+      "n_eval_groups": 445.0,
+      "intercept_shift": -0.21300298241842594,
+      "ROC-AUC": 0.8906505946560694,
+      "ece_before": 0.041345526826980054,
+      "ece_after": 0.01843527313972653,
+      "citl_before": 0.040357390655680725,
+      "citl_after": 0.013904800189119382,
+      "brier_before": 0.11651309556698496,
+      "brier_after": 0.11434010295857576
+    },
+    {
+      "fold": 4,
+      "groups_held_out": 6,
+      "n_cal": 710.0,
+      "n_cal_groups": 48.0,
+      "n_eval": 7608.0,
+      "n_eval_groups": 433.0,
+      "intercept_shift": -0.1068224200127744,
+      "ROC-AUC": 0.8709268833356426,
+      "ece_before": 0.019092750695874926,
+      "ece_after": 0.0180434298860625,
+      "citl_before": 0.006108582241575344,
+      "citl_after": -0.007915058193718905,
+      "brier_before": 0.13829616099929198,
+      "brier_after": 0.1384065613073164
+    }
+  ],
+  "recalibration_sector": [
+    {
+      "shift": "train rural -> test urban",
+      "n_cal": 1433.0,
+      "n_cal_groups": 104.0,
+      "n_eval": 13040.0,
+      "n_eval_groups": 939.0,
+      "intercept_shift": -0.6120568364227935,
+      "ROC-AUC": 0.8664327617533356,
+      "ece_before": 0.09066993467174471,
+      "ece_after": 0.018276660855938265,
+      "citl_before": 0.09066993467174472,
+      "citl_after": -0.003632532333248062,
+      "brier_before": 0.1539584524994716,
+      "brier_after": 0.14415319194460183
+    },
+    {
+      "shift": "train urban -> test rural",
+      "n_cal": 2781.0,
+      "n_cal_groups": 142.0,
+      "n_eval": 24264.0,
+      "n_eval_groups": 1276.0,
+      "intercept_shift": 0.2688705527822076,
+      "ROC-AUC": 0.8820120598857125,
+      "ece_before": 0.05073982876636624,
+      "ece_after": 0.030298974625870403,
+      "citl_before": -0.05073982876636626,
+      "citl_after": -0.022890194293481103,
+      "brier_before": 0.12698322861737024,
+      "brier_after": 0.12424754016952995
     }
   ],
   "note": "HCES 2022-23 has no income: the mechanism is compared, the label is not rebuilt."
