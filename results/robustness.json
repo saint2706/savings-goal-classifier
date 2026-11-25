@@ -1,0 +1,151 @@
+{
+  "dissaver_sensitivity": [
+    {
+      "subset": "Full sample",
+      "max_ratio": null,
+      "n": 41518,
+      "share_of_sample": 1.0,
+      "at_risk_rate": 0.6807167975335999,
+      "ROC-AUC": 0.8828951461040021,
+      "ECE": 0.005003144998224481,
+      "recall_model": 0.361899370179039,
+      "precision_model": 0.9853564547206166,
+      "recall_income": 0.35043521336069633,
+      "recall_diff_pp": 1.1464156818342675,
+      "diff_ci_low": 0.99040392773587,
+      "diff_ci_high": 1.3130082030739918
+    },
+    {
+      "subset": "COTOTAL <= 2x INCOME",
+      "max_ratio": 2.0,
+      "n": 32381,
+      "share_of_sample": 0.7799267787465678,
+      "at_risk_rate": 0.5906241314351008,
+      "ROC-AUC": 0.8425532066377145,
+      "ECE": 0.01892354223259908,
+      "recall_model": 0.3928888888888889,
+      "precision_model": 0.9282273008029648,
+      "recall_income": 0.3683660130718954,
+      "recall_diff_pp": 2.4522875816993475,
+      "diff_ci_low": 2.11274192302474,
+      "diff_ci_high": 2.755074827349296
+    },
+    {
+      "subset": "COTOTAL <= 1.5x INCOME",
+      "max_ratio": 1.5,
+      "n": 27414,
+      "share_of_sample": 0.6602919215761838,
+      "at_risk_rate": 0.5164514481651711,
+      "ROC-AUC": 0.8154356221019048,
+      "ECE": 0.04675017371964986,
+      "recall_model": 0.4164430004237887,
+      "precision_model": 0.8602276043186461,
+      "recall_income": 0.38162169797994067,
+      "recall_diff_pp": 3.482130244384801,
+      "diff_ci_low": 3.0113508664841033,
+      "diff_ci_high": 3.875331198446821
+    },
+    {
+      "subset": "COTOTAL <= 1x INCOME",
+      "max_ratio": 1.0,
+      "n": 18314,
+      "share_of_sample": 0.4411098800520256,
+      "at_risk_rate": 0.2761821557278585,
+      "ROC-AUC": 0.7500274725078051,
+      "ECE": 0.18833382071688717,
+      "recall_model": 0.4689600632661131,
+      "precision_model": 0.5181301878549585,
+      "recall_income": 0.41854487939897195,
+      "recall_diff_pp": 5.041518386714117,
+      "diff_ci_low": 3.7981006090900356,
+      "diff_ci_high": 6.165270449719586
+    }
+  ],
+  "refit_non_extreme": {
+    "n": 32381,
+    "at_risk_rate": 0.5906241314351008,
+    "ROC-AUC": 0.8424203478212849,
+    "ECE": 0.006259061273878887,
+    "recall_model": 0.39388235294117646,
+    "precision_model": 0.9305744286596664,
+    "recall_income": 0.3683660130718954,
+    "recall_diff_pp": 2.5516339869281035
+  },
+  "underreporting_stress": [
+    {
+      "scenario": "Reported (1.0x)",
+      "at_risk_rate": 0.6807167975335999,
+      "ROC-AUC": 0.8828951461040021,
+      "recall_model": 0.361899370179039,
+      "precision_model": 0.9853564547206166,
+      "recall_income": 0.35043521336069633,
+      "recall_diff_pp": 1.1464156818342675
+    },
+    {
+      "scenario": "Uniform +10% income (1.1x)",
+      "at_risk_rate": 0.6304253576761887,
+      "ROC-AUC": 0.8804651886811395,
+      "recall_model": 0.3878658210437839,
+      "precision_model": 0.9780346820809248,
+      "recall_income": 0.37124627492931916,
+      "recall_diff_pp": 1.6619546114464756
+    },
+    {
+      "scenario": "Uniform +20% income (1.2x)",
+      "at_risk_rate": 0.5804952068982129,
+      "ROC-AUC": 0.8787046485110934,
+      "recall_model": 0.41599933612713164,
+      "precision_model": 0.9658959537572255,
+      "recall_income": 0.3941330235259948,
+      "recall_diff_pp": 2.1866312601136864
+    },
+    {
+      "scenario": "Uniform +30% income (1.3x)",
+      "at_risk_rate": 0.5366347126547522,
+      "ROC-AUC": 0.8782896034143226,
+      "recall_model": 0.4439407540394973,
+      "precision_model": 0.9528901734104046,
+      "recall_income": 0.41638240574506286,
+      "recall_diff_pp": 2.755834829443443
+    },
+    {
+      "scenario": "Heterogeneous (farm/business +25%, salaried +5%, other +15%)",
+      "at_risk_rate": 0.6045811455272412,
+      "ROC-AUC": 0.8733787642651714,
+      "recall_model": 0.4012190749372535,
+      "precision_model": 0.9702312138728324,
+      "recall_income": 0.3816581012708657,
+      "recall_diff_pp": 1.9560973666387815
+    }
+  ],
+  "external_criterion": [
+    {
+      "target": "Has_Fixed_Deposit",
+      "rate": 0.10409942675466063,
+      "auc_headline": 0.6791255928859213,
+      "auc_no_sensitive": 0.6813075384798284,
+      "auc_income": 0.7235291019882968
+    },
+    {
+      "target": "Has_Pension_LIC",
+      "rate": 0.16987812515053713,
+      "auc_headline": 0.6474194421384635,
+      "auc_no_sensitive": 0.6462842412474212,
+      "auc_income": 0.7007393441820751
+    },
+    {
+      "target": "Has_Bank_Savings",
+      "rate": 0.5740401753456332,
+      "auc_headline": 0.5739628688793088,
+      "auc_no_sensitive": 0.5754482102699325,
+      "auc_income": 0.6296928712598114
+    },
+    {
+      "target": "Has_Any_Formal_Instrument",
+      "rate": 0.6362782407630425,
+      "auc_headline": 0.5712122932700339,
+      "auc_no_sensitive": 0.5725141456267123,
+      "auc_income": 0.6282072455079107
+    }
+  ]
+}

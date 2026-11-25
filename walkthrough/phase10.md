@@ -35,9 +35,10 @@ Weighted MPCE rose from Rs 1,600 (rural) and Rs 2,572 (urban) in IHDS-II to Rs 3
 
 ## Reading the result correctly
 
-- A stable mechanism means the *warning* travels: spending shares should still be treated as leaky wherever food tracks household size. It does not mean the 0.895 or 0.882 carry over.
-- Transport tests show that ranking quality is robust to a change of population but absolute probabilities are not. Use the model to rank, recalibrate before reading a probability.
-- Leave-states-out is a proxy for a changing population, not for time. A change in the income distribution over eleven years is bigger than the difference between states.
+- A stable mechanism means the *warning* persists into HCES 2022-23: spending shares should still be treated as leaky wherever food tracks household size. It does not imply that the 0.895 or 0.882 classifier scores hold out of time.
+- Within the tested IHDS-II shifts (leave-states-out and rural/urban), discrimination holds while absolute probabilities drift until a 10%-PSU intercept shift corrects them.
+- Feeding 2.4× unadjusted nominal income (matching 2011-12 to 2022-23 MPCE growth) into the 2011-12 model on held-out PSUs inflates predicted on-track share from 32.2% to 62.9% against 31.9% observed (CITL +31.0 pp, ECE 0.310), showing why nominal rupees must be CPI-deflated and recalibrated before modern use.
+- Leave-states-out is a within-survey spatial check, not an out-of-time test. An eleven-year shift in real and nominal incomes is larger than cross-state variation.
 
 ## What this means for later work
 

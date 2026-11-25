@@ -123,6 +123,18 @@ The rupee column cannot identify a lever. Every rupee interval is above zero, in
 
 22.0% of households (23.8% weighted) report spending more than twice their reported income; they are 32.3% of the at-risk group. Indian household surveys tend to under-report income relative to item-by-item consumption, so part of the at-risk group reflects measurement rather than observed distress. Moving the benchmark changes the at-risk share: 61.7% at a 10% savings threshold, 68.1% at 20%, 74.7% at 30%. Phase 1 found 93.6% and 93.4% label agreement with the 20% definition at those two alternatives, so rankings are stable while the level moves.
 
+### Cell 11b: Subgroup errors, calibration and sensitive-attribute ablation
+
+`savings_goal.evaluation.subgroup` audits discrimination, calibration-in-the-large (CITL), ECE, at-risk FNR/FPR and 25%-budget selection rates across `Caste_Group`, `Religion`, `Area_Type` and `Occupation`, comparing the 13-feature deployable model against an 11-feature variant that drops `Caste_Group` and `Religion` (`results/subgroup_audit.json`). Dropping both sensitive attributes lowers OOF ROC-AUC by 0.0025 (0.8829 → 0.8804, 95% CI 0.0016 to 0.0033) and held-out AUC from 0.886 to 0.883 while leaving 25%-budget recall unchanged (0.3619 vs 0.3618; weighted 0.3540 vs 0.3540). Yet omitting them degrades subgroup calibration on smaller regionally concentrated groups (Sikh CITL +0.9 → +11.6 pp, weighted +1.8 → +12.0 pp; Scheduled Tribe −0.3 → −4.4 pp, weighted −2.4 → −7.3 pp; Muslim +0.1 → +2.8 pp). Excluding sensitive attributes from ranking costs no aggregate recall but requires ongoing subgroup calibration checks.
+
+### Cell 11c: Measurement-error sensitivity and external holdings
+
+`savings_goal.evaluation.robustness` tests three measurement-error checks (`results/robustness.json`):
+
+- **Dissaver exclusion and refit**: trimming the 22.0% extreme dissavers (`COTOTAL > 2 × INCOME`, n = 32,381, at-risk 59.1%) doubles the model's 25%-budget recall edge over poorest-first from +1.1 to +2.5 pp (95% CI 2.1 to 2.8; +2.6 pp when refit, AUC 0.842, ECE 0.006).
+- **Income under-reporting stress test**: scaling income up by +10% to +30% uniformly, or heterogeneously (+25% farm/business, +5% salaried, +15% other), keeps original risk-ranking ROC-AUC at 0.873 to 0.881 and widens the 25%-budget edge to +1.7 to +2.8 pp (+2.0 pp heterogeneous) while at-risk prevalence falls to 53.7%.
+- **External formal-instrument holdings**: against non-accounting indicators, raw income outranks the savings-adequacy classifier (ROC-AUC 0.724 vs 0.679 for fixed deposits, 0.701 vs 0.647 for pension/LIC, 0.630 vs 0.574 for bank savings), because larger households have lower per-capita savings rates while having more adults holding formal accounts.
+
 ### Cell 13: The recommendations
 
 Each recommendation is built from f-strings over the values computed above (and the Phase 3 income threshold from `results/baseline.json`), written to `results/business_recommendations.csv`, and printed. The cell then writes `results/business.json` with the capture tables (unweighted and weighted), the bootstrap edge, decile table, calibration bins, ECE, the benchmark table, the gap-closure figures, the measurement caveats and a 41-point capture curve per strategy that Phase 8's figure script reads.
