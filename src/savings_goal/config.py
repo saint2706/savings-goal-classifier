@@ -40,6 +40,8 @@ TARGET = "Goal_Met"
 WEIGHT = "WT"
 
 CATEGORICALS: list[str] = ["Occupation", "Area_Type", "Caste_Group", "Religion"]
+SENSITIVE_CATEGORICALS: list[str] = ["Caste_Group", "Religion"]
+NON_SENSITIVE_CATEGORICALS: list[str] = [c for c in CATEGORICALS if c not in SENSITIVE_CATEGORICALS]
 
 # The size family: Groceries rupees are close to proportional to household size,
 # so these columns plus Groceries_Share and income can approximately recover

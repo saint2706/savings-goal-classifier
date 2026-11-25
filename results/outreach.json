@@ -1421,5 +1421,543 @@
       "cost_per_flip": 5857.787810383746,
       "reach_minus_risk": 9.633911368015413
     }
+  ],
+  "no_sensitive_sensitivity": [
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.7514450867052024,
+      "extra_savings_per_contact": 294.90773747591527,
+      "cost_per_flip": 199615.3846153846
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.8477842003853564,
+      "extra_savings_per_contact": 295.09497254335264,
+      "cost_per_flip": 176931.81818181818
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.077071290944124,
+      "extra_savings_per_contact": 1313.5932008670522,
+      "cost_per_flip": 14885.277246653919
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 9.845857418111756,
+      "extra_savings_per_contact": 1303.786865125241,
+      "cost_per_flip": 15234.83365949119
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.448717904094526,
+      "extra_savings_per_contact": 181.59150589233892,
+      "cost_per_flip": 334285.74752925686
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.5096694833756439,
+      "extra_savings_per_contact": 181.99795889688454,
+      "cost_per_flip": 294308.3800240888
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 11.765826596463812,
+      "extra_savings_per_contact": 1781.9154276447127,
+      "cost_per_flip": 12748.785541772484
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 11.538532953787206,
+      "extra_savings_per_contact": 1764.4128029745084,
+      "cost_per_flip": 12999.91953923108
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.6454720616570327,
+      "extra_savings_per_contact": 257.8964303949904,
+      "cost_per_flip": 232388.05970149254
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 0.7321772639691715,
+      "extra_savings_per_contact": 257.29277095375727,
+      "cost_per_flip": 204868.4210526316
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.722543352601155,
+      "extra_savings_per_contact": 1408.5747782695087,
+      "cost_per_flip": 13989.21832884097
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 10380.0,
+      "flips_per_1000": 10.54913294797688,
+      "extra_savings_per_contact": 1390.506437469894,
+      "cost_per_flip": 14219.17808219178
+    }
+  ],
+  "no_sensitive_sensitivity_weighted": [
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.5254782674957718,
+      "extra_savings_per_contact": 266.14889813496956,
+      "cost_per_flip": 285454.2409809688
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62705039.8602229,
+      "flips_per_1000": 0.6018921897414746,
+      "extra_savings_per_contact": 267.0894661503652,
+      "cost_per_flip": 249214.06616761076
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 9.852244930399452,
+      "extra_savings_per_contact": 1241.207950580575,
+      "cost_per_flip": 15224.956449993408
+    },
+    {
+      "scenario": "uniform r=0.20",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62706075.46500576,
+      "flips_per_1000": 9.75644231078431,
+      "extra_savings_per_contact": 1239.9049487162804,
+      "cost_per_flip": 15374.456715046334
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.29394413244042417,
+      "extra_savings_per_contact": 153.2208687072036,
+      "cost_per_flip": 510301.0519538151
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62705039.8602229,
+      "flips_per_1000": 0.3610306525261589,
+      "extra_savings_per_contact": 154.81365770196732,
+      "cost_per_flip": 415477.18718739966
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 11.285127412564508,
+      "extra_savings_per_contact": 1656.0950351760796,
+      "cost_per_flip": 13291.830434541189
+    },
+    {
+      "scenario": "income-gradient 0.05-0.35",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62706075.46500576,
+      "flips_per_1000": 11.262309482537338,
+      "extra_savings_per_contact": 1653.8900381187748,
+      "cost_per_flip": 13318.760262500422
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62695132.42582023,
+      "flips_per_1000": 0.41522353544913854,
+      "extra_savings_per_contact": 228.17547374393232,
+      "cost_per_flip": 361251.19891806756
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Risk model (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62705039.8602229,
+      "flips_per_1000": 0.4570495135151984,
+      "extra_savings_per_contact": 228.6629400876947,
+      "cost_per_flip": 328192.0132598763
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability (with sensitive)",
+      "budget": 0.25,
+      "contacts": 62706402.77447038,
+      "flips_per_1000": 10.629260090433636,
+      "extra_savings_per_contact": 1338.030254871169,
+      "cost_per_flip": 14111.988861294347
+    },
+    {
+      "scenario": "debt-burdened 0.30/0.10",
+      "strategy": "Reachability (no sensitive)",
+      "budget": 0.25,
+      "contacts": 62706075.46500576,
+      "flips_per_1000": 10.651192026605722,
+      "extra_savings_per_contact": 1333.8490820230886,
+      "cost_per_flip": 14082.93077669743
+    }
+  ],
+  "decile_allocation": [
+    {
+      "Income_Decile": 0,
+      "n": 4152,
+      "risk_selection_rate": 0.8834296724470135,
+      "reach_selection_rate": 0.019508670520231215
+    },
+    {
+      "Income_Decile": 1,
+      "n": 4152,
+      "risk_selection_rate": 0.7295279383429673,
+      "reach_selection_rate": 0.0838150289017341
+    },
+    {
+      "Income_Decile": 2,
+      "n": 4153,
+      "risk_selection_rate": 0.5186612087647484,
+      "reach_selection_rate": 0.11967252588490249
+    },
+    {
+      "Income_Decile": 3,
+      "n": 4447,
+      "risk_selection_rate": 0.22599505284461435,
+      "reach_selection_rate": 0.20530694850460984
+    },
+    {
+      "Income_Decile": 4,
+      "n": 3934,
+      "risk_selection_rate": 0.0920183019827148,
+      "reach_selection_rate": 0.2839349262836807
+    },
+    {
+      "Income_Decile": 5,
+      "n": 4140,
+      "risk_selection_rate": 0.02995169082125604,
+      "reach_selection_rate": 0.4236714975845411
+    },
+    {
+      "Income_Decile": 6,
+      "n": 4084,
+      "risk_selection_rate": 0.0075905974534769835,
+      "reach_selection_rate": 0.42703232125367285
+    },
+    {
+      "Income_Decile": 7,
+      "n": 4155,
+      "risk_selection_rate": 0.0016847172081829122,
+      "reach_selection_rate": 0.4197352587244284
+    },
+    {
+      "Income_Decile": 8,
+      "n": 4149,
+      "risk_selection_rate": 0.0,
+      "reach_selection_rate": 0.3661123162207761
+    },
+    {
+      "Income_Decile": 9,
+      "n": 4152,
+      "risk_selection_rate": 0.0,
+      "reach_selection_rate": 0.1596820809248555
+    }
+  ],
+  "decile_allocation_weighted": [
+    {
+      "Income_Decile": 0,
+      "n": 4152,
+      "risk_selection_rate": 0.8611522867052452,
+      "reach_selection_rate": 0.022467436492733677
+    },
+    {
+      "Income_Decile": 1,
+      "n": 4152,
+      "risk_selection_rate": 0.6693239507081373,
+      "reach_selection_rate": 0.08913099134963443
+    },
+    {
+      "Income_Decile": 2,
+      "n": 4153,
+      "risk_selection_rate": 0.4112049191276016,
+      "reach_selection_rate": 0.14102484814974756
+    },
+    {
+      "Income_Decile": 3,
+      "n": 4447,
+      "risk_selection_rate": 0.15795949750036695,
+      "reach_selection_rate": 0.21059116394746888
+    },
+    {
+      "Income_Decile": 4,
+      "n": 3934,
+      "risk_selection_rate": 0.058870850932993275,
+      "reach_selection_rate": 0.29725719195547845
+    },
+    {
+      "Income_Decile": 5,
+      "n": 4140,
+      "risk_selection_rate": 0.01896793340082637,
+      "reach_selection_rate": 0.44064126591464675
+    },
+    {
+      "Income_Decile": 6,
+      "n": 4084,
+      "risk_selection_rate": 0.0030534816435033875,
+      "reach_selection_rate": 0.44458900162239895
+    },
+    {
+      "Income_Decile": 7,
+      "n": 4155,
+      "risk_selection_rate": 0.0006055168145568852,
+      "reach_selection_rate": 0.4298527127259979
+    },
+    {
+      "Income_Decile": 8,
+      "n": 4149,
+      "risk_selection_rate": 0.0,
+      "reach_selection_rate": 0.37955563638116036
+    },
+    {
+      "Income_Decile": 9,
+      "n": 4152,
+      "risk_selection_rate": 0.0,
+      "reach_selection_rate": 0.1695368887241474
+    }
+  ],
+  "subgroup_allocation": [
+    {
+      "group_col": "Area_Type",
+      "subgroup": "Developed_Village",
+      "n": 12635,
+      "at_risk_rate": 0.6908587257617729,
+      "selection_rate": 0.2631578947368421,
+      "reach_selection_rate": 0.23996834190740007
+    },
+    {
+      "group_col": "Area_Type",
+      "subgroup": "Less_Developed_Village",
+      "n": 14410,
+      "at_risk_rate": 0.7334489937543373,
+      "selection_rate": 0.3315058986814712,
+      "reach_selection_rate": 0.24635669673837612
+    },
+    {
+      "group_col": "Area_Type",
+      "subgroup": "Metro_Urban",
+      "n": 3063,
+      "at_risk_rate": 0.5788442703232125,
+      "selection_rate": 0.11655239960822723,
+      "reach_selection_rate": 0.3238654913483513
+    },
+    {
+      "group_col": "Area_Type",
+      "subgroup": "Other_Urban",
+      "n": 11410,
+      "at_risk_rate": 0.630236634531113,
+      "selection_rate": 0.16836108676599473,
+      "reach_selection_rate": 0.24592462751971955
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Brahmin",
+      "n": 2167,
+      "at_risk_rate": 0.615597600369174,
+      "selection_rate": 0.19473927088140286,
+      "reach_selection_rate": 0.23765574526995847
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Forward_Caste",
+      "n": 9496,
+      "at_risk_rate": 0.6279486099410277,
+      "selection_rate": 0.19766217354675653,
+      "reach_selection_rate": 0.22325189553496208
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "OBC",
+      "n": 16755,
+      "at_risk_rate": 0.7128021486123545,
+      "selection_rate": 0.28546702476872576,
+      "reach_selection_rate": 0.2438078185616234
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Other",
+      "n": 547,
+      "at_risk_rate": 0.7184643510054844,
+      "selection_rate": 0.27239488117001825,
+      "reach_selection_rate": 0.20292504570383912
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Scheduled_Caste",
+      "n": 8865,
+      "at_risk_rate": 0.6873096446700507,
+      "selection_rate": 0.23993231810490695,
+      "reach_selection_rate": 0.28392554991539765
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Scheduled_Tribe",
+      "n": 3603,
+      "at_risk_rate": 0.6877601998334721,
+      "selection_rate": 0.2803219539272828,
+      "reach_selection_rate": 0.27865667499306135
+    },
+    {
+      "group_col": "Caste_Group",
+      "subgroup": "Unknown",
+      "n": 85,
+      "at_risk_rate": 0.6823529411764706,
+      "selection_rate": 0.1411764705882353,
+      "reach_selection_rate": 0.32941176470588235
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "Ag_Labour",
+      "n": 3825,
+      "at_risk_rate": 0.7487581699346405,
+      "selection_rate": 0.2912418300653595,
+      "reach_selection_rate": 0.29777777777777775
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "Business",
+      "n": 5391,
+      "at_risk_rate": 0.7130402522723057,
+      "selection_rate": 0.2383602300129846,
+      "reach_selection_rate": 0.2489334075310703
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "Farm",
+      "n": 9547,
+      "at_risk_rate": 0.7429559023777103,
+      "selection_rate": 0.3655598617366712,
+      "reach_selection_rate": 0.22195454069341156
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "No_Regular_Worker",
+      "n": 3444,
+      "at_risk_rate": 0.7497096399535423,
+      "selection_rate": 0.3597560975609756,
+      "reach_selection_rate": 0.21951219512195122
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "Non_Ag_Labour",
+      "n": 8751,
+      "at_risk_rate": 0.6828933836133013,
+      "selection_rate": 0.21803222488858418,
+      "reach_selection_rate": 0.26259856016455263
+    },
+    {
+      "group_col": "Occupation",
+      "subgroup": "Salaried",
+      "n": 10560,
+      "at_risk_rate": 0.5589962121212121,
+      "selection_rate": 0.12727272727272726,
+      "reach_selection_rate": 0.25814393939393937
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Buddhist",
+      "n": 268,
+      "at_risk_rate": 0.5671641791044776,
+      "selection_rate": 0.15298507462686567,
+      "reach_selection_rate": 0.291044776119403
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Christian",
+      "n": 1194,
+      "at_risk_rate": 0.5661641541038526,
+      "selection_rate": 0.13316582914572864,
+      "reach_selection_rate": 0.25795644891122277
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Hindu",
+      "n": 33871,
+      "at_risk_rate": 0.68010982846683,
+      "selection_rate": 0.25369785362109176,
+      "reach_selection_rate": 0.25027309497800476
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Jain",
+      "n": 103,
+      "at_risk_rate": 0.5825242718446602,
+      "selection_rate": 0.1262135922330097,
+      "reach_selection_rate": 0.32038834951456313
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Muslim",
+      "n": 4866,
+      "at_risk_rate": 0.739416358405261,
+      "selection_rate": 0.2815454171804357,
+      "reach_selection_rate": 0.23818331278257296
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Sikh",
+      "n": 955,
+      "at_risk_rate": 0.6261780104712041,
+      "selection_rate": 0.1612565445026178,
+      "reach_selection_rate": 0.2617801047120419
+    },
+    {
+      "group_col": "Religion",
+      "subgroup": "Tribal",
+      "n": 211,
+      "at_risk_rate": 0.5023696682464455,
+      "selection_rate": 0.17061611374407584,
+      "reach_selection_rate": 0.3127962085308057
+    }
   ]
 }

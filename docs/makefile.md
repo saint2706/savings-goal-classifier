@@ -331,7 +331,7 @@ A misconfigured setting cannot aim a deletion at source: `NB_RUN_DIR=.`, `NB_RUN
 
 ## 8. Git automation
 
-Git targets run only when you name them. They check the repository and the remote first and stop with an actionable message otherwise.
+Git targets run only when you name them. They check the repository and the remote first and stop with a clear error message otherwise.
 
 - The **default branch is detected**, in this order: the remote's `HEAD` ref, the remote itself (`git ls-remote --symref`), `init.defaultBranch`, then a local `main` or `master`. It is never assumed.
 - A **detached HEAD** blocks `git-stage`, `git-commit`, `git-pull`, `git-push` and the release targets. A merge, rebase or cherry-pick in progress and unresolved conflicts fail `git-check`.

@@ -165,4 +165,4 @@ The classifier still captures slightly more at-risk households by count (36.2% v
 
 ## How far the outreach framing holds
 
-The framing in Q1 treats outreach as the decision this project informs. [Phase 9](phase9.md) tests how much that decision depends on who responds to a nudge, which IHDS does not record, and [Phase 10](phase10.md) tests how far the 2011-12 framing travels to a newer survey and to other states.
+The framing in Q1 prespecifies fixed-budget need screening as the primary outreach decision. [Phase 9](phase9.md) tests how much targeting depends on hypothetical nudge-response assumptions that IHDS does not record, and [Phase 10](phase10.md) checks whether the expenditure leakage mechanism holds in HCES 2022-23 and how the classifier behaves under spatial, sector and nominal-scaling shifts within IHDS-II.

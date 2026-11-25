@@ -1,12 +1,12 @@
-"""Does the model travel? Train on one slice of IHDS-II, score a structurally different one.
+"""Within-survey transport checks: train on one slice of IHDS-II, score a different one.
 
 A newer survey with income and consumption for the same households does not exist in
-public form, so out-of-time validation is not possible. These tests are the available
-proxy for "the population changes under the model": whole states held out (different
-prices, labour markets, institutions) and the rural/urban divide in both directions.
-Each reports discrimination (ROC-AUC), calibration-in-the-large (mean predicted minus
-observed on-track rate) and the 25%-budget at-risk recall of the model against a
-poorest-first income rule on the held-out slice.
+public form, so out-of-time classifier validation is not possible. These tests check
+transfer across observed IHDS-II strata: whole states held out (different prices, labour
+markets, institutions), the rural/urban divide in both directions, and unadjusted nominal
+income scaling. Each reports discrimination (ROC-AUC), calibration-in-the-large (mean
+predicted minus observed on-track rate), and 25%-budget at-risk recall against a
+poorest-first income rule.
 """
 
 from __future__ import annotations
@@ -166,3 +166,38 @@ def leave_group_recalibration(
             df, tr, te, model, cols, group_col=psu_col, cal_frac=cal_frac, seed=seed
         ),
     )
+
+
+def nominal_scaling_shift(
+    df: pd.DataFrame,
+    train: NDArray[np.bool_],
+    test: NDArray[np.bool_],
+    model: Any,
+    cols: list[str],
+    scale_factor: float = 2.4,
+    income_col: str = "Log_Income",
+) -> dict[str, float]:
+    """Simulate scoring unadjusted nominal rupees scaled by ``scale_factor`` on ``test``.
+
+    Measures calibration breakdown when a model fitted on 2011-12 nominal income is given
+    modern nominal rupees without CPI deflation or local recalibration.
+    """
+    m = clone(model).fit(df.loc[train, cols], df.loc[train, "Goal_Met"])
+    test_df = df.loc[test, cols].copy()
+    y = df.loc[test, "Goal_Met"].to_numpy()
+    p_base = np.asarray(m.predict_proba(test_df)[:, 1], dtype=float)
+    test_df[income_col] = test_df[income_col].to_numpy(dtype=float) + float(np.log(scale_factor))
+    p_scaled = np.asarray(m.predict_proba(test_df)[:, 1], dtype=float)
+    return {
+        "scale_factor": float(scale_factor),
+        "n_test": float(test.sum()),
+        "observed_on_track": float(y.mean()),
+        "pred_on_track_before": float(p_base.mean()),
+        "pred_on_track_after": float(p_scaled.mean()),
+        "citl_before": float(p_base.mean() - y.mean()),
+        "citl_after": float(p_scaled.mean() - y.mean()),
+        "ece_before": expected_calibration_error(y, p_base),
+        "ece_after": expected_calibration_error(y, p_scaled),
+        "roc_auc_before": float(roc_auc_score(y, p_base)),
+        "roc_auc_after": float(roc_auc_score(y, p_scaled)),
+    }

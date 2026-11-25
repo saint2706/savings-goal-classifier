@@ -34,6 +34,10 @@ None of these is estimated. The first three are the knobs; the fourth is arithme
 
 All rankings use only deployable features, out of fold under PSU-grouped CV. The **reachability model** fits the headline XGBoost twice, to `Goal_Met` and to the label relaxed by `delta`; the difference in P(on track) is the model's estimate of P(0.20 - delta <= Savings_Rate < 0.20). The **oracle** uses the true savings rate and is an upper bound, not a strategy. The **risk model** is the Phase 7 ranking, `1 - P(on track)`.
 
+## Sensitive-attribute ablation and distributional shift
+
+Dropping `Caste_Group` and `Religion` from both risk and reachability models leaves hypothetical survey-weighted reachability flips nearly unchanged across all three response scenarios (9.8 vs 9.9 uniform, 11.3 vs 11.3 income-gradient, 10.7 vs 10.6 debt-burdened; `results/outreach.json`). Switching from need screening (risk ranking) to threshold-crossing reachability shifts *who* gets contacted: at a 25% budget, risk ranking contacts 88.3% of income decile 0 and 33.2% of less-developed villages (11.7% of metro urban), whereas reachability contacts 2.0% of decile 0, 42.0–42.7% of deciles 5–7 and 32.4% of metro urban.
+
 ## Reading the result correctly
 
 - The result is a statement about sensitivity, not benefit. It says that the choice between a risk ranking and a reachability ranking changes the outcome by an order of magnitude *under these assumptions*, and that the survey cannot adjudicate between them.

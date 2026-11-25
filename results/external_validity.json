@@ -388,5 +388,18 @@
       "brier_after": 0.12424754016952995
     }
   ],
+  "nominal_scaling_shift": {
+    "scale_factor": 2.4,
+    "n_test": 8299.0,
+    "observed_on_track": 0.31943607663573925,
+    "pred_on_track_before": 0.3221660102039903,
+    "pred_on_track_after": 0.6289725463984374,
+    "citl_before": 0.002729933568251075,
+    "citl_after": 0.3095364697626981,
+    "ece_before": 0.008210669828895635,
+    "ece_after": 0.3095364697626981,
+    "roc_auc_before": 0.8860385479101904,
+    "roc_auc_after": 0.8796514530836083
+  },
   "note": "HCES 2022-23 has no income: the mechanism is compared, the label is not rebuilt."
 }
